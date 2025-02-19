@@ -5,6 +5,12 @@ version = "0.1.0"
 authors = ["c12i <collins.muriuki@holochain.org>"]
 license = "MIT"
 edition = "2021"
+readme = "./README.md"
+repository = "https://github.com/holochain/hc-http-gw"
+
+[[bin]]
+name = "hc-http-gw"
+path = "./src/bin/hc-http-gw.rs"
 
 [dependencies]
 anyhow = "1.0.96"
