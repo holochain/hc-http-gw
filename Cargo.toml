@@ -15,11 +15,12 @@ path = "./src/bin/hc-http-gw.rs"
 [dependencies]
 anyhow = "1.0.96"
 axum = "0.8.1"
-clap = { version = "4.5.30", features = ["derive"] }
+clap = { version = "4.5.30", features = ["derive", "env"] }
 holochain_client = "0.6.0"
 portpicker = "0.1.1"
 serde = { version = "=1.0.203", features = ["derive"] }
 thiserror = "2.0.11"
+tokio = { version = "1.43.0", features = ["full"] }
 tracing = "0.1.41"
 tracing-bunyan-formatter = "0.3.10"
 tracing-subscriber = { version = "0.3.19", features = [
@@ -27,3 +28,6 @@ tracing-subscriber = { version = "0.3.19", features = [
   "json",
   "registry",
 ] }
+
+[dev-dependencies]
+reqwest = "0.12"

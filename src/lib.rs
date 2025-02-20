@@ -1,14 +1,11 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
+//! # holochain http gateway
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+mod cli;
+mod error;
+mod routes;
+mod service;
+mod tracing;
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
-}
+pub use cli::HcHttpGatewayArgs;
+pub use error::HcHttpGatewayError;
+pub use service::HcHttpGatewayService;
