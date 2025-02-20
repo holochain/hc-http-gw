@@ -1,12 +1,13 @@
 [package]
 name = "holochain_http_gateway"
+version = "0.1.0-alpha.0"
 description = "The Holochain HTTP Gateway for providing a way to bridge from the web2 world into Holochain"
-version = "0.1.0"
-authors = ["c12i <collins.muriuki@holochain.org>"]
-license = "MIT"
-edition = "2021"
-readme = "./README.md"
+authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
+homepage = "https://github.com/holochain/hc-http-gw"
+license = "Apache-2.0"
 repository = "https://github.com/holochain/hc-http-gw"
+readme = "./README.md"
+edition = "2021"
 
 [[bin]]
 name = "hc-http-gw"
