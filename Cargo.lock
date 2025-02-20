@@ -1237,22 +1237,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "hc-http-gw"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "axum",
- "clap 4.5.30",
- "holochain_client",
- "portpicker",
- "serde",
- "thiserror 2.0.11",
- "tracing",
- "tracing-bunyan-formatter",
- "tracing-subscriber",
-]
-
-[[package]]
 name = "hc_r2d2_sqlite"
 version = "0.25.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1392,6 +1376,22 @@ dependencies = [
  "thiserror 1.0.69",
  "tracing",
  "url2",
+]
+
+[[package]]
+name = "holochain_http_gateway"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "axum",
+ "clap 4.5.30",
+ "holochain_client",
+ "portpicker",
+ "serde",
+ "thiserror 2.0.11",
+ "tracing",
+ "tracing-bunyan-formatter",
+ "tracing-subscriber",
 ]
 
 [[package]]
