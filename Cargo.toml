@@ -1,0 +1,23 @@
+[package]
+name = "holochain_http_gateway"
+description = "The Holochain HTTP Gateway for providing a way to bridge from the web2 world into Holochain"
+version = "0.1.0"
+authors = ["c12i <collins.muriuki@holochain.org>"]
+license = "MIT"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.96"
+axum = "0.8.1"
+clap = { version = "4.5.30", features = ["derive"] }
+holochain_client = "0.6.0"
+portpicker = "0.1.1"
+serde = { version = "=1.0.203", features = ["derive"] }
+thiserror = "2.0.11"
+tracing = "0.1.41"
+tracing-bunyan-formatter = "0.3.10"
+tracing-subscriber = { version = "0.3.19", features = [
+  "env-filter",
+  "json",
+  "registry",
+] }
