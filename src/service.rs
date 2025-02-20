@@ -1,3 +1,5 @@
+//! HTTP gateway service for Holochain
+
 use std::net::{IpAddr, SocketAddr};
 
 use axum::{routing::get, Router};
@@ -5,16 +7,19 @@ use tokio::net::TcpListener;
 
 use crate::{routes::healthz, tracing::initialize_tracing_subscriber};
 
+/// Core Holochain HTTP gateway service
 #[derive(Debug)]
 pub struct HcHttpGatewayService {
     address: SocketAddr,
     router: Router,
 }
 
+/// Shared application state
 #[derive(Debug, Clone)]
 pub struct AppState {}
 
 impl HcHttpGatewayService {
+    /// Create a new service instance bound to the given address and port
     pub fn new(address: impl Into<IpAddr>, port: u16) -> Self {
         let address = SocketAddr::new(address.into(), port);
 
@@ -25,10 +30,12 @@ impl HcHttpGatewayService {
         HcHttpGatewayService { router, address }
     }
 
+    /// Get the socket address the service is configured to use
     pub fn address(&self) -> SocketAddr {
         self.address
     }
 
+    /// Start the HTTP server and run until terminated
     pub async fn run(self) -> anyhow::Result<()> {
         initialize_tracing_subscriber("info");
 
