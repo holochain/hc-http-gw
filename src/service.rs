@@ -32,8 +32,13 @@ impl HcHttpGatewayService {
     pub async fn run(self) -> anyhow::Result<()> {
         initialize_tracing_subscriber("info");
 
+        let address = self.address();
         let listener = TcpListener::bind(self.address).await?;
-        axum::serve(listener, self.router).await?;
+
+        tracing::info!("Starting server on {}", address);
+        axum::serve(listener, self.router)
+            .await
+            .inspect_err(|e| tracing::error!("Failed to bind to {}: {}", address, e))?;
 
         Ok(())
     }
