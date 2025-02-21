@@ -1,5 +1,5 @@
 #![deny(missing_docs)]
-//! # holochain http gateway
+//! # Holochain HTTP gateway
 
 mod cli;
 mod error;
