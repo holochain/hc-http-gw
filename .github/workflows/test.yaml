@@ -10,39 +10,24 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  cargo_test:
-    name: cargo_test
+  checks:
+    name: tests, fmt and clippy
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-      - run: cargo test --no-fail-fast
-
-  rustfmt:
-    name: rustfmt
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - run: cargo fmt --all -- --check
-
-  clippy:
-    name: clippy
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-      - run: cargo clippy -- -D warnings
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+      - name: Run clippy
+        run: cargo clippy -- -D warnings
+      - name: Run tests
+        run: cargo test --no-fail-fast
 
   ci_pass:
     if: ${{ always() }}
     runs-on: "ubuntu-latest"
-    needs:
-      - cargo_test
-      - rustfmt
-      - clippy
+    needs: [checks]
     steps:
       - name: check status
         uses: re-actors/alls-green@release/v1
