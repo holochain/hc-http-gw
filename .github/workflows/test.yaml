@@ -11,7 +11,7 @@ concurrency:
 
 jobs:
   checks:
-    name: tests, fmt and clippy
+    name: fmt, clippy and tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
