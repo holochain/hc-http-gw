@@ -5,7 +5,7 @@ use std::net::{IpAddr, SocketAddr};
 use axum::{routing::get, Router};
 use tokio::net::TcpListener;
 
-use crate::{routes::healthz, tracing::initialize_tracing_subscriber};
+use crate::{routes::health_check, tracing::initialize_tracing_subscriber};
 
 /// Core Holochain HTTP gateway service
 #[derive(Debug)]
@@ -24,7 +24,7 @@ impl HcHttpGatewayService {
         let address = SocketAddr::new(address.into(), port);
 
         let router = Router::new()
-            .route("/healthz", get(healthz))
+            .route("/health", get(health_check))
             .with_state(AppState {});
 
         HcHttpGatewayService { router, address }
