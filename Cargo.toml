@@ -6,7 +6,6 @@ authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 homepage = "https://github.com/holochain/hc-http-gw"
 license = "Apache-2.0"
 repository = "https://github.com/holochain/hc-http-gw"
-readme = "./README.md"
 edition = "2021"
 
 [[bin]]
