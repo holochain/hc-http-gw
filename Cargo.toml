@@ -1,0 +1,32 @@
+[package]
+name = "holochain_http_gateway"
+version = "0.1.0-alpha.0"
+description = "The Holochain HTTP Gateway for providing a way to bridge from the web2 world into Holochain"
+authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
+homepage = "https://github.com/holochain/hc-http-gw"
+license = "Apache-2.0"
+repository = "https://github.com/holochain/hc-http-gw"
+edition = "2021"
+
+[[bin]]
+name = "hc-http-gw"
+path = "./src/bin/hc-http-gw.rs"
+
+[dependencies]
+anyhow = "1.0.96"
+axum = "0.8.1"
+clap = { version = "4.5.30", features = ["derive", "env"] }
+holochain_client = "0.6.0"
+serde = { version = "=1.0.203", features = ["derive"] }
+thiserror = "2.0.11"
+tokio = { version = "1.43.0", features = ["rt-multi-thread", "macros", "net"] }
+tracing = "0.1.41"
+tracing-bunyan-formatter = "0.3.10"
+tracing-subscriber = { version = "0.3.19", features = [
+  "env-filter",
+  "json",
+  "registry",
+] }
+
+[dev-dependencies]
+reqwest = { version = "0.12", features = ["rustls-tls"] }
