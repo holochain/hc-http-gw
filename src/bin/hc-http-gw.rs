@@ -38,11 +38,9 @@ fn load_config_from_env() -> anyhow::Result<Configuration> {
     let allowed_fns = {
         let mut allowed_fns = HashMap::new();
         for (key, value) in env::vars() {
-            let prefix = "HC_GW_ALLOWED_FNS_";
-            if key.starts_with(prefix) {
-                let app_id = key[prefix.len()..].to_string();
+            if let Some(app_id) = key.strip_prefix("HC_GW_ALLOWED_FNS_") {
                 let fns = AllowedFns::from_str(&value)?;
-                allowed_fns.insert(app_id, fns);
+                allowed_fns.insert(app_id.to_string(), fns);
             }
         }
         allowed_fns
