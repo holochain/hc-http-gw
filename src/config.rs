@@ -39,7 +39,7 @@ impl FromStr for AllowedAppIds {
     type Err = HcHttpGatewayError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
+        match s.trim() {
             "*" => Ok(AllowedAppIds::All),
             s => {
                 if s.is_empty() {
@@ -81,10 +81,10 @@ impl FromStr for AllowedFns {
     type Err = HcHttpGatewayError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
+        match s.trim() {
             "*" => Ok(AllowedFns::All),
             s => {
-                let csv = s.trim().split(',');
+                let csv = s.split(',');
                 let mut zome_fns = Vec::new();
 
                 for fns in csv {
@@ -101,6 +101,13 @@ impl FromStr for AllowedFns {
                             s
                         ))
                     })?;
+
+                    if zome_name.is_empty() || fn_name.is_empty() {
+                        return Err(HcHttpGatewayError::ConfigurationError(format!(
+                            "Zome name or Fn name is empty for: {:?}",
+                            fns
+                        )));
+                    }
 
                     zome_fns.push(ZomeFn {
                         zome_name: zome_name.to_string(),
