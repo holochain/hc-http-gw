@@ -13,10 +13,10 @@ use url2::Url2;
 async fn main() -> anyhow::Result<()> {
     initialize_tracing_subscriber("info");
 
-    let config = load_config_from_env()?;
+    let configuration = load_config_from_env()?;
 
     let args = HcHttpGatewayArgs::parse();
-    let service: HcHttpGatewayService = args.try_into()?;
+    let service = HcHttpGatewayService::new(args.address, args.port, configuration);
 
     service.run().await?;
 
