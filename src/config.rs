@@ -162,12 +162,12 @@ mod tests {
 
     #[test]
     fn test_allowed_app_ids_from_str_empty() {
-        let result = AllowedAppIds::from_str("");
-        assert!(result.is_err());
-        assert!(matches!(
-            result,
-            Err(HcHttpGatewayError::ConfigurationError(_))
-        ));
+        let result = AllowedAppIds::from_str("app1,app2,").unwrap();
+        if let AllowedAppIds::Restricted(app_ids) = result {
+            assert_eq!(app_ids.len(), 2)
+        } else {
+            panic!("Expected AllowedAppIds::Restricted");
+        }
     }
 
     #[test]
