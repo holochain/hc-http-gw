@@ -35,6 +35,9 @@ pub enum AllowedAppIds {
     All,
 }
 
+// Expected format:
+// - A comma separated string of allowed app_ids e.g "app1,app2,app3"
+// - An asterix ("*") indicating that all apps are allowed
 impl FromStr for AllowedAppIds {
     type Err = HcHttpGatewayError;
 
@@ -79,6 +82,10 @@ pub struct ZomeFn {
     pub fn_name: String,
 }
 
+// Expected format
+// - A comma separated string of zome_name/fn_name pairs, which should be separated
+//   by a forward slash (/)
+// - An asterix ("*") indicating that all functions in all zomes are allowed
 impl FromStr for AllowedFns {
     type Err = HcHttpGatewayError;
 
