@@ -42,16 +42,18 @@ impl FromStr for AllowedAppIds {
         match s.trim() {
             "*" => Ok(AllowedAppIds::All),
             s => {
-                if s.is_empty() {
-                    return Err(HcHttpGatewayError::ConfigurationError(
-                        "Allowed AppIds cannot be empty".to_string(),
-                    ));
-                }
                 let app_ids = s
                     .trim()
                     .split(',')
-                    .map(|s| s.trim().to_string())
-                    .collect::<Vec<String>>();
+                    .filter_map(|s| {
+                        let trimmed = s.trim();
+                        if trimmed.is_empty() {
+                            None
+                        } else {
+                            Some(trimmed.to_string())
+                        }
+                    })
+                    .collect::<Vec<_>>();
                 Ok(AllowedAppIds::Restricted(app_ids))
             }
         }
