@@ -64,7 +64,7 @@ pub enum AllowedFns {
     /// Only specific functions are allowed.
     Restricted(Vec<ZomeFn>),
 
-    /// All functions are allowed for all applications.
+    /// All functions are allowed for all zomes.
     All,
 }
 
