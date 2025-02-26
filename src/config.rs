@@ -87,25 +87,18 @@ impl FromStr for AllowedFns {
                 let csv = s.split(',');
                 let mut zome_fns = Vec::new();
 
-                for fns in csv {
-                    let mut fns = fns.trim().split('/');
-                    let zome_name = fns.next().ok_or_else(|| {
-                        HcHttpGatewayError::ConfigurationError(format!(
-                            "Failed to parse zome name from: {}",
-                            s
-                        ))
-                    })?;
-                    let fn_name = fns.next().ok_or_else(|| {
-                        HcHttpGatewayError::ConfigurationError(format!(
-                            "Failed to parse zome fn from: {}",
-                            s
-                        ))
-                    })?;
+                for zome_fn_path in csv {
+                    let Some((zome_name, fn_name)) = zome_fn_path.trim().split_once('/') else {
+                        return Err(HcHttpGatewayError::ConfigurationError(format!(
+                            "Failed to parse the zome name and function name from value: {}",
+                            zome_fn_path
+                        )));
+                    };
 
                     if zome_name.is_empty() || fn_name.is_empty() {
                         return Err(HcHttpGatewayError::ConfigurationError(format!(
-                            "Zome name or Fn name is empty for: {:?}",
-                            fns
+                            "Zome name or function name is empty for value: {}",
+                            zome_fn_path
                         )));
                     }
 
