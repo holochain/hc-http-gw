@@ -7,7 +7,7 @@ pub struct HcHttpGatewayArgs {
     #[arg(short, long, env = "HC_GW_ADDRESS", default_value = "127.0.0.1")]
     pub address: IpAddr,
 
-    /// The port to bind to. (e.g 8000)
+    /// The port to bind to
     #[arg(short, long, env = "HC_GW_PORT", default_value = "8090")]
     pub port: u16,
 }
