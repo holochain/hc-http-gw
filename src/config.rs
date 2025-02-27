@@ -22,7 +22,7 @@ pub struct Configuration {
     /// WebSocket URL for admin connections and management interfaces
     pub admin_ws_url: Url2,
     /// Maximum size in bytes that request payloads can be
-    pub payload_limit_bytes: PayloadLimitBytes,
+    pub payload_limit_bytes: u32,
     /// Controls which applications are permitted to connect to the gateway
     pub allowed_app_ids: AllowedAppIds,
     /// Maps application IDs to their allowed function configurations
@@ -41,7 +41,16 @@ impl Configuration {
             HcHttpGatewayError::ConfigurationError(format!("Url parse error: {}", e))
         })?;
 
-        let payload_limit_bytes = PayloadLimitBytes::from_str(payload_limit_bytes)?;
+        let payload_limit_bytes = if payload_limit_bytes.is_empty() {
+            DEFAULT_PAYLOAD_LIMIT_BYTES
+        } else {
+            payload_limit_bytes.parse::<u32>().map_err(|e| {
+                HcHttpGatewayError::ConfigurationError(format!(
+                    "Failed to parse the payload limit bytes value: {}",
+                    e
+                ))
+            })?
+        };
 
         let allowed_app_ids = AllowedAppIds::from_str(allowed_app_ids)?;
 
@@ -95,43 +104,6 @@ impl FromStr for AllowedAppIds {
             .collect::<HashSet<_>>();
 
         Ok(Self(allowed_app_ids))
-    }
-}
-
-/// Maximum size in bytes that zome call payloads can be.
-#[derive(Debug, Clone)]
-pub struct PayloadLimitBytes(u32);
-
-impl Deref for PayloadLimitBytes {
-    type Target = u32;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl Default for PayloadLimitBytes {
-    fn default() -> Self {
-        Self(DEFAULT_PAYLOAD_LIMIT_BYTES)
-    }
-}
-
-impl FromStr for PayloadLimitBytes {
-    type Err = HcHttpGatewayError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let payload_limit_bytes = if s.is_empty() {
-            return Ok(Self::default());
-        } else {
-            s.parse::<u32>().map_err(|e| {
-                HcHttpGatewayError::ConfigurationError(format!(
-                    "Failed to parse the payload limit bytes value: {}",
-                    e
-                ))
-            })?
-        };
-
-        Ok(Self(payload_limit_bytes))
     }
 }
 
@@ -236,7 +208,7 @@ mod tests {
 
         Configuration {
             admin_ws_url,
-            payload_limit_bytes: PayloadLimitBytes(1024 * 1024),
+            payload_limit_bytes: 1024 * 1024,
             allowed_app_ids: AllowedAppIds(HashSet::from(["app1".to_string(), "app2".to_string()])),
             allowed_fns,
         }
@@ -320,21 +292,6 @@ mod tests {
         }
     }
 
-    mod payload_limit_tests {
-        use super::*;
-
-        #[test]
-        fn from_str_parses_valid_and_invalid_limits() {
-            // Valid number
-            let result = PayloadLimitBytes::from_str("1048576").unwrap();
-            assert_eq!(*result, 1048576);
-
-            // Invalid input
-            let result = PayloadLimitBytes::from_str("not a number");
-            assert!(result.is_err());
-        }
-    }
-
     mod configuration_tests {
         use super::*;
 
@@ -343,7 +300,7 @@ mod tests {
             let config = create_test_config();
 
             assert_eq!(config.admin_ws_url.to_string(), "ws://localhost:8888/");
-            assert_eq!(*config.payload_limit_bytes, 1024 * 1024);
+            assert_eq!(config.payload_limit_bytes, 1024 * 1024);
             assert_eq!(config.allowed_app_ids.len(), 2);
         }
 
@@ -397,7 +354,7 @@ mod tests {
 
             // Verify configuration
             assert_eq!(config.admin_ws_url.to_string(), "ws://localhost:8888/");
-            assert_eq!(*config.payload_limit_bytes, 1048576);
+            assert_eq!(config.payload_limit_bytes, 1048576);
             assert_eq!(config.allowed_app_ids.len(), 2);
         }
 
