@@ -55,7 +55,7 @@ impl Configuration {
         let allowed_app_ids = AllowedAppIds::from_str(allowed_app_ids)?;
 
         for app_id in allowed_app_ids.iter() {
-            if allowed_fns.get(app_id).is_none() {
+            if !allowed_fns.contains_key(app_id) {
                 return Err(HcHttpGatewayError::ConfigurationError(format!(
                     "{} is not present in allowed_fns",
                     app_id
