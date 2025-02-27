@@ -11,7 +11,7 @@ use std::{
 
 use url2::Url2;
 
-use crate::HcHttpGatewayError;
+use crate::{HcHttpGatewayError, HcHttpGatewayResult};
 
 /// Default payload size limit (10 kilobytes)
 pub const DEFAULT_PAYLOAD_LIMIT_BYTES: u32 = 10 * 1024;
@@ -27,6 +27,40 @@ pub struct Configuration {
     pub allowed_app_ids: AllowedAppIds,
     /// Maps application IDs to their allowed function configurations
     pub allowed_fns: HashMap<AppId, AllowedFns>,
+}
+
+impl Configuration {
+    /// Construct Configuration
+    pub fn new(
+        admin_ws_url: &str,
+        payload_limit_bytes: &str,
+        allowed_app_ids: &str,
+        allowed_fns: HashMap<String, AllowedFns>,
+    ) -> HcHttpGatewayResult<Self> {
+        let admin_ws_url = Url2::try_parse(admin_ws_url).map_err(|e| {
+            HcHttpGatewayError::ConfigurationError(format!("Url parse error: {}", e))
+        })?;
+
+        let payload_limit_bytes = PayloadLimitBytes::from_str(payload_limit_bytes)?;
+
+        let allowed_app_ids = AllowedAppIds::from_str(allowed_app_ids)?;
+
+        for app_id in allowed_app_ids.iter() {
+            if allowed_fns.get(app_id).is_none() {
+                return Err(HcHttpGatewayError::ConfigurationError(format!(
+                    "{} is not present in allowed_fns",
+                    app_id
+                )));
+            }
+        }
+
+        Ok(Configuration {
+            admin_ws_url,
+            payload_limit_bytes,
+            allowed_app_ids,
+            allowed_fns,
+        })
+    }
 }
 
 /// Collection of app ids that are permitted to connect to the gateway
@@ -181,282 +215,215 @@ mod tests {
     use super::*;
     use std::str::FromStr;
 
-    #[test]
-    fn test_allowed_app_ids_from_str() {
-        let result = AllowedAppIds::from_str("app1,app2,app3").unwrap();
-        assert_eq!(result.len(), 3);
-        assert!(result.contains("app1"));
-        assert!(result.contains("app2"));
-        assert!(result.contains("app3"));
-    }
-
-    #[test]
-    fn test_allowed_app_ids_from_str_with_whitespace() {
-        let result = AllowedAppIds::from_str(" app1 , app2 , app3 ").unwrap();
-        assert_eq!(result.len(), 3);
-        assert!(result.contains("app1"));
-        assert!(result.contains("app2"));
-        assert!(result.contains("app3"));
-    }
-
-    #[test]
-    fn test_allowed_app_ids_from_str_empty_entries() {
-        let result = AllowedAppIds::from_str("app1,,app3").unwrap();
-        assert_eq!(result.len(), 2);
-        assert!(result.contains("app1"));
-        assert!(result.contains("app3"));
-    }
-
-    #[test]
-    fn test_allowed_app_ids_from_str_duplicate_entries() {
-        let result = AllowedAppIds::from_str("app1,app1,app2").unwrap();
-        assert_eq!(result.len(), 2); // Duplicates are eliminated
-        assert!(result.contains("app1"));
-        assert!(result.contains("app2"));
-    }
-
-    #[test]
-    fn test_allowed_app_ids_from_str_empty_string() {
-        let result = AllowedAppIds::from_str("").unwrap();
-        assert_eq!(result.len(), 0);
-    }
-
-    #[test]
-    fn test_allowed_fns_from_str_all() {
-        let result = AllowedFns::from_str("*").unwrap();
-        assert!(matches!(result, AllowedFns::All));
-    }
-
-    #[test]
-    fn test_allowed_fns_from_str_restricted() {
-        let result = AllowedFns::from_str("zome1/fn1,zome2/fn2").unwrap();
-        if let AllowedFns::Restricted(fns) = result {
-            assert_eq!(fns.len(), 2);
-
-            // Check for presence of both ZomeFn instances
-            let zome1_fn1 = ZomeFn {
-                zome_name: "zome1".to_string(),
-                fn_name: "fn1".to_string(),
-            };
-            let zome2_fn2 = ZomeFn {
-                zome_name: "zome2".to_string(),
-                fn_name: "fn2".to_string(),
-            };
-
-            assert!(fns.contains(&zome1_fn1));
-            assert!(fns.contains(&zome2_fn2));
-        } else {
-            panic!("Expected AllowedFns::Restricted");
+    // Helper function to create a ZomeFn
+    fn create_zome_fn(zome_name: &str, fn_name: &str) -> ZomeFn {
+        ZomeFn {
+            zome_name: zome_name.to_string(),
+            fn_name: fn_name.to_string(),
         }
     }
 
-    #[test]
-    fn test_allowed_fns_from_str_with_whitespace() {
-        let result = AllowedFns::from_str(" zome1/fn1 , zome2/fn2 ").unwrap();
-        if let AllowedFns::Restricted(fns) = result {
-            assert_eq!(fns.len(), 2);
-
-            // Check for presence of both ZomeFn instances
-            let zome1_fn1 = ZomeFn {
-                zome_name: "zome1".to_string(),
-                fn_name: "fn1".to_string(),
-            };
-            let zome2_fn2 = ZomeFn {
-                zome_name: "zome2".to_string(),
-                fn_name: "fn2".to_string(),
-            };
-
-            assert!(fns.contains(&zome1_fn1));
-            assert!(fns.contains(&zome2_fn2));
-        } else {
-            panic!("Expected AllowedFns::Restricted");
-        }
-    }
-
-    #[test]
-    fn test_allowed_fns_from_str_with_duplicates() {
-        let result = AllowedFns::from_str("zome1/fn1,zome1/fn1,zome2/fn2").unwrap();
-        if let AllowedFns::Restricted(fns) = result {
-            assert_eq!(fns.len(), 2); // Should deduplicate
-
-            let zome1_fn1 = ZomeFn {
-                zome_name: "zome1".to_string(),
-                fn_name: "fn1".to_string(),
-            };
-            let zome2_fn2 = ZomeFn {
-                zome_name: "zome2".to_string(),
-                fn_name: "fn2".to_string(),
-            };
-
-            assert!(fns.contains(&zome1_fn1));
-            assert!(fns.contains(&zome2_fn2));
-        } else {
-            panic!("Expected AllowedFns::Restricted");
-        }
-    }
-
-    #[test]
-    fn test_allowed_fns_from_str_missing_zome() {
-        let result = AllowedFns::from_str("/fn1");
-        assert!(result.is_err());
-        assert!(matches!(
-            result,
-            Err(HcHttpGatewayError::ConfigurationError(_))
-        ));
-    }
-
-    #[test]
-    fn test_allowed_fns_from_str_missing_fn() {
-        let result = AllowedFns::from_str("zome1/");
-        assert!(result.is_err());
-        assert!(matches!(
-            result,
-            Err(HcHttpGatewayError::ConfigurationError(_))
-        ));
-    }
-
-    #[test]
-    fn test_allowed_fns_from_str_invalid_format() {
-        let result = AllowedFns::from_str("zome1");
-        assert!(result.is_err());
-        assert!(matches!(
-            result,
-            Err(HcHttpGatewayError::ConfigurationError(_))
-        ));
-    }
-
-    #[test]
-    fn test_payload_limit_bytes_from_str() {
-        // Test successful parsing
-        let result = PayloadLimitBytes::from_str("1048576").unwrap();
-        assert_eq!(*result, 1048576);
-
-        // Test parsing with invalid input
-        let result = PayloadLimitBytes::from_str("not a number");
-        assert!(result.is_err());
-        assert!(matches!(
-            result,
-            Err(HcHttpGatewayError::ConfigurationError(_))
-        ));
-    }
-
-    #[test]
-    fn test_configuration_creation() {
+    // Helper function to create a test Configuration
+    fn create_test_config() -> Configuration {
         let admin_ws_url = Url2::parse("ws://localhost:8888");
-        let allowed_app_ids =
-            AllowedAppIds(HashSet::from(["app1".to_string(), "app2".to_string()]));
-        let payload_limit_bytes = PayloadLimitBytes(1024 * 1024); // 1MB
 
-        // Create ZomeFn for app1
-        let zome1_fn1 = ZomeFn {
-            zome_name: "zome1".to_string(),
-            fn_name: "fn1".to_string(),
-        };
-
-        // Create HashSet of ZomeFn for app1
+        let zome1_fn1 = create_zome_fn("zome1", "fn1");
         let app1_fns = HashSet::from([zome1_fn1.clone()]);
 
         let mut allowed_fns = HashMap::new();
         allowed_fns.insert("app1".to_string(), AllowedFns::Restricted(app1_fns));
         allowed_fns.insert("app2".to_string(), AllowedFns::All);
 
-        let config = Configuration {
+        Configuration {
             admin_ws_url,
-            payload_limit_bytes,
-            allowed_app_ids,
-            allowed_fns,
-        };
-
-        assert_eq!(config.admin_ws_url.to_string(), "ws://localhost:8888/");
-        assert_eq!(*config.payload_limit_bytes, 1024 * 1024);
-
-        // Test AllowedAppIds
-        assert_eq!(config.allowed_app_ids.len(), 2);
-        assert!(config.allowed_app_ids.contains("app1"));
-        assert!(config.allowed_app_ids.contains("app2"));
-
-        // Test is_app_allowed method
-        assert!(config.is_app_allowed("app1"));
-        assert!(config.is_app_allowed("app2"));
-        assert!(!config.is_app_allowed("app3"));
-
-        // Test get_allowed_functions method
-        assert!(config.get_allowed_functions("app1").is_some());
-        assert!(config.get_allowed_functions("app2").is_some());
-        assert!(config.get_allowed_functions("app3").is_none());
-
-        // Check allowed functions for app1
-        if let Some(AllowedFns::Restricted(fns)) = config.get_allowed_functions("app1") {
-            assert_eq!(fns.len(), 1);
-            assert!(fns.contains(&zome1_fn1));
-        } else {
-            panic!("Expected Some(AllowedFns::Restricted)");
-        }
-
-        // Check allowed functions for app2
-        if let Some(allowed_fns) = config.get_allowed_functions("app2") {
-            assert!(matches!(allowed_fns, AllowedFns::All));
-        } else {
-            panic!("Expected Some(AllowedFns::All)");
-        }
-    }
-
-    #[test]
-    fn test_is_app_allowed() {
-        let allowed_app_ids =
-            AllowedAppIds(HashSet::from(["app1".to_string(), "app2".to_string()]));
-        let config = Configuration {
-            admin_ws_url: Url2::parse("ws://localhost:8888"),
-            payload_limit_bytes: PayloadLimitBytes(1024),
-            allowed_app_ids,
-            allowed_fns: HashMap::new(),
-        };
-
-        assert!(config.is_app_allowed("app1"));
-        assert!(config.is_app_allowed("app2"));
-        assert!(!config.is_app_allowed("app3"));
-
-        // Case sensitivity test
-        assert!(!config.is_app_allowed("APP1"));
-    }
-
-    #[test]
-    fn test_get_allowed_functions() {
-        // Create ZomeFn instance
-        let zome1_fn1 = ZomeFn {
-            zome_name: "zome1".to_string(),
-            fn_name: "fn1".to_string(),
-        };
-
-        // Create HashSet for restricted functions
-        let app1_fns = HashSet::from([zome1_fn1.clone()]);
-
-        let mut allowed_fns = HashMap::new();
-        allowed_fns.insert("app1".to_string(), AllowedFns::Restricted(app1_fns));
-        allowed_fns.insert("app2".to_string(), AllowedFns::All);
-
-        let config = Configuration {
-            admin_ws_url: Url2::parse("ws://localhost:8888"),
-            payload_limit_bytes: PayloadLimitBytes(1024),
+            payload_limit_bytes: PayloadLimitBytes(1024 * 1024),
             allowed_app_ids: AllowedAppIds(HashSet::from(["app1".to_string(), "app2".to_string()])),
             allowed_fns,
-        };
+        }
+    }
 
-        // Test retrieving existing functions
-        assert!(matches!(
-            config.get_allowed_functions("app2"),
-            Some(AllowedFns::All)
-        ));
+    mod allowed_app_ids_tests {
+        use super::*;
 
-        // Test retrieving non-existent app
-        assert!(config.get_allowed_functions("app3").is_none());
+        #[test]
+        fn from_str_parses_various_formats() {
+            // Standard case
+            let result = AllowedAppIds::from_str("app1,app2,app3").unwrap();
+            assert_eq!(result.len(), 3);
+            assert!(result.contains("app1"));
 
-        // Test restricted functions
-        if let Some(AllowedFns::Restricted(fns)) = config.get_allowed_functions("app1") {
-            assert_eq!(fns.len(), 1);
-            assert!(fns.contains(&zome1_fn1));
-        } else {
-            panic!("Expected Some(AllowedFns::Restricted)");
+            // With whitespace
+            let result = AllowedAppIds::from_str(" app1 , app2 , app3 ").unwrap();
+            assert_eq!(result.len(), 3);
+
+            // Empty entries
+            let result = AllowedAppIds::from_str("app1,,app3").unwrap();
+            assert_eq!(result.len(), 2);
+
+            // Duplicate entries
+            let result = AllowedAppIds::from_str("app1,app1,app2").unwrap();
+            assert_eq!(result.len(), 2);
+            assert!(result.contains("app1"));
+            assert!(result.contains("app2"));
+
+            // Empty string
+            let result = AllowedAppIds::from_str("").unwrap();
+            assert_eq!(result.len(), 0);
+        }
+    }
+
+    mod allowed_fns_tests {
+        use super::*;
+
+        #[test]
+        fn from_str_all_wildcard() {
+            let result = AllowedFns::from_str("*").unwrap();
+            assert!(matches!(result, AllowedFns::All));
+        }
+
+        #[test]
+        fn from_str_parses_function_lists() {
+            // Standard case
+            let result = AllowedFns::from_str("zome1/fn1,zome2/fn2").unwrap();
+            if let AllowedFns::Restricted(fns) = result {
+                assert_eq!(fns.len(), 2);
+                assert!(fns.contains(&create_zome_fn("zome1", "fn1")));
+                assert!(fns.contains(&create_zome_fn("zome2", "fn2")));
+            }
+
+            // With whitespace
+            let result = AllowedFns::from_str(" zome1/fn1 , zome2/fn2 ").unwrap();
+            if let AllowedFns::Restricted(fns) = result {
+                assert_eq!(fns.len(), 2);
+            }
+
+            // With duplicates
+            let result = AllowedFns::from_str("zome1/fn1,zome1/fn1,zome2/fn2").unwrap();
+            if let AllowedFns::Restricted(fns) = result {
+                assert_eq!(fns.len(), 2);
+            }
+        }
+
+        #[test]
+        fn from_str_handles_errors() {
+            // Missing zome
+            let result = AllowedFns::from_str("/fn1");
+            assert!(result.is_err());
+
+            // Missing function
+            let result = AllowedFns::from_str("zome1/");
+            assert!(result.is_err());
+
+            // Invalid format
+            let result = AllowedFns::from_str("zome1");
+            assert!(result.is_err());
+        }
+    }
+
+    mod payload_limit_tests {
+        use super::*;
+
+        #[test]
+        fn from_str_parses_valid_and_invalid_limits() {
+            // Valid number
+            let result = PayloadLimitBytes::from_str("1048576").unwrap();
+            assert_eq!(*result, 1048576);
+
+            // Invalid input
+            let result = PayloadLimitBytes::from_str("not a number");
+            assert!(result.is_err());
+        }
+    }
+
+    mod configuration_tests {
+        use super::*;
+
+        #[test]
+        fn creation_sets_up_correct_fields() {
+            let config = create_test_config();
+
+            assert_eq!(config.admin_ws_url.to_string(), "ws://localhost:8888/");
+            assert_eq!(*config.payload_limit_bytes, 1024 * 1024);
+            assert_eq!(config.allowed_app_ids.len(), 2);
+        }
+
+        #[test]
+        fn is_app_allowed_checks_app_presence() {
+            let config = create_test_config();
+
+            assert!(config.is_app_allowed("app1"));
+            assert!(config.is_app_allowed("app2"));
+            assert!(!config.is_app_allowed("app3"));
+            assert!(!config.is_app_allowed("APP1")); // Case sensitivity
+        }
+
+        #[test]
+        fn get_allowed_functions_retrieves_functions() {
+            let config = create_test_config();
+            let zome1_fn1 = create_zome_fn("zome1", "fn1");
+
+            // Test All variant
+            assert!(matches!(
+                config.get_allowed_functions("app2"),
+                Some(AllowedFns::All)
+            ));
+
+            // Test Restricted variant
+            if let Some(AllowedFns::Restricted(fns)) = config.get_allowed_functions("app1") {
+                assert_eq!(fns.len(), 1);
+                assert!(fns.contains(&zome1_fn1));
+            } else {
+                panic!("Expected Some(AllowedFns::Restricted)");
+            }
+
+            // Test non-existent app
+            assert!(config.get_allowed_functions("app3").is_none());
+        }
+
+        #[test]
+        fn new_constructs_valid_configuration() {
+            // Setup allowed functions
+            let mut allowed_fns = HashMap::new();
+            allowed_fns.insert(
+                "app1".to_string(),
+                AllowedFns::Restricted(HashSet::from([create_zome_fn("zome1", "fn1")])),
+            );
+            allowed_fns.insert("app2".to_string(), AllowedFns::All);
+
+            // Create configuration with valid inputs
+            let config =
+                Configuration::new("ws://localhost:8888", "1048576", "app1,app2", allowed_fns)
+                    .unwrap();
+
+            // Verify configuration
+            assert_eq!(config.admin_ws_url.to_string(), "ws://localhost:8888/");
+            assert_eq!(*config.payload_limit_bytes, 1048576);
+            assert_eq!(config.allowed_app_ids.len(), 2);
+        }
+
+        #[test]
+        fn new_handles_invalid_inputs() {
+            let mut allowed_fns = HashMap::new();
+            allowed_fns.insert("app1".to_string(), AllowedFns::All);
+
+            // Invalid URL
+            let result =
+                Configuration::new("not-a-valid-url", "1048576", "app1", allowed_fns.clone());
+            assert!(result.is_err());
+
+            // Invalid payload limit
+            let result = Configuration::new(
+                "ws://localhost:8888",
+                "not-a-number",
+                "app1",
+                allowed_fns.clone(),
+            );
+            assert!(result.is_err());
+
+            // Missing allowed function for app2
+            let result =
+                Configuration::new("ws://localhost:8888", "1048576", "app1,app2", allowed_fns);
+            assert!(result.is_err());
         }
     }
 }
