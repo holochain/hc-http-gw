@@ -30,8 +30,15 @@ pub struct Configuration {
 }
 
 impl Configuration {
-    /// Construct Configuration
-    pub fn new(
+    /// Creates a new `Configuration` by parsing and validating the provided string inputs.
+    ///
+    /// This constructor ensures that all components of the configuration are properly
+    /// parsed and validated, including:
+    /// * The admin WebSocket URL is a valid URL
+    /// * The payload limit bytes can be parsed as a number
+    /// * The app IDs are correctly parsed from a comma-separated string
+    /// * Every app ID listed has a corresponding entry in the allowed_fns map
+    pub fn try_new(
         admin_ws_url: &str,
         payload_limit_bytes: &str,
         allowed_app_ids: &str,
@@ -349,7 +356,7 @@ mod tests {
 
             // Create configuration with valid inputs
             let config =
-                Configuration::new("ws://localhost:8888", "1048576", "app1,app2", allowed_fns)
+                Configuration::try_new("ws://localhost:8888", "1048576", "app1,app2", allowed_fns)
                     .unwrap();
 
             // Verify configuration
@@ -365,11 +372,11 @@ mod tests {
 
             // Invalid URL
             let result =
-                Configuration::new("not-a-valid-url", "1048576", "app1", allowed_fns.clone());
+                Configuration::try_new("not-a-valid-url", "1048576", "app1", allowed_fns.clone());
             assert!(result.is_err());
 
             // Invalid payload limit
-            let result = Configuration::new(
+            let result = Configuration::try_new(
                 "ws://localhost:8888",
                 "not-a-number",
                 "app1",
@@ -379,7 +386,7 @@ mod tests {
 
             // Missing allowed function for app2
             let result =
-                Configuration::new("ws://localhost:8888", "1048576", "app1,app2", allowed_fns);
+                Configuration::try_new("ws://localhost:8888", "1048576", "app1,app2", allowed_fns);
             assert!(result.is_err());
         }
     }
