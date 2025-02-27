@@ -3,7 +3,11 @@
 //! This module provides the configuration structure and related types for
 //! controlling the behavior of the HTTP Gateway.
 
-use std::{collections::HashMap, ops::Deref, str::FromStr};
+use std::{
+    collections::{HashMap, HashSet},
+    ops::Deref,
+    str::FromStr,
+};
 
 use url2::Url2;
 
@@ -27,10 +31,10 @@ pub struct Configuration {
 
 /// Collection of app ids that are permitted to connect to the gateway
 #[derive(Debug, Clone)]
-pub struct AllowedAppIds(Vec<AppId>);
+pub struct AllowedAppIds(HashSet<AppId>);
 
 impl Deref for AllowedAppIds {
-    type Target = Vec<AppId>;
+    type Target = HashSet<AppId>;
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -54,7 +58,7 @@ impl FromStr for AllowedAppIds {
                     Some(trimmed.to_string())
                 }
             })
-            .collect::<Vec<_>>();
+            .collect::<HashSet<_>>();
 
         Ok(Self(allowed_app_ids))
     }
@@ -181,26 +185,34 @@ mod tests {
     fn test_allowed_app_ids_from_str() {
         let result = AllowedAppIds::from_str("app1,app2,app3").unwrap();
         assert_eq!(result.len(), 3);
-        assert_eq!(result[0], "app1");
-        assert_eq!(result[1], "app2");
-        assert_eq!(result[2], "app3");
+        assert!(result.contains("app1"));
+        assert!(result.contains("app2"));
+        assert!(result.contains("app3"));
     }
 
     #[test]
     fn test_allowed_app_ids_from_str_with_whitespace() {
         let result = AllowedAppIds::from_str(" app1 , app2 , app3 ").unwrap();
         assert_eq!(result.len(), 3);
-        assert_eq!(result[0], "app1");
-        assert_eq!(result[1], "app2");
-        assert_eq!(result[2], "app3");
+        assert!(result.contains("app1"));
+        assert!(result.contains("app2"));
+        assert!(result.contains("app3"));
     }
 
     #[test]
     fn test_allowed_app_ids_from_str_empty_entries() {
         let result = AllowedAppIds::from_str("app1,,app3").unwrap();
         assert_eq!(result.len(), 2);
-        assert_eq!(result[0], "app1");
-        assert_eq!(result[1], "app3");
+        assert!(result.contains("app1"));
+        assert!(result.contains("app3"));
+    }
+
+    #[test]
+    fn test_allowed_app_ids_from_str_duplicate_entries() {
+        let result = AllowedAppIds::from_str("app1,app1,app2").unwrap();
+        assert_eq!(result.len(), 2); // Duplicates are eliminated
+        assert!(result.contains("app1"));
+        assert!(result.contains("app2"));
     }
 
     #[test]
@@ -291,7 +303,8 @@ mod tests {
     #[test]
     fn test_configuration_creation() {
         let admin_ws_url = Url2::parse("ws://localhost:8888");
-        let allowed_app_ids = AllowedAppIds(vec!["app1".to_string(), "app2".to_string()]);
+        let allowed_app_ids =
+            AllowedAppIds(HashSet::from(["app1".to_string(), "app2".to_string()]));
         let payload_limit_bytes = PayloadLimitBytes(1024 * 1024); // 1MB
 
         let mut allowed_fns = HashMap::new();
@@ -341,7 +354,8 @@ mod tests {
 
     #[test]
     fn test_is_app_allowed() {
-        let allowed_app_ids = AllowedAppIds(vec!["app1".to_string(), "app2".to_string()]);
+        let allowed_app_ids =
+            AllowedAppIds(HashSet::from(["app1".to_string(), "app2".to_string()]));
         let config = Configuration {
             admin_ws_url: Url2::parse("ws://localhost:8888"),
             payload_limit_bytes: PayloadLimitBytes(1024),
@@ -372,7 +386,7 @@ mod tests {
         let config = Configuration {
             admin_ws_url: Url2::parse("ws://localhost:8888"),
             payload_limit_bytes: PayloadLimitBytes(1024),
-            allowed_app_ids: AllowedAppIds(vec!["app1".to_string(), "app2".to_string()]),
+            allowed_app_ids: AllowedAppIds(HashSet::from(["app1".to_string(), "app2".to_string()])),
             allowed_fns,
         };
 
