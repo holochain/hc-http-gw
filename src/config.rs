@@ -120,14 +120,14 @@ pub type AppId = String;
 #[derive(Debug, Clone)]
 pub enum AllowedFns {
     /// Only specific functions are allowed.
-    Restricted(Vec<ZomeFn>),
+    Restricted(HashSet<ZomeFn>),
 
     /// All functions are allowed for all zomes.
     All,
 }
 
 /// Represents a function within a Holochain zome that can be called through the gateway
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub struct ZomeFn {
     /// Name of the zome containing the function
     pub zome_name: String,
@@ -147,7 +147,7 @@ impl FromStr for AllowedFns {
             "*" => Ok(AllowedFns::All),
             s => {
                 let csv = s.split(',');
-                let mut zome_fns = Vec::new();
+                let mut zome_fns = HashSet::new();
 
                 for zome_fn_path in csv {
                     let Some((zome_name, fn_name)) = zome_fn_path.trim().split_once('/') else {
@@ -164,7 +164,7 @@ impl FromStr for AllowedFns {
                         )));
                     }
 
-                    zome_fns.push(ZomeFn {
+                    zome_fns.insert(ZomeFn {
                         zome_name: zome_name.to_string(),
                         fn_name: fn_name.to_string(),
                     });
@@ -232,10 +232,19 @@ mod tests {
         let result = AllowedFns::from_str("zome1/fn1,zome2/fn2").unwrap();
         if let AllowedFns::Restricted(fns) = result {
             assert_eq!(fns.len(), 2);
-            assert_eq!(fns[0].zome_name, "zome1");
-            assert_eq!(fns[0].fn_name, "fn1");
-            assert_eq!(fns[1].zome_name, "zome2");
-            assert_eq!(fns[1].fn_name, "fn2");
+
+            // Check for presence of both ZomeFn instances
+            let zome1_fn1 = ZomeFn {
+                zome_name: "zome1".to_string(),
+                fn_name: "fn1".to_string(),
+            };
+            let zome2_fn2 = ZomeFn {
+                zome_name: "zome2".to_string(),
+                fn_name: "fn2".to_string(),
+            };
+
+            assert!(fns.contains(&zome1_fn1));
+            assert!(fns.contains(&zome2_fn2));
         } else {
             panic!("Expected AllowedFns::Restricted");
         }
@@ -246,10 +255,41 @@ mod tests {
         let result = AllowedFns::from_str(" zome1/fn1 , zome2/fn2 ").unwrap();
         if let AllowedFns::Restricted(fns) = result {
             assert_eq!(fns.len(), 2);
-            assert_eq!(fns[0].zome_name, "zome1");
-            assert_eq!(fns[0].fn_name, "fn1");
-            assert_eq!(fns[1].zome_name, "zome2");
-            assert_eq!(fns[1].fn_name, "fn2");
+
+            // Check for presence of both ZomeFn instances
+            let zome1_fn1 = ZomeFn {
+                zome_name: "zome1".to_string(),
+                fn_name: "fn1".to_string(),
+            };
+            let zome2_fn2 = ZomeFn {
+                zome_name: "zome2".to_string(),
+                fn_name: "fn2".to_string(),
+            };
+
+            assert!(fns.contains(&zome1_fn1));
+            assert!(fns.contains(&zome2_fn2));
+        } else {
+            panic!("Expected AllowedFns::Restricted");
+        }
+    }
+
+    #[test]
+    fn test_allowed_fns_from_str_with_duplicates() {
+        let result = AllowedFns::from_str("zome1/fn1,zome1/fn1,zome2/fn2").unwrap();
+        if let AllowedFns::Restricted(fns) = result {
+            assert_eq!(fns.len(), 2); // Should deduplicate
+
+            let zome1_fn1 = ZomeFn {
+                zome_name: "zome1".to_string(),
+                fn_name: "fn1".to_string(),
+            };
+            let zome2_fn2 = ZomeFn {
+                zome_name: "zome2".to_string(),
+                fn_name: "fn2".to_string(),
+            };
+
+            assert!(fns.contains(&zome1_fn1));
+            assert!(fns.contains(&zome2_fn2));
         } else {
             panic!("Expected AllowedFns::Restricted");
         }
@@ -307,14 +347,17 @@ mod tests {
             AllowedAppIds(HashSet::from(["app1".to_string(), "app2".to_string()]));
         let payload_limit_bytes = PayloadLimitBytes(1024 * 1024); // 1MB
 
+        // Create ZomeFn for app1
+        let zome1_fn1 = ZomeFn {
+            zome_name: "zome1".to_string(),
+            fn_name: "fn1".to_string(),
+        };
+
+        // Create HashSet of ZomeFn for app1
+        let app1_fns = HashSet::from([zome1_fn1.clone()]);
+
         let mut allowed_fns = HashMap::new();
-        allowed_fns.insert(
-            "app1".to_string(),
-            AllowedFns::Restricted(vec![ZomeFn {
-                zome_name: "zome1".to_string(),
-                fn_name: "fn1".to_string(),
-            }]),
-        );
+        allowed_fns.insert("app1".to_string(), AllowedFns::Restricted(app1_fns));
         allowed_fns.insert("app2".to_string(), AllowedFns::All);
 
         let config = Configuration {
@@ -327,6 +370,11 @@ mod tests {
         assert_eq!(config.admin_ws_url.to_string(), "ws://localhost:8888/");
         assert_eq!(*config.payload_limit_bytes, 1024 * 1024);
 
+        // Test AllowedAppIds
+        assert_eq!(config.allowed_app_ids.len(), 2);
+        assert!(config.allowed_app_ids.contains("app1"));
+        assert!(config.allowed_app_ids.contains("app2"));
+
         // Test is_app_allowed method
         assert!(config.is_app_allowed("app1"));
         assert!(config.is_app_allowed("app2"));
@@ -337,14 +385,15 @@ mod tests {
         assert!(config.get_allowed_functions("app2").is_some());
         assert!(config.get_allowed_functions("app3").is_none());
 
+        // Check allowed functions for app1
         if let Some(AllowedFns::Restricted(fns)) = config.get_allowed_functions("app1") {
             assert_eq!(fns.len(), 1);
-            assert_eq!(fns[0].zome_name, "zome1");
-            assert_eq!(fns[0].fn_name, "fn1");
+            assert!(fns.contains(&zome1_fn1));
         } else {
             panic!("Expected Some(AllowedFns::Restricted)");
         }
 
+        // Check allowed functions for app2
         if let Some(allowed_fns) = config.get_allowed_functions("app2") {
             assert!(matches!(allowed_fns, AllowedFns::All));
         } else {
@@ -373,14 +422,17 @@ mod tests {
 
     #[test]
     fn test_get_allowed_functions() {
+        // Create ZomeFn instance
+        let zome1_fn1 = ZomeFn {
+            zome_name: "zome1".to_string(),
+            fn_name: "fn1".to_string(),
+        };
+
+        // Create HashSet for restricted functions
+        let app1_fns = HashSet::from([zome1_fn1.clone()]);
+
         let mut allowed_fns = HashMap::new();
-        allowed_fns.insert(
-            "app1".to_string(),
-            AllowedFns::Restricted(vec![ZomeFn {
-                zome_name: "zome1".to_string(),
-                fn_name: "fn1".to_string(),
-            }]),
-        );
+        allowed_fns.insert("app1".to_string(), AllowedFns::Restricted(app1_fns));
         allowed_fns.insert("app2".to_string(), AllowedFns::All);
 
         let config = Configuration {
@@ -402,8 +454,7 @@ mod tests {
         // Test restricted functions
         if let Some(AllowedFns::Restricted(fns)) = config.get_allowed_functions("app1") {
             assert_eq!(fns.len(), 1);
-            assert_eq!(fns[0].zome_name, "zome1");
-            assert_eq!(fns[0].fn_name, "fn1");
+            assert!(fns.contains(&zome1_fn1));
         } else {
             panic!("Expected Some(AllowedFns::Restricted)");
         }
