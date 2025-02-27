@@ -35,7 +35,7 @@ impl Configuration {
         admin_ws_url: &str,
         payload_limit_bytes: &str,
         allowed_app_ids: &str,
-        allowed_fns: HashMap<String, AllowedFns>,
+        allowed_fns: HashMap<AppId, AllowedFns>,
     ) -> HcHttpGatewayResult<Self> {
         let admin_ws_url = Url2::try_parse(admin_ws_url).map_err(|e| {
             HcHttpGatewayError::ConfigurationError(format!("Url parse error: {}", e))
