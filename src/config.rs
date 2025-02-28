@@ -91,11 +91,11 @@ impl Deref for AllowedAppIds {
     }
 }
 
-// Expected format:
-// - A comma separated string of allowed app_ids e.g "app1,app2,app3"
 impl FromStr for AllowedAppIds {
     type Err = HcHttpGatewayError;
 
+    /// Expected format:
+    /// - A comma separated string of allowed app_ids e.g "app1,app2,app3"
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let allowed_app_ids = s
             .trim()
@@ -148,13 +148,13 @@ pub struct ZomeFn {
     pub fn_name: String,
 }
 
-// Expected format
-// - A comma separated string of zome_name/fn_name pairs, which should be separated
-//   by a forward slash (/)
-// - An asterix ("*") indicating that all functions in all zomes are allowed
 impl FromStr for AllowedFns {
     type Err = HcHttpGatewayError;
 
+    /// Expected format
+    /// - A comma separated string of zome_name/fn_name pairs, which should be separated
+    ///   by a forward slash (/)
+    /// - An asterix ("*") indicating that all functions in all zomes are allowed
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.trim() {
             "*" => Ok(AllowedFns::All),
