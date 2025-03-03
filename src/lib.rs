@@ -2,11 +2,12 @@
 //! # Holochain HTTP gateway
 
 mod cli;
+pub mod config;
 mod error;
 mod routes;
 mod service;
 pub mod tracing;
 
 pub use cli::HcHttpGatewayArgs;
-pub use error::HcHttpGatewayError;
+pub use error::{HcHttpGatewayError, HcHttpGatewayResult};
 pub use service::HcHttpGatewayService;
