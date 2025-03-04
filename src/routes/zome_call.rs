@@ -2,6 +2,7 @@ use axum::extract::{Path, Query};
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
+#[allow(unused)] // XXX:temporarily unused fields
 pub struct ZomeCallParams {
     dna_hash: String,
     coordinator_identifier: String,
@@ -19,11 +20,5 @@ pub async fn zome_call(
     Path(params): Path<ZomeCallParams>,
     Query(query): Query<PayloadQuery>,
 ) -> &'static str {
-    let ZomeCallParams {
-        dna_hash,
-        coordinator_identifier,
-        zome_name,
-        function_name,
-    } = params;
-    todo!("zome call");
+    "Ok"
 }
