@@ -7,7 +7,6 @@ use std::{
     collections::{HashMap, HashSet},
     ops::Deref,
     str::FromStr,
-    usize,
 };
 
 use url2::Url2;
