@@ -15,14 +15,14 @@ pub async fn validate_zome_call_payload(
     next: Next,
 ) -> Response {
     if let Some(encoded_payload) = query.payload {
-        let estimated_decoded_size = estimate_base64_decoded_size(&encoded_payload);
+        let estimated_decoded_size = calculate_base64_decoded_size(&encoded_payload);
 
         if estimated_decoded_size > state.configuration.payload_limit_bytes {
             return (
                 StatusCode::BAD_REQUEST,
                 Json(HcGwErrorResponse {
                     error: format!(
-                        "Estimated payload size ({} bytes) exceeds maximum allowed size ({} bytes)",
+                        "Payload size ({} bytes) exceeds maximum allowed size ({} bytes)",
                         estimated_decoded_size, state.configuration.payload_limit_bytes
                     ),
                 }),
@@ -36,7 +36,7 @@ pub async fn validate_zome_call_payload(
 /// Calculate the approximate decoded size without actually decoding
 /// Base64 encoding: every 4 chars in base64 represent 3 bytes of original data
 /// Need to account for padding characters too ('='), which don't represent data
-fn estimate_base64_decoded_size(encoded_payload: &str) -> usize {
+fn calculate_base64_decoded_size(encoded_payload: &str) -> usize {
     let encoded_len = encoded_payload.len();
     let padding_count = encoded_payload
         .chars()
