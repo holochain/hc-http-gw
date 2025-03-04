@@ -13,7 +13,7 @@ use crate::{
 };
 
 /// Core Holochain HTTP gateway service
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct HcHttpGatewayService {
     address: SocketAddr,
     router: Router,
