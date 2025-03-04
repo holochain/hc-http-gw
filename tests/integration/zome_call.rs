@@ -31,6 +31,7 @@ async fn zome_call_with_payload_exceeding_limit_fails() {
     let mut allowed_fns = std::collections::HashMap::new();
     allowed_fns.insert("forum".to_string(), AllowedFns::All);
 
+    // Custom configuration with a very small payload limit
     let config =
         Configuration::try_new("ws://localhost:50350", "10", "forum", allowed_fns).unwrap();
 
