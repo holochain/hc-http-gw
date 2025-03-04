@@ -34,7 +34,7 @@ impl HcHttpGatewayService {
 
         let zome_call_routes = Router::new()
             .route(
-                "/:dna_hash/:coordinator_identifier/:zome_name/:function_name",
+                "/{dna_hash}/{coordinator_identifier}/{zome_name}/{function_name}",
                 get(zome_call),
             )
             .layer(middleware::from_fn_with_state(
