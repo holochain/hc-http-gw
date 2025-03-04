@@ -15,6 +15,7 @@ path = "./src/bin/hc-http-gw.rs"
 [dependencies]
 anyhow = "1.0.96"
 axum = "0.8.1"
+base64 = "0.22.1"
 clap = { version = "4.5.30", features = ["derive", "env"] }
 holochain_client = "0.6.0"
 serde = { version = "=1.0.203", features = ["derive"] }
