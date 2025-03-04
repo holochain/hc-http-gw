@@ -8,6 +8,7 @@ use axum::{
 
 use crate::{http::HcGwErrorResponse, routes::PayloadQuery, service::AppState};
 
+#[tracing::instrument(skip(state, request, next))]
 pub async fn validate_zome_call_payload(
     State(state): State<AppState>,
     Query(query): Query<PayloadQuery>,
