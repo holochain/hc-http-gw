@@ -4,6 +4,8 @@
 mod cli;
 pub mod config;
 mod error;
+mod http;
+mod middleware;
 mod routes;
 mod service;
 pub mod tracing;

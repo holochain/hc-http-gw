@@ -1,16 +1,14 @@
 //! HTTP gateway service for Holochain
 
-use std::{
-    net::{IpAddr, SocketAddr},
-    sync::Arc,
-};
+use std::net::{IpAddr, SocketAddr};
 
-use axum::{routing::get, Router};
+use axum::{middleware, routing::get, Router};
 use tokio::net::TcpListener;
 
 use crate::{
     config::Configuration,
     error::HcHttpGatewayResult,
+    middleware::validate_zome_call_payload,
     routes::{health_check, zome_call},
 };
 
@@ -24,7 +22,7 @@ pub struct HcHttpGatewayService {
 /// Shared application state
 #[derive(Debug, Clone)]
 pub struct AppState {
-    configuration: Configuration,
+    pub configuration: Configuration,
 }
 
 impl HcHttpGatewayService {
@@ -32,13 +30,20 @@ impl HcHttpGatewayService {
     pub fn new(address: impl Into<IpAddr>, port: u16, configuration: Configuration) -> Self {
         let address = SocketAddr::new(address.into(), port);
 
-        let state = Arc::new(AppState { configuration });
+        let state = AppState { configuration };
 
-        let router = Router::new()
+        let zome_call_routes = Router::new()
             .route(
                 "/:dna_hash/:coordinator_identifier/:zome_name/:function_name",
                 get(zome_call),
             )
+            .layer(middleware::from_fn_with_state(
+                state.clone(),
+                validate_zome_call_payload,
+            ));
+
+        let router = Router::new()
+            .merge(zome_call_routes)
             .route("/health", get(health_check))
             .with_state(state.clone());
 
