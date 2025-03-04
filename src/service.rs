@@ -8,7 +8,11 @@ use std::{
 use axum::{routing::get, Router};
 use tokio::net::TcpListener;
 
-use crate::{config::Configuration, error::HcHttpGatewayResult, routes::health_check};
+use crate::{
+    config::Configuration,
+    error::HcHttpGatewayResult,
+    routes::{health_check, zome_call},
+};
 
 /// Core Holochain HTTP gateway service
 #[derive(Debug)]
@@ -31,6 +35,10 @@ impl HcHttpGatewayService {
         let state = Arc::new(AppState { configuration });
 
         let router = Router::new()
+            .route(
+                "/:dna_hash/:coordinator_identifier/:zome_name/:function_name",
+                get(zome_call),
+            )
             .route("/health", get(health_check))
             .with_state(state.clone());
 
