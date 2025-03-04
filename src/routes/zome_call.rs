@@ -11,14 +11,19 @@ pub struct ZomeCallParams {
 
 #[derive(Debug, Deserialize)]
 pub struct PayloadQuery {
-    payload: Option<String>,
+    pub payload: Option<String>,
 }
 
-// http://<host>/<dna-hash>/<coordinator-identifier>/<zome-name>/<function-name>?payload=<payload>
 #[tracing::instrument]
 pub async fn zome_call(
     Path(params): Path<ZomeCallParams>,
     Query(query): Query<PayloadQuery>,
 ) -> &'static str {
+    let ZomeCallParams {
+        dna_hash,
+        coordinator_identifier,
+        zome_name,
+        function_name,
+    } = params;
     todo!("zome call");
 }
