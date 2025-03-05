@@ -1,7 +1,4 @@
-use std::{
-    sync::{Arc, Mutex},
-    usize,
-};
+use std::sync::{Arc, Mutex};
 use tokio::time::{sleep, Duration};
 
 use holochain_client::{AdminWebsocket, ConductorApiError, ConductorApiResult};
@@ -137,7 +134,7 @@ impl ReconnectingAdminWebsocket {
         &mut self,
         f: impl Fn(&AdminWebsocket) -> ConductorApiResult<T>,
     ) -> HcHttpGatewayResult<T> {
-        self.call_inner(|ws| f(ws).map_err(|e| HcHttpGatewayError::from(e)))
+        self.call_inner(|ws| f(ws).map_err(HcHttpGatewayError::from))
             .await
     }
 
