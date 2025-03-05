@@ -5,12 +5,14 @@ use holochain_http_gateway::{
 
 use reqwest::Client;
 use std::collections::HashMap;
+use tokio::task::JoinHandle;
 
 /// Test application harness for the HTTP gateway service
 pub struct TestApp {
     pub config: Configuration,
     pub address: String,
     pub client: Client,
+    pub task_handle: JoinHandle<()>,
 }
 
 impl TestApp {
@@ -42,7 +44,7 @@ impl TestApp {
         let address = service.address().unwrap().to_string();
 
         // Run service in the background
-        tokio::task::spawn(async move { service.run().await.unwrap() });
+        let task_handle = tokio::task::spawn(async move { service.run().await.unwrap() });
         // Wait for service to start
         tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
 
@@ -50,6 +52,13 @@ impl TestApp {
             config,
             address,
             client: Client::new(),
+            task_handle,
         }
+    }
+}
+
+impl Drop for TestApp {
+    fn drop(&mut self) {
+        self.task_handle.abort();
     }
 }
