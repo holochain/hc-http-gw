@@ -94,3 +94,31 @@ async fn zome_call_with_invalid_json_payload() {
 
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 }
+
+#[tokio::test]
+async fn zome_call_with_invalid_dna_hash() {
+    initialize_tracing_subscriber("info");
+
+    let app = TestApp::spawn().await;
+
+    // Invalid JSON payload with a comma
+    let small_payload = r#"{"limit":10,}"#;
+    let encoded_payload = BASE64_STANDARD.encode(small_payload);
+
+    let dna_hash = "not-a-dna-hash";
+    let coordinator = "coord98765";
+    let zome = "custom_zome";
+    let function = "special_function";
+
+    let response = app
+        .client
+        .get(format!(
+            "http://{}/{}/{}/{}/{}?payload={}",
+            app.address, dna_hash, coordinator, zome, function, encoded_payload
+        ))
+        .send()
+        .await
+        .expect("Failed to execute request");
+
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+}
