@@ -24,6 +24,7 @@ pub struct HcHttpGatewayService {
 #[derive(Clone)]
 pub struct AppState {
     configuration: Configuration,
+    #[allow(unused, reason = "Temporary")]
     admin_ws: ReconnectingAdminWebsocket,
 }
 
