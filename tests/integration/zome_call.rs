@@ -1,21 +1,18 @@
 use base64::prelude::*;
-use fixt::prelude::*;
-use holochain::fixt::DnaHashFixturator;
 use holochain_http_gateway::{
     config::{AllowedFns, Configuration},
     tracing::initialize_tracing_subscriber,
 };
+use holochain_types::{dna::HOLO_HASH_UNTYPED_LEN, prelude::DnaHash};
 use reqwest::StatusCode;
 
 use crate::TestApp;
 
 #[tokio::test]
 async fn zome_call_uses_correct_route_parameters() {
-    initialize_tracing_subscriber("info");
-
     let app = TestApp::spawn().await;
 
-    let dna_hash = fixt!(DnaHash);
+    let dna_hash = DnaHash::from_raw_36(vec![0xdb; HOLO_HASH_UNTYPED_LEN]);
     let coordinator = "coord98765";
     let zome = "custom_zome";
     let function = "special_function";
@@ -49,11 +46,16 @@ async fn zome_call_with_payload_exceeding_limit_fails() {
     let large_payload = r#"{"limit":100,"offset":0,"filters":{"author":"user123","tags":["important","featured","latest"],"content_contains":"search term","date_range":{"from":"2023-01-01","to":"2023-12-31"}}"#;
     let encoded_payload = BASE64_STANDARD.encode(large_payload);
 
+    let dna_hash = DnaHash::from_raw_36(vec![0; HOLO_HASH_UNTYPED_LEN]);
+    let coordinator = "coord98765";
+    let zome = "custom_zome";
+    let function = "special_function";
+
     let response = app
         .client
         .get(format!(
-            "http://{}/12345/coordinator/forum/get_posts?payload={}",
-            app.address, encoded_payload
+            "http://{}/{}/{}/{}/{}?payload={}",
+            app.address, dna_hash, coordinator, zome, function, encoded_payload
         ))
         .send()
         .await
@@ -71,11 +73,16 @@ async fn zome_call_with_small_payload_works() {
     let small_payload = r#"{"limit":10}"#;
     let encoded_payload = BASE64_STANDARD.encode(small_payload);
 
+    let dna_hash = DnaHash::from_raw_36(vec![12; 36]);
+    let coordinator = "coord98765";
+    let zome = "custom_zome";
+    let function = "special_function";
+
     let response = app
         .client
         .get(format!(
-            "http://{}/12345/coordinator/forum/get_posts?payload={}",
-            app.address, encoded_payload
+            "http://{}/{}/{}/{}/{}?payload={}",
+            app.address, dna_hash, coordinator, zome, function, encoded_payload
         ))
         .send()
         .await

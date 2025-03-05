@@ -15,6 +15,12 @@ pub enum HcHttpGatewayError {
     /// Handles configuration parsing errors
     #[error("Configuration error: {0}")]
     ConfigurationError(String),
+    /// Handle path deserialization errors
+    #[error("Path deserialization error: {0}")]
+    PathDeserializationError(#[from] axum::extract::rejection::PathRejection),
+    /// Handle base64 decode errors
+    #[error("Base64 decoding error: {0}")]
+    Base64DecodingError(#[from] base64::DecodeError),
 }
 
 /// Type aliased Result
@@ -23,6 +29,14 @@ pub type HcHttpGatewayResult<T> = Result<T, HcHttpGatewayError>;
 impl IntoResponse for HcHttpGatewayError {
     fn into_response(self) -> axum::response::Response {
         match self {
+            HcHttpGatewayError::PathDeserializationError(e) => {
+                tracing::error!("Path deserialization error: {}", e);
+                error_from_status(400, Some("Invalid Request Path"))
+            }
+            HcHttpGatewayError::Base64DecodingError(e) => {
+                tracing::error!("Base64 decode error: {}", e);
+                error_from_status(400, Some("Failed to decode base64 encoded strig"))
+            }
             e => {
                 tracing::error!("Internal Error: {}", e);
                 error_from_status(500, None)
