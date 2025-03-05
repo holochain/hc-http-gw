@@ -13,5 +13,5 @@ pub fn initialize_tracing_subscriber(env_filter: &str) {
         .with(env_filter)
         .with(JsonStorageLayer)
         .with(formatting_layer);
-    tracing::subscriber::set_global_default(subscriber).expect("Failed to set subscriber");
+    tracing::subscriber::set_global_default(subscriber).ok();
 }

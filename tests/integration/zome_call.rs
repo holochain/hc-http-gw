@@ -1,14 +1,21 @@
 use base64::prelude::*;
-use holochain_http_gateway::config::{AllowedFns, Configuration};
+use fixt::prelude::*;
+use holochain::fixt::DnaHashFixturator;
+use holochain_http_gateway::{
+    config::{AllowedFns, Configuration},
+    tracing::initialize_tracing_subscriber,
+};
 use reqwest::StatusCode;
 
 use crate::TestApp;
 
 #[tokio::test]
 async fn zome_call_uses_correct_route_parameters() {
+    initialize_tracing_subscriber("info");
+
     let app = TestApp::spawn().await;
 
-    let dna_hash = "dna123456";
+    let dna_hash = fixt!(DnaHash);
     let coordinator = "coord98765";
     let zome = "custom_zome";
     let function = "special_function";
@@ -28,6 +35,8 @@ async fn zome_call_uses_correct_route_parameters() {
 
 #[tokio::test]
 async fn zome_call_with_payload_exceeding_limit_fails() {
+    initialize_tracing_subscriber("info");
+
     let mut allowed_fns = std::collections::HashMap::new();
     allowed_fns.insert("forum".to_string(), AllowedFns::All);
 
@@ -55,6 +64,8 @@ async fn zome_call_with_payload_exceeding_limit_fails() {
 
 #[tokio::test]
 async fn zome_call_with_small_payload_works() {
+    initialize_tracing_subscriber("info");
+
     let app = TestApp::spawn().await;
 
     let small_payload = r#"{"limit":10}"#;
