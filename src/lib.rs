@@ -9,6 +9,7 @@ mod routes;
 mod service;
 pub mod tracing;
 
+pub use admin_ws::ReconnectingAdminWebsocket;
 pub use cli::HcHttpGatewayArgs;
 pub use error::{HcHttpGatewayError, HcHttpGatewayResult};
 pub use service::HcHttpGatewayService;
