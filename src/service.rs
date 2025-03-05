@@ -60,7 +60,7 @@ impl HcHttpGatewayService {
     pub fn address(&self) -> HcHttpGatewayResult<SocketAddr> {
         self.listener
             .local_addr()
-            .map_err(|e| HcHttpGatewayError::IoError(e))
+            .map_err(HcHttpGatewayError::IoError)
     }
 
     /// Start the HTTP server and run until terminated
