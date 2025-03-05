@@ -1,18 +1,21 @@
 use base64::prelude::*;
+use fixt::fixt;
 use holochain_http_gateway::{
     config::{AllowedFns, Configuration},
     tracing::initialize_tracing_subscriber,
 };
-use holochain_types::{dna::HOLO_HASH_UNTYPED_LEN, prelude::DnaHash};
+use holochain_types::dna::fixt::DnaHashFixturator;
 use reqwest::StatusCode;
 
 use crate::TestApp;
 
 #[tokio::test]
 async fn zome_call_uses_correct_route_parameters() {
+    initialize_tracing_subscriber("info");
+
     let app = TestApp::spawn().await;
 
-    let dna_hash = DnaHash::from_raw_36(vec![0xdb; HOLO_HASH_UNTYPED_LEN]);
+    let dna_hash = fixt!(DnaHash);
     let coordinator = "coord98765";
     let zome = "custom_zome";
     let function = "special_function";
@@ -46,7 +49,7 @@ async fn zome_call_with_payload_exceeding_limit_fails() {
     let large_payload = r#"{"limit":100,"offset":0,"filters":{"author":"user123","tags":["important","featured","latest"],"content_contains":"search term","date_range":{"from":"2023-01-01","to":"2023-12-31"}}"#;
     let encoded_payload = BASE64_STANDARD.encode(large_payload);
 
-    let dna_hash = DnaHash::from_raw_36(vec![0; HOLO_HASH_UNTYPED_LEN]);
+    let dna_hash = fixt!(DnaHash);
     let coordinator = "coord98765";
     let zome = "custom_zome";
     let function = "special_function";
@@ -65,15 +68,16 @@ async fn zome_call_with_payload_exceeding_limit_fails() {
 }
 
 #[tokio::test]
-async fn zome_call_with_small_payload_works() {
+async fn zome_call_with_invalid_json_payload() {
     initialize_tracing_subscriber("info");
 
     let app = TestApp::spawn().await;
 
-    let small_payload = r#"{"limit":10}"#;
+    // Invalid JSON payload with a comma
+    let small_payload = r#"{"limit":10,}"#;
     let encoded_payload = BASE64_STANDARD.encode(small_payload);
 
-    let dna_hash = DnaHash::from_raw_36(vec![12; 36]);
+    let dna_hash = fixt!(DnaHash);
     let coordinator = "coord98765";
     let zome = "custom_zome";
     let function = "special_function";
@@ -88,7 +92,5 @@ async fn zome_call_with_small_payload_works() {
         .await
         .expect("Failed to execute request");
 
-    assert_eq!(response.status(), StatusCode::OK);
-    let body = response.text().await.expect("Failed to read response body");
-    assert_eq!(body, "Ok");
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 }

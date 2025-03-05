@@ -3,6 +3,7 @@
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Json;
+use holochain_types::dna::HoloHashError;
 
 use crate::http::HcGwErrorResponse;
 
@@ -21,6 +22,12 @@ pub enum HcHttpGatewayError {
     /// Handle base64 decode errors
     #[error("Base64 decoding error: {0}")]
     Base64DecodingError(#[from] base64::DecodeError),
+    /// Handle holo hash errors
+    #[error("HoloHash error: {0}")]
+    HoloHashError(#[from] HoloHashError),
+    /// Handle errors deserializing zome call payload to json
+    #[error("Failed to deserialize JSON to serde_json::Value: {0}")]
+    InvalidJSON(#[from] serde_json::Error),
 }
 
 /// Type aliased Result
@@ -36,6 +43,14 @@ impl IntoResponse for HcHttpGatewayError {
             HcHttpGatewayError::Base64DecodingError(e) => {
                 tracing::error!("Base64 decode error: {}", e);
                 error_from_status(400, Some("Failed to decode base64 encoded strig"))
+            }
+            HcHttpGatewayError::HoloHashError(e) => {
+                tracing::error!("HoloHash error: {}", e);
+                error_from_status(400, Some("HoloHash error"))
+            }
+            HcHttpGatewayError::InvalidJSON(e) => {
+                tracing::error!("Invalid JSON: {}", e);
+                error_from_status(400, Some("Payload contains invalid JSON"))
             }
             e => {
                 tracing::error!("Internal Error: {}", e);
