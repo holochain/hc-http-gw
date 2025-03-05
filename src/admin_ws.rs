@@ -8,8 +8,8 @@ use holochain_client::{AdminWebsocket, ConductorApiError, ConductorApiResult};
 
 use crate::{HcHttpGatewayError, HcHttpGatewayResult};
 
-const WS_CONNECTION_MAX_RETRIES: usize = 1;
-const WS_CONNECTION_RETRY_DELAY_MS: u64 = 1000;
+const ADMIN_WS_CONNECTION_MAX_RETRIES: usize = 1;
+const ADMIN_WS_CONNECTION_RETRY_DELAY_MS: u64 = 1000;
 
 /// A wrapper around AdminWebsocket that automatically handles reconnection
 /// when the connection is lost due to network issues or other failures.
@@ -17,12 +17,8 @@ const WS_CONNECTION_RETRY_DELAY_MS: u64 = 1000;
 pub struct ReconnectingAdminWebsocket {
     /// The WebSocket URL to connect to
     url: String,
-    /// The current AdminWebsocket connection
-    connection: Arc<Mutex<Option<AdminWebsocket>>>,
-    /// Maximum number of reconnection attempts before giving up
-    max_retries: usize,
-    /// Delay between reconnection attempts in milliseconds
-    retry_delay_ms: u64,
+    /// The handle to the AdminWebsocket connection
+    handle: Arc<Mutex<Option<AdminWebsocket>>>,
     /// Current retry attempt counter
     current_retries: usize,
 }
@@ -36,9 +32,7 @@ impl ReconnectingAdminWebsocket {
     pub fn new(url: &str) -> Self {
         ReconnectingAdminWebsocket {
             url: url.to_string(),
-            connection: Arc::new(Mutex::new(None)),
-            max_retries: WS_CONNECTION_MAX_RETRIES,
-            retry_delay_ms: WS_CONNECTION_RETRY_DELAY_MS,
+            handle: Arc::new(Mutex::new(None)),
             current_retries: 0,
         }
     }
@@ -55,34 +49,29 @@ impl ReconnectingAdminWebsocket {
     pub async fn connect(&mut self) -> HcHttpGatewayResult<()> {
         let conn = AdminWebsocket::connect(&self.url).await?;
 
-        let mut connection = self.connection.lock().unwrap();
+        let mut connection = self.handle.lock().unwrap();
         *connection = Some(conn);
 
         self.current_retries = 0;
         Ok(())
     }
 
+    /// Checks if there is an active connection
+    fn is_connected(&self) -> HcHttpGatewayResult<bool> {
+        let connection = self.handle.lock().unwrap();
+        Ok(connection.is_some())
+    }
+
     /// Ensures that a connection is established before proceeding
     ///
     /// If a connection already exists, this is a no-op.
     /// If no connection exists, it will attempt to establish one.
-    ///
-    /// # Returns
-    ///
-    /// * `Ok(())` - If a connection is available or was established successfully
-    /// * `Err(HcHttpGatewayError)` - If no connection exists and one could not be established
-    pub async fn ensure_connected(&mut self) -> HcHttpGatewayResult<()> {
+    async fn ensure_connected(&mut self) -> HcHttpGatewayResult<()> {
         if self.is_connected()? {
             return Ok(());
         }
 
         self.reconnect().await
-    }
-
-    /// Checks if there is an active connection
-    fn is_connected(&self) -> HcHttpGatewayResult<bool> {
-        let connection = self.connection.lock().unwrap();
-        Ok(connection.is_some())
     }
 
     /// Attempts to reconnect to the AdminWebsocket
@@ -96,10 +85,10 @@ impl ReconnectingAdminWebsocket {
     /// * `Err(HcHttpGatewayError)` - If reconnection failed after all retry attempts
     pub async fn reconnect(&mut self) -> HcHttpGatewayResult<()> {
         self.current_retries = 0;
-        while self.current_retries < self.max_retries {
+        while self.current_retries < ADMIN_WS_CONNECTION_MAX_RETRIES {
             match AdminWebsocket::connect(&self.url).await {
                 Ok(conn) => {
-                    let mut connection = self.connection.lock().unwrap();
+                    let mut connection = self.handle.lock().unwrap();
                     *connection = Some(conn);
                     self.current_retries = 0;
                     return Ok(());
@@ -109,16 +98,16 @@ impl ReconnectingAdminWebsocket {
                     tracing::warn!(
                         "Failed to connect to WebSocket (attempt {}/{}): {:?}",
                         self.current_retries,
-                        self.max_retries,
+                        ADMIN_WS_CONNECTION_MAX_RETRIES,
                         e
                     );
 
-                    if self.current_retries < self.max_retries {
-                        sleep(Duration::from_millis(self.retry_delay_ms)).await;
+                    if self.current_retries < ADMIN_WS_CONNECTION_MAX_RETRIES {
+                        sleep(Duration::from_millis(ADMIN_WS_CONNECTION_RETRY_DELAY_MS)).await;
                     } else {
                         return Err(HcHttpGatewayError::ConfigurationError(format!(
                             "Maximum connection retry attempts ({}) reached",
-                            self.max_retries
+                            ADMIN_WS_CONNECTION_RETRY_DELAY_MS
                         )));
                     }
                 }
@@ -127,7 +116,7 @@ impl ReconnectingAdminWebsocket {
 
         Err(HcHttpGatewayError::ConfigurationError(format!(
             "Maximum connection retry attempts ({}) reached",
-            self.max_retries
+            ADMIN_WS_CONNECTION_MAX_RETRIES
         )))
     }
 
@@ -144,7 +133,7 @@ impl ReconnectingAdminWebsocket {
     ///
     /// * `Ok(T)` - If the function executed successfully
     /// * `Err(HcHttpGatewayError)` - If an error occurred that could not be recovered from
-    pub async fn call_method<T>(
+    pub async fn call<T>(
         &mut self,
         f: impl Fn(&AdminWebsocket) -> ConductorApiResult<T>,
     ) -> HcHttpGatewayResult<T> {
@@ -162,7 +151,7 @@ impl ReconnectingAdminWebsocket {
         self.ensure_connected().await?;
 
         let result = {
-            let connection = self.connection.lock().unwrap();
+            let connection = self.handle.lock().unwrap();
             let conn = connection.as_ref().unwrap();
             f(conn)
         };
@@ -175,7 +164,7 @@ impl ReconnectingAdminWebsocket {
                     tracing::warn!("Detected disconnection. Attempting to reconnect...");
                     if let Ok(()) = self.reconnect().await {
                         tracing::info!("Reconnected successfully. Retrying operation.");
-                        let connection = self.connection.lock().unwrap();
+                        let connection = self.handle.lock().unwrap();
                         let conn = connection.as_ref().unwrap();
                         return f(conn);
                     }

@@ -6,10 +6,12 @@ use std::{
 };
 
 use axum::{routing::get, Router};
-use holochain_client::AdminWebsocket;
 use tokio::net::TcpListener;
 
-use crate::{config::Configuration, error::HcHttpGatewayResult, routes::health_check};
+use crate::{
+    config::Configuration, error::HcHttpGatewayResult, routes::health_check,
+    ReconnectingAdminWebsocket,
+};
 
 /// Core Holochain HTTP gateway service
 #[derive(Debug)]
@@ -19,9 +21,10 @@ pub struct HcHttpGatewayService {
 }
 
 /// Shared application state
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct AppState {
     configuration: Configuration,
+    admin_ws: ReconnectingAdminWebsocket,
 }
 
 impl HcHttpGatewayService {
@@ -32,10 +35,13 @@ impl HcHttpGatewayService {
         configuration: Configuration,
     ) -> HcHttpGatewayResult<Self> {
         let address = SocketAddr::new(address.into(), port);
-        let admin_ws_url = &configuration.admin_ws_url.to_string();
-        let admin_ws_connection = AdminWebsocket::connect(admin_ws_url).await?;
+        let mut admin_ws = ReconnectingAdminWebsocket::new(&configuration.admin_ws_url.to_string());
+        admin_ws.connect().await?;
 
-        let state = Arc::new(AppState { configuration });
+        let state = Arc::new(AppState {
+            configuration,
+            admin_ws,
+        });
 
         let router = Router::new()
             .route("/health", get(health_check))
