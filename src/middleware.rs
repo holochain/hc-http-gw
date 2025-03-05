@@ -1,3 +1,3 @@
-mod validate_zome_call_payload;
+mod validate_zome_call_payload_limit;
 
-pub use validate_zome_call_payload::validate_zome_call_payload;
+pub use validate_zome_call_payload_limit::validate_zome_call_payload_limit;
