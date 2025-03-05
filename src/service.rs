@@ -37,19 +37,16 @@ impl HcHttpGatewayService {
 
         let state = AppState { configuration };
 
-        let zome_call_routes = Router::new()
+        let router = Router::new()
             .route(
                 "/{dna_hash}/{coordinator_identifier}/{zome_name}/{function_name}",
                 get(zome_call),
             )
+            .route("/health", get(health_check))
             .layer(middleware::from_fn_with_state(
                 state.clone(),
                 validate_zome_call_payload_limit,
-            ));
-
-        let router = Router::new()
-            .merge(zome_call_routes)
-            .route("/health", get(health_check))
+            ))
             .with_state(state.clone());
 
         tracing::info!("Configuration: {:?}", state.configuration);
