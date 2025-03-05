@@ -6,6 +6,7 @@ use std::{
 };
 
 use axum::{routing::get, Router};
+use holochain_client::AdminWebsocket;
 use tokio::net::TcpListener;
 
 use crate::{config::Configuration, error::HcHttpGatewayResult, routes::health_check};
@@ -25,8 +26,14 @@ pub struct AppState {
 
 impl HcHttpGatewayService {
     /// Create a new service instance bound to the given address and port
-    pub fn new(address: impl Into<IpAddr>, port: u16, configuration: Configuration) -> Self {
+    pub async fn new(
+        address: impl Into<IpAddr>,
+        port: u16,
+        configuration: Configuration,
+    ) -> HcHttpGatewayResult<Self> {
         let address = SocketAddr::new(address.into(), port);
+        let admin_ws_url = &configuration.admin_ws_url.to_string();
+        let admin_ws_connection = AdminWebsocket::connect(admin_ws_url).await?;
 
         let state = Arc::new(AppState { configuration });
 
@@ -36,7 +43,7 @@ impl HcHttpGatewayService {
 
         tracing::info!("Configuration: {:?}", state.configuration);
 
-        HcHttpGatewayService { router, address }
+        Ok(HcHttpGatewayService { router, address })
     }
 
     /// Get the socket address the service is configured to use

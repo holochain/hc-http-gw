@@ -9,6 +9,18 @@ pub enum HcHttpGatewayError {
     /// Handles configuration parsing errors
     #[error("Configuration error: {0}")]
     ConfigurationError(String),
+    /// Handles conductor api errors
+    #[error("Conductor API error: {0:?}")]
+    ConductorApiError(holochain_client::ConductorApiError),
+    /// Handles other errors
+    #[error(transparent)]
+    Other(#[from] anyhow::Error),
+}
+
+impl From<holochain_client::ConductorApiError> for HcHttpGatewayError {
+    fn from(value: holochain_client::ConductorApiError) -> Self {
+        HcHttpGatewayError::ConductorApiError(value)
+    }
 }
 
 /// Type aliased Result
