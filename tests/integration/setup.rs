@@ -35,13 +35,11 @@ impl TestApp {
 
     /// Create a test app with custom configuration
     pub async fn spawn_with_config(config: Configuration) -> Self {
-        let service = HcHttpGatewayService::new(
-            [127, 0, 0, 1],
-            portpicker::pick_unused_port().unwrap(),
-            config.clone(),
-        );
+        let service = HcHttpGatewayService::new([127, 0, 0, 1], 0, config.clone())
+            .await
+            .unwrap();
 
-        let address = service.address().to_string();
+        let address = service.address().unwrap().to_string();
 
         // Run service in the background
         tokio::task::spawn(async move { service.run().await.unwrap() });

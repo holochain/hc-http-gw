@@ -10,12 +10,13 @@ use crate::{
     error::HcHttpGatewayResult,
     middleware::validate_zome_call_payload,
     routes::{health_check, zome_call},
+    HcHttpGatewayError,
 };
 
 /// Core Holochain HTTP gateway service
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct HcHttpGatewayService {
-    address: SocketAddr,
+    listener: TcpListener,
     router: Router,
 }
 
@@ -27,7 +28,11 @@ pub struct AppState {
 
 impl HcHttpGatewayService {
     /// Create a new service instance bound to the given address and port
-    pub fn new(address: impl Into<IpAddr>, port: u16, configuration: Configuration) -> Self {
+    pub async fn new(
+        address: impl Into<IpAddr>,
+        port: u16,
+        configuration: Configuration,
+    ) -> HcHttpGatewayResult<Self> {
         let address = SocketAddr::new(address.into(), port);
 
         let state = AppState { configuration };
@@ -49,21 +54,24 @@ impl HcHttpGatewayService {
 
         tracing::info!("Configuration: {:?}", state.configuration);
 
-        HcHttpGatewayService { router, address }
+        let listener = TcpListener::bind(address).await?;
+
+        Ok(HcHttpGatewayService { router, listener })
     }
 
     /// Get the socket address the service is configured to use
-    pub fn address(&self) -> SocketAddr {
-        self.address
+    pub fn address(&self) -> HcHttpGatewayResult<SocketAddr> {
+        self.listener
+            .local_addr()
+            .map_err(|e| HcHttpGatewayError::IoError(e))
     }
 
     /// Start the HTTP server and run until terminated
     pub async fn run(self) -> HcHttpGatewayResult<()> {
-        let address = self.address();
-        let listener = TcpListener::bind(self.address).await?;
+        let address = self.address()?;
 
         tracing::info!("Starting server on {}", address);
-        axum::serve(listener, self.router)
+        axum::serve(self.listener, self.router)
             .await
             .inspect_err(|e| tracing::error!("Failed to bind to {}: {}", address, e))?;
 

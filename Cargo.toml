@@ -35,4 +35,3 @@ url2 = "0.0.6"
 holochain = { version = "0.4.1", features = ["test_utils"] }
 fixt = "0.4.1"
 reqwest = { version = "0.12", features = ["rustls-tls"] }
-portpicker = "0.1.1"

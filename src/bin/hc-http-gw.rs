@@ -15,7 +15,7 @@ async fn main() -> anyhow::Result<()> {
     let configuration = load_config_from_env()?;
 
     let args = HcHttpGatewayArgs::parse();
-    let service = HcHttpGatewayService::new(args.address, args.port, configuration);
+    let service = HcHttpGatewayService::new(args.address, args.port, configuration).await?;
 
     service.run().await?;
 
