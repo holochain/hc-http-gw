@@ -8,7 +8,7 @@ use tokio::net::TcpListener;
 use crate::{
     config::Configuration,
     error::HcHttpGatewayResult,
-    middleware::validate_zome_call_payload_limit,
+    middleware::validate_zome_call_payload_size,
     routes::{health_check, zome_call},
     HcHttpGatewayError,
 };
@@ -45,7 +45,7 @@ impl HcHttpGatewayService {
             .route("/health", get(health_check))
             .layer(middleware::from_fn_with_state(
                 state.clone(),
-                validate_zome_call_payload_limit,
+                validate_zome_call_payload_size,
             ))
             .with_state(state.clone());
 
