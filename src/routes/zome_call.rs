@@ -1,10 +1,11 @@
 use axum::extract::{Path, Query};
+use holochain_types::dna::DnaHash;
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
 #[allow(unused, reason = "Temporarily unused fields")]
 pub struct ZomeCallParams {
-    dna_hash: String,
+    dna_hash: DnaHash,
     coordinator_identifier: String,
     zome_name: String,
     function_name: String,

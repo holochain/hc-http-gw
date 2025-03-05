@@ -2742,6 +2742,7 @@ dependencies = [
  "fixt",
  "holochain",
  "holochain_client",
+ "holochain_types",
  "portpicker",
  "reqwest 0.12.12",
  "serde",
