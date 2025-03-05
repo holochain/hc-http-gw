@@ -2,7 +2,7 @@ use axum::extract::{Path, Query};
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
-#[allow(unused)] // XXX:temporarily unused fields
+#[allow(unused, reason = "Temporarily unused fields")]
 pub struct ZomeCallParams {
     dna_hash: String,
     coordinator_identifier: String,
