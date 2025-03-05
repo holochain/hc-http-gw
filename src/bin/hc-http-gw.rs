@@ -10,7 +10,7 @@ use holochain_http_gateway::{
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    initialize_tracing_subscriber("info");
+    initialize_tracing_subscriber();
 
     let configuration = load_config_from_env()?;
 

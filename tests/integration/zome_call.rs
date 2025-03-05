@@ -11,7 +11,7 @@ use crate::TestApp;
 
 #[tokio::test]
 async fn zome_call_uses_correct_route_parameters() {
-    initialize_tracing_subscriber("info");
+    initialize_tracing_subscriber();
 
     let app = TestApp::spawn().await;
 
@@ -35,7 +35,7 @@ async fn zome_call_uses_correct_route_parameters() {
 
 #[tokio::test]
 async fn zome_call_with_payload_exceeding_limit_fails() {
-    initialize_tracing_subscriber("info");
+    initialize_tracing_subscriber();
 
     let mut allowed_fns = std::collections::HashMap::new();
     allowed_fns.insert("forum".to_string(), AllowedFns::All);
@@ -69,7 +69,7 @@ async fn zome_call_with_payload_exceeding_limit_fails() {
 
 #[tokio::test]
 async fn zome_call_with_invalid_json_payload() {
-    initialize_tracing_subscriber("info");
+    initialize_tracing_subscriber();
 
     let app = TestApp::spawn().await;
 
@@ -97,7 +97,7 @@ async fn zome_call_with_invalid_json_payload() {
 
 #[tokio::test]
 async fn zome_call_with_invalid_dna_hash() {
-    initialize_tracing_subscriber("info");
+    initialize_tracing_subscriber();
 
     let app = TestApp::spawn().await;
 
