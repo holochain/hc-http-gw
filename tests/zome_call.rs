@@ -103,10 +103,10 @@ async fn zome_call_with_invalid_dna_hash() {
 
     let app = TestApp::spawn().await;
 
-    // Invalid JSON payload with a comma
-    let small_payload = r#"{"limit":10,}"#;
-    let encoded_payload = BASE64_STANDARD.encode(small_payload);
+    let payload = r#"{"limit":10}"#;
+    let encoded_payload = BASE64_STANDARD.encode(payload);
 
+    // Invalid DNA hash
     let dna_hash = "not-a-dna-hash";
     let coordinator = "coord98765";
     let zome = "custom_zome";
