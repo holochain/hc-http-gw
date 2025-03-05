@@ -9,7 +9,6 @@ use tokio::task::JoinHandle;
 
 /// Test application harness for the HTTP gateway service
 pub struct TestApp {
-    pub config: Configuration,
     pub address: String,
     pub client: Client,
     pub task_handle: JoinHandle<()>,
@@ -49,7 +48,6 @@ impl TestApp {
         tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
 
         TestApp {
-            config,
             address,
             client: Client::new(),
             task_handle,

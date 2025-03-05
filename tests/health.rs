@@ -1,6 +1,8 @@
+mod setup;
+
 use reqwest::StatusCode;
 
-use crate::TestApp;
+use setup::TestApp;
 
 #[tokio::test]
 async fn health_check_works() {

@@ -1,3 +1,5 @@
+mod setup;
+
 use base64::prelude::*;
 use fixt::fixt;
 use holochain_http_gateway::{
@@ -7,7 +9,7 @@ use holochain_http_gateway::{
 use holochain_types::dna::fixt::DnaHashFixturator;
 use reqwest::StatusCode;
 
-use crate::TestApp;
+use setup::TestApp;
 
 #[tokio::test]
 async fn zome_call_uses_correct_route_parameters() {
