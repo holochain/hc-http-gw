@@ -49,7 +49,7 @@ pub struct PayloadQuery {
     pub payload: Option<String>,
 }
 
-#[tracing::instrument]
+#[tracing::instrument(skip(state))]
 pub async fn zome_call(
     params: ZomeCallParams,
     State(state): State<AppState>,
