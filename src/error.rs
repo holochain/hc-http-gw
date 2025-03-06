@@ -46,19 +46,19 @@ impl IntoResponse for HcHttpGatewayError {
         match self {
             HcHttpGatewayError::PathParsingError(e) => {
                 tracing::error!("Path deserialization error: {}", e);
-                error_from_status(400, Some("Invalid request path"))
+                error_response(400, Some("Invalid request path"))
             }
             HcHttpGatewayError::Base64DecodingError(e) => {
                 tracing::error!("Base64 decode error: {}", e);
-                error_from_status(400, Some("Failed to decode base64 encoded string"))
+                error_response(400, Some("Failed to decode base64 encoded string"))
             }
             HcHttpGatewayError::HoloHashError(e) => {
                 tracing::error!("HoloHash error: {}", e);
-                error_from_status(400, Some("Invalid base64 DNA hash"))
+                error_response(400, Some("Invalid base64 DNA hash"))
             }
             HcHttpGatewayError::InvalidJSON(e) => {
                 tracing::error!("Invalid JSON: {}", e);
-                error_from_status(400, Some("Payload contains invalid JSON"))
+                error_response(400, Some("Payload contains invalid JSON"))
             }
             HcHttpGatewayError::PayloadSizeLimitError { size, limit } => {
                 tracing::error!(
@@ -66,18 +66,18 @@ impl IntoResponse for HcHttpGatewayError {
                     size,
                     limit
                 );
-                error_from_status(400, Some("Payload size exceeds maximum allowed size"))
+                error_response(400, Some("Payload size exceeds maximum allowed size"))
             }
             e => {
                 tracing::error!("Internal Error: {}", e);
-                error_from_status(500, None)
+                error_response(500, None)
             }
         }
     }
 }
 
 /// Construct an axum http error from a status code and optional message
-pub fn error_from_status(status_code: u16, message: Option<&str>) -> axum::response::Response {
+pub fn error_response(status_code: u16, message: Option<&str>) -> axum::response::Response {
     let error_response = HcGwErrorResponse {
         error: message.unwrap_or("Something Went Wrong").to_string(),
     };
