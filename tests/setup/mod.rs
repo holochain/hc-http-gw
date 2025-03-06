@@ -44,8 +44,6 @@ impl TestApp {
 
         // Run service in the background
         let task_handle = tokio::task::spawn(async move { service.run().await.unwrap() });
-        // Wait for service to start
-        tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
 
         TestApp {
             address,
