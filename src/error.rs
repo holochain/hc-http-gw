@@ -66,7 +66,12 @@ impl IntoResponse for HcHttpGatewayError {
                     size,
                     limit
                 );
-                error_response(400, Some("Payload size exceeds maximum allowed size"))
+                error_response(
+                    400,
+                    Some(&format!(
+                        "Payload size exceeds maximum allowed size ({limit} bytes)"
+                    )),
+                )
             }
             e => {
                 tracing::error!("Internal Error: {}", e);
