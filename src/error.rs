@@ -20,8 +20,8 @@ pub enum HcHttpGatewayError {
     #[error("Path deserialization error: {0}")]
     PathParsingError(#[from] axum::extract::rejection::PathRejection),
     /// Handle base64 decode errors
-    #[error("Base64 decoding error: {0}")]
-    Base64DecodingError(#[from] base64::DecodeError),
+    #[error("Base64 decode error: {0}")]
+    Base64DecodeError(#[from] base64::DecodeError),
     /// Handle holo hash errors
     #[error("HoloHash error: {0}")]
     HoloHashError(#[from] HoloHashError),
@@ -48,7 +48,7 @@ impl IntoResponse for HcHttpGatewayError {
                 tracing::error!("Path deserialization error: {}", e);
                 error_response(400, Some("Invalid request path"))
             }
-            HcHttpGatewayError::Base64DecodingError(e) => {
+            HcHttpGatewayError::Base64DecodeError(e) => {
                 tracing::error!("Base64 decode error: {}", e);
                 error_response(400, Some("Failed to decode base64 encoded string"))
             }
