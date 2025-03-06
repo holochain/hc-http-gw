@@ -75,7 +75,7 @@ fn check_payload_size(
     payload_limit_bytes: u32,
 ) -> HcHttpGatewayResult<()> {
     if let Some(encoded_payload) = payload {
-        let estimated_decoded_size = calculate_base64_decoded_size(&encoded_payload);
+        let estimated_decoded_size = calculate_base64_decoded_size(encoded_payload);
 
         if estimated_decoded_size > payload_limit_bytes {
             return Err(HcHttpGatewayError::PayloadSizeLimitError {
