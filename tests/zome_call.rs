@@ -1,6 +1,6 @@
 mod setup;
 
-use base64::prelude::*;
+use base64::{prelude::BASE64_URL_SAFE, Engine};
 use fixt::fixt;
 use holochain_http_gateway::{
     config::{AllowedFns, Configuration},
@@ -12,28 +12,45 @@ use reqwest::StatusCode;
 use setup::TestApp;
 
 #[tokio::test]
-async fn zome_call_uses_correct_route_parameters() {
+async fn zome_call_with_valid_params() {
     initialize_tracing_subscriber();
 
     let app = TestApp::spawn().await;
 
-    let dna_hash = fixt!(DnaHash);
-    let coordinator = "coord98765";
-    let zome = "custom_zome";
-    let function = "special_function";
-
+    let dna_hash = fixt!(DnaHash).to_string();
     let payload = r#"{"limit": 100, "offset": 10}"#;
-    let encoded_payload = BASE64_URL_SAFE.encode(payload);
+    let payload = BASE64_URL_SAFE.encode(payload);
 
     let response = app
-        .client
-        .get(format!(
-            "http://{}/{dna_hash}/{coordinator}/{zome}/{function}?payload={encoded_payload}",
-            app.address,
-        ))
-        .send()
-        .await
-        .expect("Failed to execute request");
+        .call_zome(
+            &dna_hash,
+            "coord98765",
+            "custom_zome",
+            "special_function",
+            Some(&payload),
+        )
+        .await;
+
+    assert_eq!(response.status(), StatusCode::OK);
+}
+
+#[tokio::test]
+async fn zome_call_with_valid_params_but_no_payload() {
+    initialize_tracing_subscriber();
+
+    let app = TestApp::spawn().await;
+
+    let dna_hash = fixt!(DnaHash).to_string();
+
+    let response = app
+        .call_zome(
+            &dna_hash,
+            "coord98765",
+            "custom_zome",
+            "special_function",
+            None,
+        )
+        .await;
 
     assert_eq!(response.status(), StatusCode::OK);
 }
@@ -51,79 +68,90 @@ async fn zome_call_with_payload_exceeding_limit_fails() {
 
     let app = TestApp::spawn_with_config(config).await;
 
+    let dna_hash = fixt!(DnaHash).to_string();
     let large_payload = r#"{"limit":100,"offset":0,"filters":{"author":"user123","tags":["important","featured","latest"],"content_contains":"search term","date_range":{"from":"2023-01-01","to":"2023-12-31"}}"#;
-    let encoded_payload = BASE64_URL_SAFE.encode(large_payload);
-
-    let dna_hash = fixt!(DnaHash);
-    let coordinator = "coord98765";
-    let zome = "custom_zome";
-    let function = "special_function";
+    let large_payload = BASE64_URL_SAFE.encode(large_payload);
 
     let response = app
-        .client
-        .get(format!(
-            "http://{}/{dna_hash}/{coordinator}/{zome}/{function}?payload={encoded_payload}",
-            app.address,
-        ))
-        .send()
-        .await
-        .expect("Failed to execute request");
+        .call_zome(
+            &dna_hash,
+            "coord98765",
+            "custom_zome",
+            "special_function",
+            Some(&large_payload),
+        )
+        .await;
 
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 }
 
 #[tokio::test]
-async fn zome_call_with_invalid_json_payload() {
+async fn zome_call_with_invalid_json_payload_fails() {
     initialize_tracing_subscriber();
 
     let app = TestApp::spawn().await;
 
-    // Invalid JSON payload with a comma
-    let small_payload = r#"{"limit":10,}"#;
-    let encoded_payload = BASE64_URL_SAFE.encode(small_payload);
-
-    let dna_hash = fixt!(DnaHash);
-    let coordinator = "coord98765";
-    let zome = "custom_zome";
-    let function = "special_function";
+    // Invalid JSON payload
+    let dna_hash = fixt!(DnaHash).to_string();
+    let invalid_payload = r#"{"limit":10, offset: 0,}"#;
+    let invalid_payload = BASE64_URL_SAFE.encode(invalid_payload);
 
     let response = app
-        .client
-        .get(format!(
-            "http://{}/{dna_hash}/{coordinator}/{zome}/{function}?payload={encoded_payload}",
-            app.address
-        ))
-        .send()
-        .await
-        .expect("Failed to execute request");
+        .call_zome(
+            &dna_hash,
+            "coord98765",
+            "custom_zome",
+            "special_function",
+            Some(&invalid_payload),
+        )
+        .await;
 
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 }
 
 #[tokio::test]
-async fn zome_call_with_invalid_dna_hash() {
+async fn zome_call_with_invalid_dna_hash_fails() {
     initialize_tracing_subscriber();
 
     let app = TestApp::spawn().await;
-
-    let payload = r#"{"limit":10}"#;
-    let encoded_payload = BASE64_URL_SAFE.encode(payload);
 
     // Invalid DNA hash
     let dna_hash = "not-a-dna-hash";
-    let coordinator = "coord98765";
-    let zome = "custom_zome";
-    let function = "special_function";
+    let payload = r#"{"limit":10}"#;
+    let payload = BASE64_URL_SAFE.encode(payload);
 
     let response = app
-        .client
-        .get(format!(
-            "http://{}/{dna_hash}/{coordinator}/{zome}/{function}?payload={encoded_payload}",
-            app.address,
-        ))
-        .send()
-        .await
-        .expect("Failed to execute request");
+        .call_zome(
+            dna_hash,
+            "coord98765",
+            "custom_zome",
+            "special_function",
+            Some(&payload),
+        )
+        .await;
+
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+}
+
+#[tokio::test]
+async fn zome_call_with_non_base64_encoded_payload_fails() {
+    initialize_tracing_subscriber();
+
+    let app = TestApp::spawn().await;
+
+    let dna_hash = fixt!(DnaHash).to_string();
+    // Sending a raw JSON string without base64 encoding
+    let payload = r#"{"limit":10}"#;
+
+    let response = app
+        .call_zome(
+            &dna_hash,
+            "coord98765",
+            "custom_zome",
+            "special_function",
+            Some(payload),
+        )
+        .await;
 
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 }

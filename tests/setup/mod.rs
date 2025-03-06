@@ -3,7 +3,7 @@ use holochain_http_gateway::{
     HcHttpGatewayService,
 };
 
-use reqwest::Client;
+use reqwest::{Client, Response};
 use std::collections::HashMap;
 use tokio::task::JoinHandle;
 
@@ -50,6 +50,34 @@ impl TestApp {
             client: Client::new(),
             task_handle,
         }
+    }
+
+    /// Util to make a request to the zome call GET endpoint
+    #[allow(unused, reason = "Actually used, only suppressing warning")]
+    pub async fn call_zome(
+        &self,
+        dna_hash: &str,
+        coordiator_identifier: &str,
+        zome: &str,
+        zome_fn: &str,
+        payload: Option<&str>,
+    ) -> Response {
+        let url = {
+            let mut url = format!(
+                "http://{}/{dna_hash}/{coordiator_identifier}/{zome}/{zome_fn}",
+                self.address
+            );
+            if let Some(payload) = payload {
+                url.push_str(&format!("?payload={}", payload));
+            }
+            url
+        };
+
+        self.client
+            .get(url)
+            .send()
+            .await
+            .expect("Failed to execute request")
     }
 }
 
