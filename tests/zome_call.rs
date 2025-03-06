@@ -1,4 +1,4 @@
-mod setup;
+pub mod setup;
 
 use base64::{prelude::BASE64_URL_SAFE, Engine};
 use fixt::fixt;

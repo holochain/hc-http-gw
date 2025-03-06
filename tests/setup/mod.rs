@@ -53,7 +53,6 @@ impl TestApp {
     }
 
     /// Util to make a request to the zome call GET endpoint
-    #[allow(unused, reason = "Actually used, only suppressing warning")]
     pub async fn call_zome(
         &self,
         dna_hash: &str,
