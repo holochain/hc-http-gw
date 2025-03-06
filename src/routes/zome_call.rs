@@ -72,7 +72,7 @@ pub async fn zome_call(
 
 fn check_payload_size(
     payload: Option<&String>,
-    payload_limit_bytes: usize,
+    payload_limit_bytes: u32,
 ) -> HcHttpGatewayResult<()> {
     if let Some(encoded_payload) = payload {
         let estimated_decoded_size = calculate_base64_decoded_size(&encoded_payload);
@@ -91,7 +91,7 @@ fn check_payload_size(
 /// Calculate the approximate decoded size without actually decoding
 /// Base64 encoding: every 4 chars in base64 represent 3 bytes of original data
 /// Need to account for padding characters too ('='), which don't represent data
-fn calculate_base64_decoded_size(encoded_payload: &str) -> usize {
+fn calculate_base64_decoded_size(encoded_payload: &str) -> u32 {
     let encoded_len = encoded_payload.len();
     let padding_count = encoded_payload
         .chars()
@@ -103,5 +103,5 @@ fn calculate_base64_decoded_size(encoded_payload: &str) -> usize {
     let effective_encoded_len = encoded_len - padding_count;
 
     // Formula: decoded_size = (effective_encoded_len * 3) / 4
-    (effective_encoded_len * 3) / 4
+    ((effective_encoded_len * 3) / 4) as u32
 }

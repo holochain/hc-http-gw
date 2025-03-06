@@ -14,7 +14,7 @@ use url2::Url2;
 use crate::{HcHttpGatewayError, HcHttpGatewayResult};
 
 /// Default payload size limit (10 kilobytes)
-pub const DEFAULT_PAYLOAD_LIMIT_BYTES: usize = 10 * 1024;
+pub const DEFAULT_PAYLOAD_LIMIT_BYTES: u32 = 10 * 1024;
 
 /// Main configuration structure for the HTTP Gateway.
 #[derive(Debug, Clone)]
@@ -22,7 +22,7 @@ pub struct Configuration {
     /// WebSocket URL for admin connections and management interfaces
     pub admin_ws_url: Url2,
     /// Maximum size in bytes that request payloads can be
-    pub payload_limit_bytes: usize,
+    pub payload_limit_bytes: u32,
     /// Controls which applications are permitted to connect to the gateway
     pub allowed_app_ids: AllowedAppIds,
     /// Maps application IDs to their allowed function configurations
@@ -51,7 +51,7 @@ impl Configuration {
         let payload_limit_bytes = if payload_limit_bytes.is_empty() {
             DEFAULT_PAYLOAD_LIMIT_BYTES
         } else {
-            payload_limit_bytes.parse::<usize>().map_err(|e| {
+            payload_limit_bytes.parse::<u32>().map_err(|e| {
                 HcHttpGatewayError::ConfigurationError(format!(
                     "Failed to parse the payload limit bytes value: {}",
                     e

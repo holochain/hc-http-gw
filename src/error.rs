@@ -32,9 +32,9 @@ pub enum HcHttpGatewayError {
     #[error("Payload size ({size} bytes) exceeds maximum allowed size ({limit} bytes)")]
     PayloadSizeLimitError {
         /// Current size of payload
-        size: usize,
+        size: u32,
         /// Allowed payload size limit
-        limit: usize,
+        limit: u32,
     },
 }
 
