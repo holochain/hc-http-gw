@@ -22,11 +22,14 @@ async fn zome_call_uses_correct_route_parameters() {
     let zome = "custom_zome";
     let function = "special_function";
 
+    let payload = r#"{"limit": 100, "offset": 10}"#;
+    let encoded_payload = BASE64_URL_SAFE.encode(payload);
+
     let response = app
         .client
         .get(format!(
-            "http://{}/{}/{}/{}/{}",
-            app.address, dna_hash, coordinator, zome, function
+            "http://{}/{dna_hash}/{coordinator}/{zome}/{function}?payload={encoded_payload}",
+            app.address,
         ))
         .send()
         .await
@@ -49,7 +52,7 @@ async fn zome_call_with_payload_exceeding_limit_fails() {
     let app = TestApp::spawn_with_config(config).await;
 
     let large_payload = r#"{"limit":100,"offset":0,"filters":{"author":"user123","tags":["important","featured","latest"],"content_contains":"search term","date_range":{"from":"2023-01-01","to":"2023-12-31"}}"#;
-    let encoded_payload = BASE64_STANDARD.encode(large_payload);
+    let encoded_payload = BASE64_URL_SAFE.encode(large_payload);
 
     let dna_hash = fixt!(DnaHash);
     let coordinator = "coord98765";
@@ -59,8 +62,8 @@ async fn zome_call_with_payload_exceeding_limit_fails() {
     let response = app
         .client
         .get(format!(
-            "http://{}/{}/{}/{}/{}?payload={}",
-            app.address, dna_hash, coordinator, zome, function, encoded_payload
+            "http://{}/{dna_hash}/{coordinator}/{zome}/{function}?payload={encoded_payload}",
+            app.address,
         ))
         .send()
         .await
@@ -77,7 +80,7 @@ async fn zome_call_with_invalid_json_payload() {
 
     // Invalid JSON payload with a comma
     let small_payload = r#"{"limit":10,}"#;
-    let encoded_payload = BASE64_STANDARD.encode(small_payload);
+    let encoded_payload = BASE64_URL_SAFE.encode(small_payload);
 
     let dna_hash = fixt!(DnaHash);
     let coordinator = "coord98765";
@@ -87,8 +90,8 @@ async fn zome_call_with_invalid_json_payload() {
     let response = app
         .client
         .get(format!(
-            "http://{}/{}/{}/{}/{}?payload={}",
-            app.address, dna_hash, coordinator, zome, function, encoded_payload
+            "http://{}/{dna_hash}/{coordinator}/{zome}/{function}?payload={encoded_payload}",
+            app.address
         ))
         .send()
         .await
@@ -104,7 +107,7 @@ async fn zome_call_with_invalid_dna_hash() {
     let app = TestApp::spawn().await;
 
     let payload = r#"{"limit":10}"#;
-    let encoded_payload = BASE64_STANDARD.encode(payload);
+    let encoded_payload = BASE64_URL_SAFE.encode(payload);
 
     // Invalid DNA hash
     let dna_hash = "not-a-dna-hash";
@@ -115,8 +118,8 @@ async fn zome_call_with_invalid_dna_hash() {
     let response = app
         .client
         .get(format!(
-            "http://{}/{}/{}/{}/{}?payload={}",
-            app.address, dna_hash, coordinator, zome, function, encoded_payload
+            "http://{}/{dna_hash}/{coordinator}/{zome}/{function}?payload={encoded_payload}",
+            app.address,
         ))
         .send()
         .await
