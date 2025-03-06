@@ -2651,9 +2651,9 @@ dependencies = [
 
 [[package]]
 name = "holochain_client"
-version = "0.6.0"
+version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "16e8ae49c9b46f3c22850c2ed77f0499165974410e6589157d421baca14f36c9"
+checksum = "60cb367513311741f2005cc459abc68f3ddb4c8bfa9329f3a7c5a657d331ce79"
 dependencies = [
  "again",
  "anyhow",
@@ -2672,6 +2672,7 @@ dependencies = [
  "parking_lot 0.12.3",
  "rand 0.8.5",
  "serde",
+ "thiserror 2.0.11",
  "tokio",
 ]
 

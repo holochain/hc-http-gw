@@ -12,6 +12,7 @@ pub enum HcHttpGatewayError {
     /// System-level I/O errors
     #[error("IO error: {0}")]
     IoError(#[from] std::io::Error),
+
     /// Configuration parsing errors
     #[error("Configuration error: {0}")]
     ConfigurationError(String),
@@ -51,6 +52,9 @@ pub enum HcHttpGatewayError {
         /// Function name
         fn_name: String,
     },
+    /// Handles Holochain errors
+    #[error("Holochain error: {0}")]
+    HolochainError(#[from] holochain_client::ConductorApiError),
 }
 
 /// Type aliased Result
