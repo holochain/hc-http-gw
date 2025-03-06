@@ -36,7 +36,7 @@ impl HcHttpGatewayService {
         configuration: Configuration,
     ) -> HcHttpGatewayResult<Self> {
         let address = SocketAddr::new(address.into(), port);
-        let mut admin_ws = ReconnectingAdminWebsocket::new(&configuration.admin_ws_url.as_ref());
+        let mut admin_ws = ReconnectingAdminWebsocket::new(configuration.admin_ws_url.as_ref());
         admin_ws.connect().await?;
 
         let state = Arc::new(AppState {
