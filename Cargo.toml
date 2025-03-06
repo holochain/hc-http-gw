@@ -34,5 +34,6 @@ url2 = "0.0.6"
 
 [dev-dependencies]
 fixt = "0.4.1"
+assert2 = "0.3.15"
 reqwest = { version = "0.12", features = ["rustls-tls"] }
 holochain = { version = "0.4.1", features = ["sweettest"] }
