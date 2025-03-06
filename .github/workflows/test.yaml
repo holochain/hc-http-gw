@@ -16,10 +16,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: Swatinem/rust-cache@v2
+      - uses: cachix/install-nix-action@v30
+      - uses: cachix/cachix-action@v15
+        with:
+          name: holochain-ci
       - name: Check formatting
         run: cargo fmt --all -- --check
       - name: Run clippy
         run: cargo clippy -- -D warnings
+      - name: Package fixture
+        run: |
+          cd fixture
+          nix develop -c ./package.sh
       - name: Run tests
         run: cargo test --no-fail-fast
 
