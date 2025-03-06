@@ -13,6 +13,7 @@ pub enum HcHttpGatewayError {
     /// Handles system-level I/O errors
     #[error("IO error: {0}")]
     IoError(#[from] std::io::Error),
+
     /// Handles configuration parsing errors
     #[error("Configuration error: {0}")]
     ConfigurationError(String),
@@ -36,6 +37,9 @@ pub enum HcHttpGatewayError {
         /// Allowed payload size limit
         limit: u32,
     },
+    /// Handles Holochain errors
+    #[error("Holochain error: {0}")]
+    HolochainError(#[from] holochain_client::ConductorApiError),
 }
 
 /// Type aliased Result
