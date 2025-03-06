@@ -18,7 +18,7 @@ pub enum HcHttpGatewayError {
     ConfigurationError(String),
     /// Handle path deserialization errors
     #[error("Path deserialization error: {0}")]
-    PathDeserializationError(#[from] axum::extract::rejection::PathRejection),
+    PathParsingError(#[from] axum::extract::rejection::PathRejection),
     /// Handle base64 decode errors
     #[error("Base64 decoding error: {0}")]
     Base64DecodingError(#[from] base64::DecodeError),
@@ -44,17 +44,17 @@ pub type HcHttpGatewayResult<T> = Result<T, HcHttpGatewayError>;
 impl IntoResponse for HcHttpGatewayError {
     fn into_response(self) -> axum::response::Response {
         match self {
-            HcHttpGatewayError::PathDeserializationError(e) => {
+            HcHttpGatewayError::PathParsingError(e) => {
                 tracing::error!("Path deserialization error: {}", e);
-                error_from_status(400, Some("Invalid Request Path"))
+                error_from_status(400, Some("Invalid request path"))
             }
             HcHttpGatewayError::Base64DecodingError(e) => {
                 tracing::error!("Base64 decode error: {}", e);
-                error_from_status(400, Some("Failed to decode base64 encoded strig"))
+                error_from_status(400, Some("Failed to decode base64 encoded string"))
             }
             HcHttpGatewayError::HoloHashError(e) => {
                 tracing::error!("HoloHash error: {}", e);
-                error_from_status(400, Some("HoloHash error"))
+                error_from_status(400, Some("Invalid base64 DNA hash"))
             }
             HcHttpGatewayError::InvalidJSON(e) => {
                 tracing::error!("Invalid JSON: {}", e);
