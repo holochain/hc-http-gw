@@ -1,9 +1,9 @@
-use axum::extract::{FromRequestParts, Path, Query};
+use axum::extract::{FromRequestParts, Path, Query, State};
 use base64::{prelude::BASE64_URL_SAFE, Engine};
 use holochain_types::dna::DnaHash;
 use serde::Deserialize;
 
-use crate::{HcHttpGatewayError, HcHttpGatewayResult};
+use crate::{service::AppState, HcHttpGatewayError, HcHttpGatewayResult};
 
 #[derive(Debug, Deserialize)]
 #[allow(unused, reason = "Temporarily unused fields")]
@@ -52,8 +52,14 @@ pub struct PayloadQuery {
 #[tracing::instrument]
 pub async fn zome_call(
     params: ZomeCallParams,
+    State(state): State<AppState>,
     Query(query): Query<PayloadQuery>,
 ) -> HcHttpGatewayResult<()> {
+    check_payload_size(
+        query.payload.as_ref(),
+        state.configuration.payload_limit_bytes,
+    )?;
+
     let _decoded_payload = if let Some(payload) = query.payload {
         let decoded = BASE64_URL_SAFE.decode(payload)?;
         let json = serde_json::from_slice::<serde_json::Value>(&decoded)?;
@@ -62,4 +68,40 @@ pub async fn zome_call(
         None
     };
     Ok(())
+}
+
+fn check_payload_size(
+    payload: Option<&String>,
+    payload_limit_bytes: usize,
+) -> HcHttpGatewayResult<()> {
+    if let Some(encoded_payload) = payload {
+        let estimated_decoded_size = calculate_base64_decoded_size(&encoded_payload);
+
+        if estimated_decoded_size > payload_limit_bytes {
+            return Err(HcHttpGatewayError::PayloadSizeLimitError {
+                size: estimated_decoded_size,
+                limit: payload_limit_bytes,
+            });
+        }
+    }
+
+    Ok(())
+}
+
+/// Calculate the approximate decoded size without actually decoding
+/// Base64 encoding: every 4 chars in base64 represent 3 bytes of original data
+/// Need to account for padding characters too ('='), which don't represent data
+fn calculate_base64_decoded_size(encoded_payload: &str) -> usize {
+    let encoded_len = encoded_payload.len();
+    let padding_count = encoded_payload
+        .chars()
+        .rev()
+        .take_while(|c| *c == '=')
+        .count();
+
+    // Adjust the encoded length by removing padding characters
+    let effective_encoded_len = encoded_len - padding_count;
+
+    // Formula: decoded_size = (effective_encoded_len * 3) / 4
+    (effective_encoded_len * 3) / 4
 }

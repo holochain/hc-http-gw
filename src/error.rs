@@ -28,6 +28,14 @@ pub enum HcHttpGatewayError {
     /// Handle errors deserializing zome call payload to json
     #[error("Failed to deserialize JSON to serde_json::Value: {0}")]
     InvalidJSON(#[from] serde_json::Error),
+    /// Handle invalid payload size errors
+    #[error("Payload size ({size} bytes) exceeds maximum allowed size ({limit} bytes)")]
+    PayloadSizeLimitError {
+        /// Current size of payload
+        size: usize,
+        /// Allowed payload size limit
+        limit: usize,
+    },
 }
 
 /// Type aliased Result
@@ -51,6 +59,14 @@ impl IntoResponse for HcHttpGatewayError {
             HcHttpGatewayError::InvalidJSON(e) => {
                 tracing::error!("Invalid JSON: {}", e);
                 error_from_status(400, Some("Payload contains invalid JSON"))
+            }
+            HcHttpGatewayError::PayloadSizeLimitError { size, limit } => {
+                tracing::error!(
+                    "Payload size ({} bytes) exceeds maximum allowed size ({} bytes)",
+                    size,
+                    limit
+                );
+                error_from_status(400, Some("Payload size exceeds maximum allowed size"))
             }
             e => {
                 tracing::error!("Internal Error: {}", e);

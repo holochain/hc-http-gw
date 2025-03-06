@@ -2,13 +2,12 @@
 
 use std::net::{IpAddr, SocketAddr};
 
-use axum::{middleware, routing::get, Router};
+use axum::{routing::get, Router};
 use tokio::net::TcpListener;
 
 use crate::{
     config::Configuration,
     error::HcHttpGatewayResult,
-    middleware::validate_zome_call_payload_size,
     routes::{health_check, zome_call},
     HcHttpGatewayError,
 };
@@ -43,10 +42,6 @@ impl HcHttpGatewayService {
                 get(zome_call),
             )
             .route("/health", get(health_check))
-            .layer(middleware::from_fn_with_state(
-                state.clone(),
-                validate_zome_call_payload_size,
-            ))
             .with_state(state.clone());
 
         tracing::info!("Configuration: {:?}", state.configuration);
