@@ -16,8 +16,8 @@ pub enum HcHttpGatewayError {
     /// Handles configuration parsing errors
     #[error("Configuration error: {0}")]
     ConfigurationError(String),
-    /// Handle path deserialization errors
-    #[error("Path deserialization error: {0}")]
+    /// Handle path parsing errors
+    #[error("Path parsing error: {0}")]
     PathParsingError(#[from] axum::extract::rejection::PathRejection),
     /// Handle base64 decode errors
     #[error("Base64 decode error: {0}")]
