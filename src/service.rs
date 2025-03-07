@@ -22,9 +22,9 @@ pub struct HcHttpGatewayService {
 /// Shared application state
 #[derive(Clone)]
 pub struct AppState {
-    configuration: Configuration,
+    pub configuration: Configuration,
     #[allow(unused, reason = "Temporary")]
-    admin_ws: ReconnectingAdminWebsocket,
+    pub admin_ws: ReconnectingAdminWebsocket,
 }
 
 impl HcHttpGatewayService {
