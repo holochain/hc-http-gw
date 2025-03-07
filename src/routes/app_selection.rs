@@ -20,7 +20,8 @@ pub async fn app_selection(
         &mut state.installed_apps,
         &state.configuration.allowed_app_ids,
         state.admin_call,
-    )?;
+    )
+    .await?;
 
     Ok(Json(app_info.installed_app_id))
 }

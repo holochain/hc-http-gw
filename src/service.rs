@@ -16,7 +16,7 @@ pub struct HcHttpGatewayService {
 }
 
 /// Shared application state
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct AppState {
     pub configuration: Configuration,
     #[allow(

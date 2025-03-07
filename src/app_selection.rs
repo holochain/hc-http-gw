@@ -29,7 +29,7 @@ fn find_installed_app<'a>(
     })
 }
 
-pub fn try_get_valid_app(
+pub async fn try_get_valid_app(
     dna_hash: DnaHash,
     installed_apps: &mut Vec<AppInfo>,
     allowed_apps: &AllowedAppIds,
@@ -38,7 +38,7 @@ pub fn try_get_valid_app(
     let app_info = if let Some(app_info) = find_installed_app(&dna_hash, installed_apps) {
         app_info
     } else {
-        *installed_apps = admin_websocket.list_apps();
+        *installed_apps = admin_websocket.list_apps().await;
         find_installed_app(&dna_hash, installed_apps).ok_or(AppSelectionError::NotInstalled)?
     };
 
@@ -58,7 +58,6 @@ mod tests {
 
     use super::*;
     use assert2::assert;
-    use holochain::core::DnaHash;
     use holochain_client::AgentPubKey;
     use holochain_types::app::{AppManifest, AppRoleDnaManifest, AppRoleManifest, AppStatus};
 
@@ -86,15 +85,15 @@ mod tests {
         }
     }
 
-    #[test]
-    fn returns_error_if_app_not_installed() {
+    #[tokio::test]
+    async fn returns_error_if_app_not_installed() {
         let dna_hash = DnaHash::from_raw_32([1; 32].to_vec()).into();
         let mut installed_apps = Vec::new();
         let allowed_apps = AllowedAppIds::from_str("").unwrap();
         let mut admin_websocket = MockAdminCall::new();
         admin_websocket
             .expect_list_apps()
-            .return_const(Vec::new())
+            .returning(|| Box::pin(async { Vec::new() }))
             .once();
 
         let result = try_get_valid_app(
@@ -102,13 +101,14 @@ mod tests {
             &mut installed_apps,
             &allowed_apps,
             &admin_websocket,
-        );
+        )
+        .await;
 
         assert!(result == Err(AppSelectionError::NotInstalled));
     }
 
-    #[test]
-    fn returns_error_if_app_installed_but_not_allowed() {
+    #[tokio::test]
+    async fn returns_error_if_app_installed_but_not_allowed() {
         let dna_hash = DnaHash::from_raw_32([1; 32].to_vec());
         let mut installed_apps = vec![new_fake_app_info("some_app_id", dna_hash.clone())];
         let allowed_apps = AllowedAppIds::from_str("other_app_id").unwrap();
@@ -119,13 +119,14 @@ mod tests {
             &mut installed_apps,
             &allowed_apps,
             &admin_websocket,
-        );
+        )
+        .await;
 
         assert!(result == Err(AppSelectionError::NotAllowed));
     }
 
-    #[test]
-    fn returns_ok_if_app_is_installed_and_allowed() {
+    #[tokio::test]
+    async fn returns_ok_if_app_is_installed_and_allowed() {
         let dna_hash = DnaHash::from_raw_32([1; 32].to_vec());
         let app_info = new_fake_app_info("some_app_id", dna_hash.clone());
         let mut installed_apps = vec![app_info.clone()];
@@ -137,21 +138,26 @@ mod tests {
             &mut installed_apps,
             &allowed_apps,
             &admin_websocket,
-        );
+        )
+        .await;
 
         assert!(result == Ok(app_info));
     }
 
-    #[test]
-    fn checks_app_list_from_websocket_if_not_in_installed_apps() {
+    #[tokio::test]
+    async fn checks_app_list_from_websocket_if_not_in_installed_apps() {
         let dna_hash = DnaHash::from_raw_32([1; 32].to_vec());
         let mut installed_apps = Vec::new();
         let allowed_apps = AllowedAppIds::from_str("some_app_id").unwrap();
         let mut admin_websocket = MockAdminCall::new();
         let app_info = new_fake_app_info("some_app_id", dna_hash.clone());
+        let app_info_cloned = app_info.clone();
         admin_websocket
             .expect_list_apps()
-            .return_const(vec![app_info.clone()])
+            .returning(move || {
+                let app_info = app_info_cloned.clone();
+                Box::pin(async { vec![app_info] })
+            })
             .once();
 
         let result = try_get_valid_app(
@@ -159,7 +165,8 @@ mod tests {
             &mut installed_apps,
             &allowed_apps,
             &admin_websocket,
-        );
+        )
+        .await;
 
         assert!(result == Ok(app_info));
     }
