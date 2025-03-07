@@ -2,7 +2,7 @@ use axum::{
     extract::{Path, State},
     Json,
 };
-use holochain_types::dna::DnaHashB64;
+use holochain_types::dna::DnaHash;
 
 use crate::{
     app_selection::try_get_valid_app, service::AppState, HcHttpGatewayError, HcHttpGatewayResult,
@@ -13,7 +13,7 @@ pub async fn app_selection(
     Path(raw_dna_hash): Path<String>,
     State(mut state): State<AppState>,
 ) -> HcHttpGatewayResult<Json<String>> {
-    let dna_hash = DnaHashB64::from_b64_str(&raw_dna_hash)
+    let dna_hash = DnaHash::try_from(raw_dna_hash)
         .map_err(|_| HcHttpGatewayError::RequestMalformed("Invalid DNA hash".to_string()))?;
     let app_info = try_get_valid_app(
         dna_hash,
