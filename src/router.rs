@@ -1,7 +1,7 @@
 use crate::holochain::AppCall;
 use crate::{
     config::Configuration,
-    routes::{health_check, zome_call},
+    routes::{app_selection, health_check, zome_call},
     service::AppState,
     AdminCall,
 };
@@ -20,6 +20,7 @@ pub fn hc_http_gateway_router(
     };
     Router::new()
         .route("/health", get(health_check))
+        .route("/{dna_hash}", get(app_selection))
         .route(
             "/{dna_hash}/{coordinator_identifier}/{zome_name}/{fn_name}",
             get(zome_call),
