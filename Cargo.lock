@@ -2739,7 +2739,6 @@ dependencies = [
  "axum",
  "base64 0.22.1",
  "clap 4.5.30",
- "fixt",
  "holochain",
  "holochain_client",
  "holochain_types",
