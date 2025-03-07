@@ -21,7 +21,7 @@ pub fn hc_http_gateway_router(
     };
     Router::new()
         .route("/health", get(health_check))
-        .route("/{dna_hash}", get(app_selection))
+        .route("/{dna_hash}/{coordinator_identifier}", get(app_selection))
         .route(
             "/{dna_hash}/{coordinator_identifier}/{zome_name}/{fn_name}",
             get(zome_call),

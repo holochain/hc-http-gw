@@ -20,15 +20,18 @@ pub enum AppSelectionError {
 
 fn find_installed_app<'a>(
     dna_hash: &DnaHash,
+    coordinator_identifier: &str,
     installed_apps: &'a [AppInfo],
 ) -> Result<&'a AppInfo, AppSelectionError> {
     let mut found_apps = installed_apps.iter().filter(|a| {
-        a.manifest.app_roles().iter().any(|r| {
-            r.dna
-                .installed_hash
-                .as_ref()
-                .is_some_and(|hash| &Into::<DnaHash>::into(hash.clone()) == dna_hash)
-        })
+        // TODO: Use real `coordinator_identifier` when field available.
+        a.installed_app_id == coordinator_identifier
+            && a.manifest.app_roles().iter().any(|r| {
+                r.dna
+                    .installed_hash
+                    .as_ref()
+                    .is_some_and(|hash| &Into::<DnaHash>::into(hash.clone()) == dna_hash)
+            })
     });
 
     let app_info = found_apps.next().ok_or(AppSelectionError::NotInstalled)?;
@@ -42,15 +45,18 @@ fn find_installed_app<'a>(
 
 pub async fn try_get_valid_app(
     dna_hash: DnaHash,
+    coordinator_identifier: String,
     installed_apps: &mut Vec<AppInfo>,
     allowed_apps: &AllowedAppIds,
     admin_websocket: impl Deref<Target = impl AdminCall + ?Sized>,
 ) -> Result<AppInfo, AppSelectionError> {
-    let app_info = if let Ok(app_info) = find_installed_app(&dna_hash, installed_apps) {
+    let app_info = if let Ok(app_info) =
+        find_installed_app(&dna_hash, &coordinator_identifier, installed_apps)
+    {
         app_info
     } else {
         *installed_apps = admin_websocket.list_apps().await;
-        find_installed_app(&dna_hash, installed_apps)?
+        find_installed_app(&dna_hash, &coordinator_identifier, installed_apps)?
     };
 
     allowed_apps
@@ -109,6 +115,7 @@ mod tests {
 
         let result = try_get_valid_app(
             dna_hash,
+            "app_1".to_string(),
             &mut installed_apps,
             &allowed_apps,
             &admin_websocket,
@@ -127,6 +134,7 @@ mod tests {
 
         let result = try_get_valid_app(
             dna_hash,
+            "some_app_id".to_string(),
             &mut installed_apps,
             &allowed_apps,
             &admin_websocket,
@@ -146,6 +154,7 @@ mod tests {
 
         let result = try_get_valid_app(
             dna_hash,
+            "some_app_id".to_string(),
             &mut installed_apps,
             &allowed_apps,
             &admin_websocket,
@@ -173,6 +182,7 @@ mod tests {
 
         let result = try_get_valid_app(
             dna_hash,
+            "some_app_id".to_string(),
             &mut installed_apps,
             &allowed_apps,
             &admin_websocket,
@@ -187,7 +197,7 @@ mod tests {
         let dna_hash = DnaHash::from_raw_32([1; 32].to_vec());
         let mut installed_apps = vec![
             new_fake_app_info("app_1", dna_hash.clone()),
-            new_fake_app_info("app_2", dna_hash.clone()),
+            new_fake_app_info("app_1", dna_hash.clone()),
         ];
         let allowed_apps = AllowedAppIds::from_str("app_1,app_2").unwrap();
         let mut admin_websocket = MockAdminCall::new();
@@ -202,6 +212,7 @@ mod tests {
 
         let result = try_get_valid_app(
             dna_hash,
+            "app_1".to_string(),
             &mut installed_apps,
             &allowed_apps,
             &admin_websocket,
@@ -209,5 +220,54 @@ mod tests {
         .await;
 
         assert!(result == Err(AppSelectionError::MultipleMatching));
+    }
+
+    #[tokio::test]
+    async fn returns_error_if_coordinator_identifier_does_not_match_app_id() {
+        let dna_hash = DnaHash::from_raw_32([1; 32].to_vec());
+        let mut installed_apps = vec![new_fake_app_info("app_2", dna_hash.clone())];
+        let allowed_apps = AllowedAppIds::from_str("app_2").unwrap();
+        let mut admin_websocket = MockAdminCall::new();
+        let installed_apps_cloned = installed_apps.clone();
+        admin_websocket
+            .expect_list_apps()
+            .returning(move || {
+                let installed_apps = installed_apps_cloned.clone();
+                Box::pin(async move { installed_apps.clone() })
+            })
+            .once();
+
+        let result = try_get_valid_app(
+            dna_hash,
+            "app_1".to_string(),
+            &mut installed_apps,
+            &allowed_apps,
+            &admin_websocket,
+        )
+        .await;
+
+        assert!(result == Err(AppSelectionError::NotInstalled));
+    }
+
+    #[tokio::test]
+    async fn returns_error_if_matching_coordinator_identifier_not_in_allowed_list() {
+        let dna_hash = DnaHash::from_raw_32([1; 32].to_vec());
+        let mut installed_apps = vec![
+            new_fake_app_info("app_1", dna_hash.clone()),
+            new_fake_app_info("app_2", dna_hash.clone()),
+        ];
+        let allowed_apps = AllowedAppIds::from_str("app_2").unwrap();
+        let admin_websocket = MockAdminCall::new();
+
+        let result = try_get_valid_app(
+            dna_hash,
+            "app_1".to_string(),
+            &mut installed_apps,
+            &allowed_apps,
+            &admin_websocket,
+        )
+        .await;
+
+        assert!(result == Err(AppSelectionError::NotAllowed));
     }
 }
