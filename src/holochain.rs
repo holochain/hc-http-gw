@@ -1,7 +1,7 @@
 use crate::HcHttpGatewayResult;
 use futures::future::BoxFuture;
 use holochain_client::{
-    AppWebsocket, AuthorizeSigningCredentialsPayload, ExternIO, SigningCredentials,
+    AppInfo, AppWebsocket, AuthorizeSigningCredentialsPayload, ExternIO, SigningCredentials,
 };
 use holochain_conductor_api::{
     AppAuthenticationTokenIssued, AppInterfaceInfo, IssueAppAuthenticationTokenPayload,
@@ -43,6 +43,10 @@ pub trait AdminCall: std::fmt::Debug + Send + Sync {
         allowed_origins: AllowedOrigins,
         installed_app_id: Option<String>,
     ) -> BoxFuture<'static, HcHttpGatewayResult<u16>>;
+
+    /// Call [`AdminWebsocket::list_apps`](holochain_client::AdminWebsocket::list_apps) and return
+    /// the result.
+    fn list_apps(&self) -> Vec<AppInfo>;
 
     /// Set the admin websocket connection to use.
     #[cfg(feature = "test-utils")]
