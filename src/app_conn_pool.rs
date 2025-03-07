@@ -189,7 +189,8 @@ impl AppConnPool {
             )?)
             .try_set_header("Origin", HTTP_GW_ORIGIN)?;
 
-        let config = WebsocketConfig::CLIENT_DEFAULT;
+        let mut config = WebsocketConfig::CLIENT_DEFAULT;
+        config.default_request_timeout = std::time::Duration::from_secs(180);
         let client_signer = ClientAgentSigner::default();
 
         // Attempt to connect to the app websocket
