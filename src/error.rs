@@ -85,6 +85,10 @@ impl IntoResponse for HcHttpGatewayError {
                 tracing::error!("{}", self);
                 error_response(403, Some(&self.to_string()))
             }
+            HcHttpGatewayError::AppSelectionError(AppSelectionError::MultipleMatching) => {
+                tracing::error!("{}", self);
+                error_response(500, Some(&self.to_string()))
+            }
             e => {
                 tracing::error!("Internal Error: {}", e);
                 error_response(500, None)
