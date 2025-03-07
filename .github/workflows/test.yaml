@@ -26,8 +26,7 @@ jobs:
         run: cargo clippy -- -D warnings
       - name: Package fixture
         run: |
-          cd fixture
-          nix develop -c ./package.sh
+          nix develop -c ./fixture/package.sh
       - name: Run tests
         run: cargo test --no-fail-fast
 
