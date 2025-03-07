@@ -1,22 +1,21 @@
 //! HTTP gateway service for Holochain
 
-use std::{
-    net::{IpAddr, SocketAddr},
-    sync::Arc,
-};
+use std::net::{IpAddr, SocketAddr};
 
 use axum::{routing::get, Router};
 use tokio::net::TcpListener;
 
 use crate::{
-    config::Configuration, error::HcHttpGatewayResult, routes::health_check,
-    ReconnectingAdminWebsocket,
+    config::Configuration,
+    error::HcHttpGatewayResult,
+    routes::{health_check, zome_call},
+    HcHttpGatewayError, ReconnectingAdminWebsocket,
 };
 
 /// Core Holochain HTTP gateway service
 #[derive(Debug)]
 pub struct HcHttpGatewayService {
-    address: SocketAddr,
+    listener: TcpListener,
     router: Router,
 }
 
@@ -39,32 +38,39 @@ impl HcHttpGatewayService {
         let mut admin_ws = ReconnectingAdminWebsocket::new(configuration.admin_ws_url.as_ref());
         admin_ws.connect().await?;
 
-        let state = Arc::new(AppState {
+        let state = AppState {
             configuration,
             admin_ws,
-        });
+        };
 
         let router = Router::new()
+            .route(
+                "/{dna_hash}/{coordinator_identifier}/{zome_name}/{function_name}",
+                get(zome_call),
+            )
             .route("/health", get(health_check))
             .with_state(state.clone());
 
         tracing::info!("Configuration: {:?}", state.configuration);
 
-        Ok(HcHttpGatewayService { router, address })
+        let listener = TcpListener::bind(address).await?;
+
+        Ok(HcHttpGatewayService { router, listener })
     }
 
     /// Get the socket address the service is configured to use
-    pub fn address(&self) -> SocketAddr {
-        self.address
+    pub fn address(&self) -> HcHttpGatewayResult<SocketAddr> {
+        self.listener
+            .local_addr()
+            .map_err(HcHttpGatewayError::IoError)
     }
 
     /// Start the HTTP server and run until terminated
     pub async fn run(self) -> HcHttpGatewayResult<()> {
-        let address = self.address();
-        let listener = TcpListener::bind(self.address).await?;
+        let address = self.address()?;
 
         tracing::info!("Starting server on {}", address);
-        axum::serve(listener, self.router)
+        axum::serve(self.listener, self.router)
             .await
             .inspect_err(|e| tracing::error!("Failed to bind to {}: {}", address, e))?;
 

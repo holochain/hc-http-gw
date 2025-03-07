@@ -1,0 +1,20 @@
+manifest_version: "1"
+name: fixture2
+integrity:
+  network_seed: ~
+  properties: ~
+  origin_time: 1708106482076894
+  zomes:
+    - name: integrity
+      hash: ~
+      bundled: "../../target/wasm32-unknown-unknown/release/integrity.wasm"
+      dependencies: ~
+      dylib: ~
+coordinator:
+  zomes:
+    - name: coordinator2
+      hash: ~
+      bundled: "../../target/wasm32-unknown-unknown/release/coordinator2.wasm"
+      dependencies:
+        - name: integrity
+      dylib: ~
