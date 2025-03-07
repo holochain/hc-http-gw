@@ -29,12 +29,12 @@ fn find_installed_app<'a>(
     })
 }
 
-pub fn check_app_valid(
+pub fn try_get_valid_app(
     dna_hash: DnaHashB64,
     installed_apps: &mut Vec<AppInfo>,
     allowed_apps: &AllowedAppIds,
     admin_websocket: impl Deref<Target = impl AdminCall + ?Sized>,
-) -> Result<(), AppSelectionError> {
+) -> Result<AppInfo, AppSelectionError> {
     let app_info = if let Some(app_info) = find_installed_app(&dna_hash, installed_apps) {
         app_info
     } else {
@@ -45,7 +45,9 @@ pub fn check_app_valid(
     allowed_apps
         .contains(&app_info.installed_app_id)
         .then_some(())
-        .ok_or(AppSelectionError::NotAllowed)
+        .ok_or(AppSelectionError::NotAllowed)?;
+
+    Ok(app_info.clone())
 }
 
 #[cfg(test)]
@@ -95,7 +97,7 @@ mod tests {
             .return_const(Vec::new())
             .once();
 
-        let result = check_app_valid(
+        let result = try_get_valid_app(
             dna_hash,
             &mut installed_apps,
             &allowed_apps,
@@ -112,7 +114,7 @@ mod tests {
         let allowed_apps = AllowedAppIds::from_str("other_app_id").unwrap();
         let admin_websocket = MockAdminCall::new();
 
-        let result = check_app_valid(
+        let result = try_get_valid_app(
             dna_hash,
             &mut installed_apps,
             &allowed_apps,
@@ -125,18 +127,19 @@ mod tests {
     #[test]
     fn returns_ok_if_app_is_installed_and_allowed() {
         let dna_hash: DnaHashB64 = DnaHash::from_raw_32([1; 32].to_vec()).into();
-        let mut installed_apps = vec![new_fake_app_info("some_app_id", dna_hash.clone())];
+        let app_info = new_fake_app_info("some_app_id", dna_hash.clone());
+        let mut installed_apps = vec![app_info.clone()];
         let allowed_apps = AllowedAppIds::from_str("some_app_id").unwrap();
         let admin_websocket = MockAdminCall::new();
 
-        let result = check_app_valid(
+        let result = try_get_valid_app(
             dna_hash,
             &mut installed_apps,
             &allowed_apps,
             &admin_websocket,
         );
 
-        assert!(result == Ok(()));
+        assert!(result == Ok(app_info));
     }
 
     #[test]
@@ -145,18 +148,19 @@ mod tests {
         let mut installed_apps = Vec::new();
         let allowed_apps = AllowedAppIds::from_str("some_app_id").unwrap();
         let mut admin_websocket = MockAdminCall::new();
+        let app_info = new_fake_app_info("some_app_id", dna_hash.clone());
         admin_websocket
             .expect_list_apps()
-            .return_const(vec![new_fake_app_info("some_app_id", dna_hash.clone())])
+            .return_const(vec![app_info.clone()])
             .once();
 
-        let result = check_app_valid(
+        let result = try_get_valid_app(
             dna_hash,
             &mut installed_apps,
             &allowed_apps,
             &admin_websocket,
         );
 
-        assert!(result == Ok(()));
+        assert!(result == Ok(app_info));
     }
 }
