@@ -17,6 +17,7 @@ pub fn hc_http_gateway_router(
         configuration,
         admin_call,
         app_call,
+        installed_apps: Default::default(),
     };
     Router::new()
         .route("/health", get(health_check))

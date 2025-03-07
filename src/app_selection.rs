@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use holochain_client::AppInfo;
 use holochain_types::dna::DnaHashB64;
 use thiserror::Error;
@@ -31,7 +33,7 @@ pub fn check_app_valid(
     dna_hash: DnaHashB64,
     installed_apps: &mut Vec<AppInfo>,
     allowed_apps: &AllowedAppIds,
-    admin_websocket: &impl AdminCall,
+    admin_websocket: impl Deref<Target = impl AdminCall + ?Sized>,
 ) -> Result<(), AppSelectionError> {
     let app_info = if let Some(app_info) = find_installed_app(&dna_hash, installed_apps) {
         app_info
