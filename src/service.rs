@@ -1,16 +1,15 @@
 //! HTTP gateway service for Holochain
 
-use std::net::{IpAddr, SocketAddr};
-
-use axum::{routing::get, Router};
-use tokio::net::TcpListener;
-
+use crate::app_conn_pool::AppConnPool;
 use crate::{
     config::Configuration,
     error::HcHttpGatewayResult,
     routes::{health_check, zome_call},
     HcHttpGatewayError,
 };
+use axum::{routing::get, Router};
+use std::net::{IpAddr, SocketAddr};
+use tokio::net::TcpListener;
 
 /// Core Holochain HTTP gateway service
 #[derive(Debug)]
@@ -22,6 +21,11 @@ pub struct HcHttpGatewayService {
 /// Shared application state
 #[derive(Debug, Clone)]
 pub struct AppState {
+    #[allow(
+        dead_code,
+        reason = "This will be used when we start making zome calls"
+    )]
+    pub app_conn_pool: AppConnPool,
     pub configuration: Configuration,
 }
 
@@ -34,7 +38,10 @@ impl HcHttpGatewayService {
     ) -> HcHttpGatewayResult<Self> {
         let address = SocketAddr::new(address.into(), port);
 
-        let state = AppState { configuration };
+        let state = AppState {
+            app_conn_pool: AppConnPool::new(configuration.clone()),
+            configuration,
+        };
 
         let router = Router::new()
             .route(

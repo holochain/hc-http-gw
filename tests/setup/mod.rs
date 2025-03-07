@@ -28,6 +28,7 @@ impl TestApp {
             "1024",
             "forum,hello_world",
             allowed_fns,
+            "",
         )
         .unwrap();
 
