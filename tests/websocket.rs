@@ -17,8 +17,12 @@ async fn connect_app_websocket() {
 
     let sweet_conductor = SweetConductor::from_standard_config().await;
 
-    install_fixture1(sweet_conductor.clone()).await.unwrap();
-    install_fixture2(sweet_conductor.clone()).await.unwrap();
+    install_fixture1(sweet_conductor.clone(), None)
+        .await
+        .unwrap();
+    install_fixture2(sweet_conductor.clone(), None)
+        .await
+        .unwrap();
 
     let admin_port = sweet_conductor
         .get_arbitrary_admin_websocket_port()
@@ -68,7 +72,9 @@ async fn reuse_connection() {
 
     let sweet_conductor = SweetConductor::from_standard_config().await;
 
-    install_fixture1(sweet_conductor.clone()).await.unwrap();
+    install_fixture1(sweet_conductor.clone(), None)
+        .await
+        .unwrap();
 
     let admin_port = sweet_conductor
         .get_arbitrary_admin_websocket_port()
@@ -125,7 +131,9 @@ async fn does_not_reconnect_on_non_websocket_error() {
 
     let sweet_conductor = SweetConductor::from_standard_config().await;
 
-    install_fixture1(sweet_conductor.clone()).await.unwrap();
+    install_fixture1(sweet_conductor.clone(), None)
+        .await
+        .unwrap();
 
     let admin_port = sweet_conductor
         .get_arbitrary_admin_websocket_port()
@@ -204,7 +212,9 @@ async fn reconnect_on_failed_websocket() {
 
     let mut sweet_conductor = SweetConductor::from_standard_config().await;
 
-    install_fixture1(sweet_conductor.clone()).await.unwrap();
+    install_fixture1(sweet_conductor.clone(), None)
+        .await
+        .unwrap();
 
     let admin_port = sweet_conductor
         .get_arbitrary_admin_websocket_port()
@@ -282,10 +292,110 @@ async fn reconnect_on_failed_websocket() {
     assert!(response.decode::<Vec<TestType>>().unwrap().is_empty());
 }
 
+#[tokio::test(flavor = "multi_thread")]
+async fn close_old_connections_on_limit() {
+    initialize_tracing_subscriber();
+
+    let sweet_conductor = SweetConductor::from_standard_config().await;
+
+    install_fixture1(sweet_conductor.clone(), Some("app_1".to_string()))
+        .await
+        .unwrap();
+    install_fixture1(sweet_conductor.clone(), Some("app_2".to_string()))
+        .await
+        .unwrap();
+    install_fixture1(sweet_conductor.clone(), Some("app_3".to_string()))
+        .await
+        .unwrap();
+
+    let admin_port = sweet_conductor
+        .get_arbitrary_admin_websocket_port()
+        .unwrap();
+    let admin_ws = AdminWebsocket::connect((Ipv4Addr::LOCALHOST, admin_port))
+        .await
+        .unwrap();
+
+    let configuration = Configuration::try_new(
+        &format!("ws://127.0.0.1:{}", admin_port),
+        "",
+        "app_1,app_2,app_3",
+        [
+            (
+                "app_1".to_string(),
+                AllowedFns::Restricted(
+                    [ZomeFn {
+                        zome_name: "coordinator1".to_string(),
+                        fn_name: "get_all_1".to_string(),
+                    }]
+                    .into_iter()
+                    .collect(),
+                ),
+            ),
+            (
+                "app_2".to_string(),
+                AllowedFns::Restricted(
+                    [ZomeFn {
+                        zome_name: "coordinator1".to_string(),
+                        fn_name: "get_all_1".to_string(),
+                    }]
+                    .into_iter()
+                    .collect(),
+                ),
+            ),
+            (
+                "app_3".to_string(),
+                AllowedFns::Restricted(
+                    [ZomeFn {
+                        zome_name: "coordinator1".to_string(),
+                        fn_name: "get_all_1".to_string(),
+                    }]
+                    .into_iter()
+                    .collect(),
+                ),
+            ),
+        ]
+        .into_iter()
+        .collect(),
+        "2",
+    )
+    .unwrap();
+    let pool = AppConnPool::new(configuration);
+
+    // Take out connections to all 3 apps
+    let _app_client_2 = pool
+        .get_or_connect_app_client("app_2".to_string(), admin_ws.clone())
+        .await
+        .unwrap();
+
+    let _app_client_1 = pool
+        .get_or_connect_app_client("app_1".to_string(), admin_ws.clone())
+        .await
+        .unwrap();
+
+    let _app_client_3 = pool
+        .get_or_connect_app_client("app_3".to_string(), admin_ws.clone())
+        .await
+        .unwrap();
+
+    let inner_pool = pool.get_inner_pool();
+
+    let mut ws_for_apps = inner_pool
+        .read()
+        .await
+        .values()
+        .map(|state| state.app_ws.cached_app_info().installed_app_id.clone())
+        .collect::<Vec<_>>();
+    ws_for_apps.sort();
+
+    // We should have open websockets for app_1 and app_3, the connection for app_2 should have
+    // been removed from state because we're only allowing 2 connections at once.
+    assert_eq!(ws_for_apps, vec!["app_1", "app_3"]);
+}
+
 fn create_test_configuration(admin_port: u16) -> HcHttpGatewayResult<Configuration> {
     Configuration::try_new(
         &format!("ws://127.0.0.1:{}", admin_port),
-        "1024",
+        "",
         "fixture1,fixture2",
         [
             (
@@ -313,5 +423,6 @@ fn create_test_configuration(admin_port: u16) -> HcHttpGatewayResult<Configurati
         ]
         .into_iter()
         .collect(),
+        "",
     )
 }
