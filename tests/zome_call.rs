@@ -63,8 +63,7 @@ async fn zome_call_with_payload_exceeding_limit_fails() {
     allowed_fns.insert("forum".to_string(), AllowedFns::All);
 
     // Custom configuration with a very small payload limit
-    let config =
-        Configuration::try_new("ws://localhost:50350", "10", "forum", allowed_fns).unwrap();
+    let config = Configuration::try_new("localhost:50350", "10", "forum", allowed_fns).unwrap();
 
     let app = TestApp::spawn_with_config(config).await;
 

@@ -204,7 +204,7 @@ mod tests {
 
     // Helper function to create a test Configuration
     fn create_test_config() -> Configuration {
-        let admin_ws_url = Url2::parse("ws://localhost:8888");
+        let admin_ws_url = Url2::parse("localhost:8888");
 
         let zome1_fn1 = create_zome_fn("zome1", "fn1");
         let app1_fns = HashSet::from([zome1_fn1.clone()]);
@@ -306,7 +306,7 @@ mod tests {
         fn creation_sets_up_correct_fields() {
             let config = create_test_config();
 
-            assert_eq!(config.admin_ws_url.to_string(), "ws://localhost:8888/");
+            assert_eq!(config.admin_ws_url.to_string(), "localhost:8888");
             assert_eq!(config.payload_limit_bytes, 1024 * 1024);
             assert_eq!(config.allowed_app_ids.len(), 2);
         }
@@ -356,11 +356,11 @@ mod tests {
 
             // Create configuration with valid inputs
             let config =
-                Configuration::try_new("ws://localhost:8888", "1048576", "app1,app2", allowed_fns)
+                Configuration::try_new("localhost:8888", "1048576", "app1,app2", allowed_fns)
                     .unwrap();
 
             // Verify configuration
-            assert_eq!(config.admin_ws_url.to_string(), "ws://localhost:8888/");
+            assert_eq!(config.admin_ws_url.to_string(), "localhost:8888");
             assert_eq!(config.payload_limit_bytes, 1048576);
             assert_eq!(config.allowed_app_ids.len(), 2);
         }
@@ -377,7 +377,7 @@ mod tests {
 
             // Invalid payload limit
             let result = Configuration::try_new(
-                "ws://localhost:8888",
+                "localhost:8888",
                 "not-a-number",
                 "app1",
                 allowed_fns.clone(),
@@ -386,7 +386,7 @@ mod tests {
 
             // Missing allowed function for app2
             let result =
-                Configuration::try_new("ws://localhost:8888", "1048576", "app1,app2", allowed_fns);
+                Configuration::try_new("localhost:8888", "1048576", "app1,app2", allowed_fns);
             assert!(result.is_err());
         }
     }
