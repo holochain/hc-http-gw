@@ -88,6 +88,10 @@ impl IntoResponse for HcHttpGatewayError {
                 StatusCode::FORBIDDEN,
                 Json(ErrorResponse::from(self.to_string())),
             ),
+            HcHttpGatewayError::AppSelectionError(AppSelectionError::MultipleMatching) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ErrorResponse::from(self.to_string())),
+            ),
             _ => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(ErrorResponse::from("Something went wrong")),

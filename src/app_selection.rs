@@ -13,20 +13,31 @@ pub enum AppSelectionError {
 
     #[error("App is not in the list of allowed apps")]
     NotAllowed,
+
+    #[error("Multiple matching apps were found, could not determine which to call")]
+    MultipleMatching,
 }
 
 fn find_installed_app<'a>(
     dna_hash: &DnaHash,
     installed_apps: &'a [AppInfo],
-) -> Option<&'a AppInfo> {
-    installed_apps.iter().find(|a| {
+) -> Result<&'a AppInfo, AppSelectionError> {
+    let mut found_apps = installed_apps.iter().filter(|a| {
         a.manifest.app_roles().iter().any(|r| {
             r.dna
                 .installed_hash
                 .as_ref()
                 .is_some_and(|hash| &Into::<DnaHash>::into(hash.clone()) == dna_hash)
         })
-    })
+    });
+
+    let app_info = found_apps.next().ok_or(AppSelectionError::NotInstalled)?;
+
+    if found_apps.next().is_some() {
+        return Err(AppSelectionError::MultipleMatching);
+    }
+
+    Ok(app_info)
 }
 
 pub async fn try_get_valid_app(
@@ -35,11 +46,11 @@ pub async fn try_get_valid_app(
     allowed_apps: &AllowedAppIds,
     admin_websocket: impl Deref<Target = impl AdminCall + ?Sized>,
 ) -> Result<AppInfo, AppSelectionError> {
-    let app_info = if let Some(app_info) = find_installed_app(&dna_hash, installed_apps) {
+    let app_info = if let Ok(app_info) = find_installed_app(&dna_hash, installed_apps) {
         app_info
     } else {
         *installed_apps = admin_websocket.list_apps().await;
-        find_installed_app(&dna_hash, installed_apps).ok_or(AppSelectionError::NotInstalled)?
+        find_installed_app(&dna_hash, installed_apps)?
     };
 
     allowed_apps
@@ -169,5 +180,34 @@ mod tests {
         .await;
 
         assert!(result == Ok(app_info));
+    }
+
+    #[tokio::test]
+    async fn returns_error_if_multiple_apps_match() {
+        let dna_hash = DnaHash::from_raw_32([1; 32].to_vec());
+        let mut installed_apps = vec![
+            new_fake_app_info("app_1", dna_hash.clone()),
+            new_fake_app_info("app_2", dna_hash.clone()),
+        ];
+        let allowed_apps = AllowedAppIds::from_str("app_1,app_2").unwrap();
+        let mut admin_websocket = MockAdminCall::new();
+        let installed_apps_cloned = installed_apps.clone();
+        admin_websocket
+            .expect_list_apps()
+            .returning(move || {
+                let installed_apps = installed_apps_cloned.clone();
+                Box::pin(async move { installed_apps.clone() })
+            })
+            .once();
+
+        let result = try_get_valid_app(
+            dna_hash,
+            &mut installed_apps,
+            &allowed_apps,
+            &admin_websocket,
+        )
+        .await;
+
+        assert!(result == Err(AppSelectionError::MultipleMatching));
     }
 }
