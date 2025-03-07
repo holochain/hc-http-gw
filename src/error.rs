@@ -12,7 +12,6 @@ pub enum HcHttpGatewayError {
     /// System-level I/O errors
     #[error("IO error: {0}")]
     IoError(#[from] std::io::Error),
-
     /// Configuration parsing errors
     #[error("Configuration error: {0}")]
     ConfigurationError(String),

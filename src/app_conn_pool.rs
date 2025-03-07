@@ -4,7 +4,7 @@ use futures::future::BoxFuture;
 use holochain_client::{
     AdminWebsocket, AppWebsocket, AuthorizeSigningCredentialsPayload, CellInfo, ClientAgentSigner,
     ConductorApiError, ConnectRequest, GrantedFunctions, IssueAppAuthenticationTokenPayload,
-    WebsocketConfig,
+    Timestamp, WebsocketConfig,
 };
 use holochain_types::app::InstalledAppId;
 use holochain_types::websocket::AllowedOrigins;
@@ -15,6 +15,16 @@ use std::sync::{Arc, RwLock};
 /// The origin that the gateway will use when connecting to Holochain app interfaces.
 pub const HTTP_GW_ORIGIN: &str = "hc-http-gw";
 
+/// A wrapper around an app websocket connection that includes state required to manage the
+/// connection.
+#[derive(Debug, Clone)]
+pub struct AppWebsocketWithState {
+    /// The app websocket connection.
+    pub app_ws: AppWebsocket,
+    /// The time at which the connection was opened.
+    pub opened_at: Timestamp,
+}
+
 /// A connection pool for app connections.
 ///
 /// This is a pool in the sense that it manages multiple connections to Holochain app interfaces,
@@ -23,7 +33,7 @@ pub const HTTP_GW_ORIGIN: &str = "hc-http-gw";
 pub struct AppConnPool {
     configuration: Configuration,
     cached_app_port: Arc<RwLock<Option<u16>>>,
-    app_clients: Arc<tokio::sync::RwLock<HashMap<InstalledAppId, AppWebsocket>>>,
+    app_clients: Arc<tokio::sync::RwLock<HashMap<InstalledAppId, AppWebsocketWithState>>>,
 }
 
 impl AppConnPool {
@@ -50,10 +60,10 @@ impl AppConnPool {
         execute: impl Fn(AppWebsocket) -> BoxFuture<'static, HcHttpGatewayResult<T>>,
     ) -> HcHttpGatewayResult<T> {
         for _ in 0..2 {
-            let app_client = self
+            let app_ws = self
                 .get_or_connect_app_client(installed_app_id.clone(), admin_websocket.clone())
                 .await?;
-            match execute(app_client).await {
+            match execute(app_ws).await {
                 Ok(response) => {
                     return Ok(response);
                 }
@@ -87,36 +97,49 @@ impl AppConnPool {
         {
             let app_clients = self.app_clients.read().await;
 
-            println!(
-                "Trying to get client for app {} from pool: {:?}",
-                installed_app_id, app_clients
-            );
-
             if let Some(client) = app_clients.get(&installed_app_id) {
-                return Ok(client.clone());
+                return Ok(client.app_ws.clone());
             }
         }
 
-        match self
-            .app_clients
-            .write()
-            .await
-            .entry(installed_app_id.clone())
-        {
+        let mut app_client_lock = self.app_clients.write().await;
+
+        let app_ws = match app_client_lock.entry(installed_app_id.clone()) {
             std::collections::hash_map::Entry::Occupied(client) => {
                 // Created by another thread while we were waiting for the lock
-                Ok(client.get().clone())
+                client.get().app_ws.clone()
             }
             std::collections::hash_map::Entry::Vacant(entry) => {
-                let app_client = self
-                    .attempt_connect_app_client(installed_app_id, admin_ws, 1)
+                let app_ws = self
+                    .attempt_connect_app_ws(installed_app_id, admin_ws, 1)
                     .await?;
 
-                entry.insert(app_client.clone());
+                entry.insert(AppWebsocketWithState {
+                    app_ws: app_ws.clone(),
+                    opened_at: Timestamp::now(),
+                });
 
-                Ok(app_client)
+                app_ws
             }
+        };
+
+        if app_client_lock.len() > self.configuration.max_app_connections as usize {
+            // Find and remove the oldest connection
+            let installed_app_id = app_client_lock
+                .iter()
+                .min_by_key(|(_, v)| v.opened_at)
+                .map(|(k, _)| k.clone())
+                .expect("Invalid lock");
+
+            tracing::warn!(
+                "Reached maximum app connections, removing connection for app: {}",
+                installed_app_id
+            );
+
+            app_client_lock.remove(&installed_app_id);
         }
+
+        Ok(app_ws)
     }
 
     /// Remove an app client from the pool.
@@ -124,7 +147,7 @@ impl AppConnPool {
         self.app_clients.write().await.remove(installed_app_id);
     }
 
-    async fn attempt_connect_app_client(
+    async fn attempt_connect_app_ws(
         &self,
         installed_app_id: InstalledAppId,
         admin_ws: AdminWebsocket,
@@ -175,7 +198,7 @@ impl AppConnPool {
         let client_signer = ClientAgentSigner::default();
 
         // Attempt to connect to the app websocket
-        let app_client = match AppWebsocket::connect_with_request_and_config(
+        let app_ws = match AppWebsocket::connect_with_request_and_config(
             request,
             Arc::new(config),
             issued.token,
@@ -192,7 +215,7 @@ impl AppConnPool {
                 *self.cached_app_port.write().expect("Invalid lock") = None;
 
                 // Try again, with one fewer retry permitted
-                return Box::pin(self.attempt_connect_app_client(
+                return Box::pin(self.attempt_connect_app_ws(
                     installed_app_id,
                     admin_ws,
                     retries - 1,
@@ -202,7 +225,7 @@ impl AppConnPool {
         };
         tracing::debug!("Connected to app websocket");
 
-        let app_info = app_client.cached_app_info();
+        let app_info = app_ws.cached_app_info();
         let cells = app_info
             .cell_info
             .values()
@@ -249,7 +272,7 @@ impl AppConnPool {
             client_signer.add_credentials(cell_id, credentials);
         }
 
-        Ok(app_client)
+        Ok(app_ws)
     }
 
     async fn get_app_port(
@@ -290,7 +313,7 @@ impl AppConnPool {
     #[cfg(feature = "test-utils")]
     pub fn get_inner_pool(
         &self,
-    ) -> Arc<tokio::sync::RwLock<HashMap<InstalledAppId, AppWebsocket>>> {
+    ) -> Arc<tokio::sync::RwLock<HashMap<InstalledAppId, AppWebsocketWithState>>> {
         self.app_clients.clone()
     }
 }

@@ -1,7 +1,7 @@
 use holochain::conductor::error::ConductorResult;
 use holochain::conductor::Conductor;
 use holochain_client::SerializedBytes;
-use holochain_types::app::{AppBundleSource, InstallAppPayload};
+use holochain_types::app::{AppBundleSource, InstallAppPayload, InstalledAppId};
 use std::path::PathBuf;
 use std::sync::Arc;
 // TODO `SerializedBytes` has an unclean macro reference to `holochain_serial!`
@@ -13,30 +13,37 @@ pub struct TestType {
     pub value: String,
 }
 
-pub async fn install_fixture1(conductor: Arc<Conductor>) -> ConductorResult<()> {
+pub async fn install_fixture1(
+    conductor: Arc<Conductor>,
+    installed_app_id: Option<InstalledAppId>,
+) -> ConductorResult<()> {
     let mut happ_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     happ_path.push("fixture/package/happ1/fixture1.happ");
 
-    install_app_from_path(conductor.clone(), happ_path).await
+    install_app_from_path(conductor.clone(), happ_path, installed_app_id).await
 }
 
-pub async fn install_fixture2(conductor: Arc<Conductor>) -> ConductorResult<()> {
+pub async fn install_fixture2(
+    conductor: Arc<Conductor>,
+    installed_app_id: Option<InstalledAppId>,
+) -> ConductorResult<()> {
     let mut happ_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     happ_path.push("fixture/package/happ2/fixture2.happ");
 
-    install_app_from_path(conductor.clone(), happ_path).await
+    install_app_from_path(conductor.clone(), happ_path, installed_app_id).await
 }
 
 async fn install_app_from_path(
     conductor: Arc<Conductor>,
     happ_path: PathBuf,
+    installed_app_id: Option<InstalledAppId>,
 ) -> ConductorResult<()> {
     let app = conductor
         .clone()
         .install_app_bundle(InstallAppPayload {
             source: AppBundleSource::Path(happ_path),
             agent_key: None,
-            installed_app_id: None,
+            installed_app_id,
             network_seed: None,
             roles_settings: None,
             ignore_genesis_failure: false,
