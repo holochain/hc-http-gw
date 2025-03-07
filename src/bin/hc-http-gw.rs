@@ -39,11 +39,14 @@ fn load_config_from_env() -> anyhow::Result<Configuration> {
         allowed_fns.insert(app_id.to_owned(), fns);
     }
 
+    let max_app_connections = env::var("HC_GW_MAX_APP_CONNECTIONS").unwrap_or_default();
+
     let config = Configuration::try_new(
         &admin_ws_url,
         &payload_limit_bytes,
         &allowed_app_ids,
         allowed_fns,
+        &max_app_connections,
     )?;
 
     Ok(config)
