@@ -1,5 +1,5 @@
 use holochain_client::AppInfo;
-use holochain_types::dna::DnaHashB64;
+use holochain_types::dna::DnaHash;
 use thiserror::Error;
 
 use crate::config::AllowedAppIds;
@@ -26,6 +26,7 @@ mod admin_websocket {
             use holochain_types::app::{
                 AppManifest, AppRoleDnaManifest, AppRoleManifest, AppStatus,
             };
+            use holochain_types::dna::DnaHashB64;
             use std::collections::HashMap;
 
             vec![
@@ -117,7 +118,7 @@ pub enum AppSelectionError {
 }
 
 fn find_installed_app<'a>(
-    dna_hash: &DnaHashB64,
+    dna_hash: &DnaHash,
     installed_apps: &'a [AppInfo],
 ) -> Option<&'a AppInfo> {
     installed_apps.iter().find(|a| {
@@ -125,13 +126,13 @@ fn find_installed_app<'a>(
             r.dna
                 .installed_hash
                 .as_ref()
-                .is_some_and(|hash| hash == dna_hash)
+                .is_some_and(|hash| &Into::<DnaHash>::into(hash.clone()) == dna_hash)
         })
     })
 }
 
 pub fn try_get_valid_app(
-    dna_hash: DnaHashB64,
+    dna_hash: DnaHash,
     installed_apps: &mut Vec<AppInfo>,
     allowed_apps: &AllowedAppIds,
     admin_websocket: &AdminWebsocket,
@@ -163,7 +164,7 @@ mod tests {
         prelude::fixt::*,
     };
 
-    fn new_fake_app_info(app_id: impl ToString, dna_hash: DnaHashB64) -> AppInfo {
+    fn new_fake_app_info(app_id: impl ToString, dna_hash: DnaHash) -> AppInfo {
         AppInfo {
             installed_app_id: app_id.to_string(),
             cell_info: HashMap::new(),
@@ -178,7 +179,7 @@ mod tests {
                     dna: AppRoleDnaManifest {
                         location: Default::default(),
                         modifiers: Default::default(),
-                        installed_hash: Some(dna_hash),
+                        installed_hash: Some(dna_hash.into()),
                         clone_limit: Default::default(),
                     },
                 }],
@@ -189,7 +190,7 @@ mod tests {
 
     #[test]
     fn returns_error_if_app_not_installed() {
-        let dna_hash = fixt!(DnaHashB64);
+        let dna_hash = fixt!(DnaHash);
         let mut installed_apps = Vec::new();
         let allowed_apps = AllowedAppIds::from_str("").unwrap();
         let mut admin_websocket = AdminWebsocket::new();
@@ -210,7 +211,7 @@ mod tests {
 
     #[test]
     fn returns_error_if_app_installed_but_not_allowed() {
-        let dna_hash = fixt!(DnaHashB64);
+        let dna_hash = fixt!(DnaHash);
         let mut installed_apps = vec![new_fake_app_info("some_app_id", dna_hash.clone())];
         let allowed_apps = AllowedAppIds::from_str("other_app_id").unwrap();
         let admin_websocket = AdminWebsocket::new();
@@ -227,7 +228,7 @@ mod tests {
 
     #[test]
     fn returns_ok_if_app_is_installed_and_allowed() {
-        let dna_hash = fixt!(DnaHashB64);
+        let dna_hash = fixt!(DnaHash);
         let app_info = new_fake_app_info("some_app_id", dna_hash.clone());
         let mut installed_apps = vec![app_info.clone()];
         let allowed_apps = AllowedAppIds::from_str("some_app_id").unwrap();
@@ -245,7 +246,7 @@ mod tests {
 
     #[test]
     fn checks_app_list_from_websocket_if_not_in_installed_apps() {
-        let dna_hash = fixt!(DnaHashB64);
+        let dna_hash = fixt!(DnaHash);
         let mut installed_apps = Vec::new();
         let allowed_apps = AllowedAppIds::from_str("some_app_id").unwrap();
         let mut admin_websocket = AdminWebsocket::new();
