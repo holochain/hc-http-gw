@@ -1,21 +1,28 @@
-use holochain_client::{AgentPubKey, AppInfo};
+use holochain_client::AppInfo;
 use holochain_types::dna::DnaHashB64;
 use thiserror::Error;
 
 use crate::config::AllowedAppIds;
 
 #[mockall_double::double]
-use admin_websocket::AdminWebsocket;
+pub(crate) use admin_websocket::AdminWebsocket;
 
 mod admin_websocket {
     use super::*;
 
     /// Fake AdminWebsocket until https://github.com/holochain/hc-http-gw/issues/11 is done.
+    #[cfg(not(test))]
+    #[derive(Debug, Clone)]
     pub struct AdminWebsocket;
 
-    #[cfg_attr(test, mockall::automock)]
+    #[cfg(not(test))]
     impl AdminWebsocket {
+        pub fn new() -> Self {
+            Self {}
+        }
+
         pub fn list_apps(&self) -> Vec<AppInfo> {
+            use holochain_client::AgentPubKey;
             use holochain_types::app::{
                 AppManifest, AppRoleDnaManifest, AppRoleManifest, AppStatus,
             };
@@ -26,7 +33,12 @@ mod admin_websocket {
                     installed_app_id: "app1".to_string(),
                     cell_info: HashMap::new(),
                     status: AppStatus::Running.into(),
-                    agent_pub_key: AgentPubKey::from_raw_39([1; 39].to_vec()).unwrap(),
+                    agent_pub_key: AgentPubKey::from_raw_39(vec![
+                        132, 32, 36, 54, 1, 132, 0, 1, 0, 99, 255, 122, 1, 0, 1, 255, 1, 0, 106,
+                        46, 186, 188, 245, 255, 0, 121, 188, 1, 239, 235, 123, 0, 169, 19, 0, 136,
+                        254, 243, 140,
+                    ])
+                    .unwrap(),
                     manifest: AppManifest::V1(holochain_types::app::AppManifestV1 {
                         name: Default::default(),
                         description: Default::default(),
@@ -52,7 +64,12 @@ mod admin_websocket {
                     installed_app_id: "app2".to_string(),
                     cell_info: HashMap::new(),
                     status: AppStatus::Running.into(),
-                    agent_pub_key: AgentPubKey::from_raw_39([2; 39].to_vec()).unwrap(),
+                    agent_pub_key: AgentPubKey::from_raw_39(vec![
+                        132, 32, 36, 54, 1, 132, 0, 1, 0, 99, 255, 122, 1, 0, 1, 255, 1, 0, 106,
+                        46, 186, 188, 245, 255, 0, 121, 188, 1, 239, 235, 123, 0, 169, 19, 0, 136,
+                        254, 243, 140,
+                    ])
+                    .unwrap(),
                     manifest: AppManifest::V1(holochain_types::app::AppManifestV1 {
                         name: Default::default(),
                         description: Default::default(),
@@ -75,6 +92,17 @@ mod admin_websocket {
                     }),
                 },
             ]
+        }
+    }
+
+    #[cfg(test)]
+    mockall::mock! {
+        #[derive(Debug)]
+        pub AdminWebsocket {
+            pub fn list_apps(&self) -> Vec<AppInfo>;
+        }
+        impl Clone for AdminWebsocket {
+            fn clone(&self) -> Self;
         }
     }
 }
