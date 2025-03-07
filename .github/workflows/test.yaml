@@ -28,7 +28,7 @@ jobs:
         run: |
           nix develop -c ./fixture/package.sh
       - name: Run tests
-        run: cargo test --no-fail-fast
+        run: cargo test --no-fail-fast -- --test-threads=1
 
   ci_pass:
     if: ${{ always() }}
