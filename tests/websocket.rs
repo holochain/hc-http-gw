@@ -1,4 +1,4 @@
-use crate::sweet::{install_fixture1, install_fixture2, TestType};
+use crate::sweet::{init_zome, install_fixture1, install_fixture2, TestType};
 use holochain::sweettest::SweetConductor;
 use holochain_client::{AdminWebsocket, CellInfo, ConductorApiError, ExternIO, ZomeCallTarget};
 use holochain_http_gateway::config::{AllowedFns, Configuration, ZomeFn};
@@ -17,10 +17,16 @@ async fn connect_app_websocket() {
 
     let sweet_conductor = SweetConductor::from_standard_config().await;
 
-    install_fixture1(sweet_conductor.clone(), None)
+    let app_1 = install_fixture1(sweet_conductor.clone(), None)
+        .await
+        .unwrap();
+    init_zome(sweet_conductor.clone(), &app_1, "coordinator1".to_string())
         .await
         .unwrap();
     install_fixture2(sweet_conductor.clone(), None)
+        .await
+        .unwrap();
+    init_zome(sweet_conductor.clone(), &app_1, "coordinator2".to_string())
         .await
         .unwrap();
 
@@ -72,7 +78,10 @@ async fn reuse_connection() {
 
     let sweet_conductor = SweetConductor::from_standard_config().await;
 
-    install_fixture1(sweet_conductor.clone(), None)
+    let app = install_fixture1(sweet_conductor.clone(), None)
+        .await
+        .unwrap();
+    init_zome(sweet_conductor.clone(), &app, "coordinator1".to_string())
         .await
         .unwrap();
 
@@ -131,7 +140,10 @@ async fn does_not_reconnect_on_non_websocket_error() {
 
     let sweet_conductor = SweetConductor::from_standard_config().await;
 
-    install_fixture1(sweet_conductor.clone(), None)
+    let app = install_fixture1(sweet_conductor.clone(), None)
+        .await
+        .unwrap();
+    init_zome(sweet_conductor.clone(), &app, "coordinator1".to_string())
         .await
         .unwrap();
 
@@ -212,7 +224,10 @@ async fn reconnect_on_failed_websocket() {
 
     let mut sweet_conductor = SweetConductor::from_standard_config().await;
 
-    install_fixture1(sweet_conductor.clone(), None)
+    let app = install_fixture1(sweet_conductor.clone(), None)
+        .await
+        .unwrap();
+    init_zome(sweet_conductor.clone(), &app, "coordinator1".to_string())
         .await
         .unwrap();
 
@@ -298,7 +313,10 @@ async fn close_old_connections_on_limit() {
 
     let sweet_conductor = SweetConductor::from_standard_config().await;
 
-    install_fixture1(sweet_conductor.clone(), Some("app_1".to_string()))
+    let app_1 = install_fixture1(sweet_conductor.clone(), Some("app_1".to_string()))
+        .await
+        .unwrap();
+    init_zome(sweet_conductor.clone(), &app_1, "coordinator1".to_string())
         .await
         .unwrap();
     install_fixture1(sweet_conductor.clone(), Some("app_2".to_string()))
