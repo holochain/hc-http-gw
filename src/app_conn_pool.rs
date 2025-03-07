@@ -190,10 +190,10 @@ impl AppConnPool {
             .try_set_header("Origin", HTTP_GW_ORIGIN)?;
 
         // Create a websocket client configuration and lower the default timeout. We are connecting
-        // locally to a running Holochain. If it takes more than 5 seconds to connect, something is
+        // locally to a running Holochain. If it takes more than 10 seconds to connect, something is
         // wrong, and we shouldn't keep blocking an incoming HTTP request.
         let mut config = WebsocketConfig::CLIENT_DEFAULT;
-        config.default_request_timeout = std::time::Duration::from_secs(5);
+        config.default_request_timeout = std::time::Duration::from_secs(10);
 
         let client_signer = ClientAgentSigner::default();
 
