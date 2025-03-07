@@ -54,7 +54,7 @@ impl HcHttpGatewayService {
         let state = AppState::from_config(configuration).await;
 
         let router = Router::new()
-            .route("/{dna_hash}", get(app_selection))
+            .route("/{dna_hash}/{coordinator_identifier}", get(app_selection))
             .route(
                 "/{dna_hash}/{coordinator_identifier}/{zome_name}/{function_name}",
                 get(zome_call),
