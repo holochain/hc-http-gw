@@ -3,9 +3,11 @@
 use std::net::{IpAddr, SocketAddr};
 
 use axum::{routing::get, Router};
+use holochain_client::AppInfo;
 use tokio::net::TcpListener;
 
 use crate::{
+    app_selection::AdminWebsocket,
     config::Configuration,
     error::HcHttpGatewayResult,
     routes::{app_selection, health_check, zome_call},
@@ -23,6 +25,18 @@ pub struct HcHttpGatewayService {
 #[derive(Debug, Clone)]
 pub struct AppState {
     pub configuration: Configuration,
+    pub admin_websocket: AdminWebsocket,
+    pub installed_apps: Vec<AppInfo>,
+}
+
+impl AppState {
+    fn from_config(configuration: Configuration) -> Self {
+        Self {
+            configuration,
+            admin_websocket: AdminWebsocket::new(),
+            installed_apps: Default::default(),
+        }
+    }
 }
 
 impl HcHttpGatewayService {
@@ -34,7 +48,7 @@ impl HcHttpGatewayService {
     ) -> HcHttpGatewayResult<Self> {
         let address = SocketAddr::new(address.into(), port);
 
-        let state = AppState { configuration };
+        let state = AppState::from_config(configuration);
 
         let router = Router::new()
             .route("/{dna_hash}", get(app_selection))
