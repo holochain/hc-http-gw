@@ -36,3 +36,4 @@ url2 = "0.0.6"
 fixt = "0.4.1"
 reqwest = { version = "0.12", features = ["rustls-tls"] }
 holochain = { version = "0.4.1", features = ["sweettest"] }
+regex = "1.11.1"
