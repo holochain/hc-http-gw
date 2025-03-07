@@ -8,6 +8,7 @@ mod http;
 mod routes;
 mod service;
 pub mod tracing;
+pub mod transcode;
 
 pub use cli::HcHttpGatewayArgs;
 pub use error::{HcHttpGatewayError, HcHttpGatewayResult};
