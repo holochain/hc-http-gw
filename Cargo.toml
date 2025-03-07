@@ -17,7 +17,7 @@ anyhow = "1.0.96"
 axum = "0.8.1"
 base64 = "0.22.1"
 clap = { version = "4.5.30", features = ["derive", "env"] }
-holochain_client = "0.6.1"
+holochain_client = "0.6.2"
 holochain_types = "0.4.1"
 serde = { version = "=1.0.203", features = ["derive"] }
 serde_json = "1.0.140"
@@ -31,10 +31,17 @@ tracing-subscriber = { version = "0.3.19", features = [
   "registry",
 ] }
 url2 = "0.0.6"
+futures = "0.3"
 
 [dev-dependencies]
+holochain_http_gateway = { path = ".", features = ["test-utils"] }
+
 fixt = "0.4.1"
 holochain = { version = "0.4.1", features = ["sweettest"] }
 http-body-util = "0.1.2"
 reqwest = { version = "0.12", features = ["rustls-tls"] }
 tower = "0.5.2"
+holochain_serialized_bytes = "0.0.55"
+
+[features]
+test-utils = []
