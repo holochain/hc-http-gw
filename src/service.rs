@@ -8,7 +8,7 @@ use tokio::net::TcpListener;
 use crate::{
     config::Configuration,
     error::HcHttpGatewayResult,
-    routes::{health_check, zome_call},
+    routes::{app_selection, health_check, zome_call},
     HcHttpGatewayError,
 };
 
@@ -37,6 +37,7 @@ impl HcHttpGatewayService {
         let state = AppState { configuration };
 
         let router = Router::new()
+            .route("/{dna_hash}", get(app_selection))
             .route(
                 "/{dna_hash}/{coordinator_identifier}/{zome_name}/{function_name}",
                 get(zome_call),
