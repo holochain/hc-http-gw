@@ -1394,6 +1394,7 @@ dependencies = [
  "axum",
  "clap 4.5.30",
  "holochain_client",
+ "regex",
  "reqwest",
  "serde",
  "thiserror 2.0.11",

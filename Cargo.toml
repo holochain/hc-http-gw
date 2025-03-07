@@ -30,4 +30,5 @@ tracing-subscriber = { version = "0.3.19", features = [
 url2 = "0.0.6"
 
 [dev-dependencies]
+regex = "1.11.1"
 reqwest = { version = "0.12", features = ["rustls-tls"] }
