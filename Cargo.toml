@@ -33,5 +33,7 @@ tracing-subscriber = { version = "0.3.19", features = [
 url2 = "0.0.6"
 
 [dev-dependencies]
-reqwest = { version = "0.12", features = ["rustls-tls"] }
+fixt = "0.4.1"
 holochain = { version = "0.4.1", features = ["sweettest"] }
+reqwest = { version = "0.12", features = ["rustls-tls"] }
+tower = "0.5.2"
