@@ -1,15 +1,19 @@
 //! HTTP gateway service for Holochain
 
-use std::net::{IpAddr, SocketAddr};
+use std::{
+    net::{IpAddr, SocketAddr},
+    vec::Vec,
+};
 
 use axum::{routing::get, Router};
+use holochain_client::AppInfo;
 use tokio::net::TcpListener;
 
 use crate::{
     config::Configuration,
     error::HcHttpGatewayResult,
-    routes::{health_check, zome_call},
-    HcHttpGatewayError,
+    routes::{app_selection, health_check, zome_call},
+    AdminWebsocketWrapper, HcHttpGatewayError,
 };
 
 /// Core Holochain HTTP gateway service
@@ -20,9 +24,22 @@ pub struct HcHttpGatewayService {
 }
 
 /// Shared application state
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct AppState {
     pub configuration: Configuration,
+    pub admin_websocket: AdminWebsocketWrapper,
+    pub installed_apps: Vec<AppInfo>,
+}
+
+impl AppState {
+    async fn from_config(configuration: Configuration) -> Self {
+        let socket_addr = configuration.admin_ws_url.to_string();
+        Self {
+            configuration,
+            admin_websocket: AdminWebsocketWrapper::connect(&socket_addr).await,
+            installed_apps: Default::default(),
+        }
+    }
 }
 
 impl HcHttpGatewayService {
@@ -34,9 +51,10 @@ impl HcHttpGatewayService {
     ) -> HcHttpGatewayResult<Self> {
         let address = SocketAddr::new(address.into(), port);
 
-        let state = AppState { configuration };
+        let state = AppState::from_config(configuration).await;
 
         let router = Router::new()
+            .route("/{dna_hash}/{coordinator_identifier}", get(app_selection))
             .route(
                 "/{dna_hash}/{coordinator_identifier}/{zome_name}/{function_name}",
                 get(zome_call),

@@ -23,13 +23,9 @@ impl TestApp {
         allowed_fns.insert("hello_world".to_string(), AllowedFns::All);
 
         // Create configuration
-        let config = Configuration::try_new(
-            "ws://localhost:50350",
-            "1024",
-            "forum,hello_world",
-            allowed_fns,
-        )
-        .unwrap();
+        let config =
+            Configuration::try_new("localhost:50350", "1024", "forum,hello_world", allowed_fns)
+                .unwrap();
 
         TestApp::spawn_with_config(config).await
     }

@@ -19,6 +19,7 @@ base64 = "0.22.1"
 clap = { version = "4.5.30", features = ["derive", "env"] }
 holochain_client = "0.6.0"
 holochain_types = "0.4.1"
+mockall_double = "0.3.1"
 serde = { version = "=1.0.203", features = ["derive"] }
 serde_json = "1.0.140"
 thiserror = "2.0.11"
@@ -34,5 +35,7 @@ url2 = "0.0.6"
 
 [dev-dependencies]
 fixt = "0.4.1"
+assert2 = "0.3.15"
 reqwest = { version = "0.12", features = ["rustls-tls"] }
 holochain = { version = "0.4.1", features = ["sweettest"] }
+mockall = "0.13.1"
