@@ -270,4 +270,29 @@ mod tests {
 
         assert!(result == Err(AppSelectionError::NotAllowed));
     }
+
+    #[tokio::test]
+    async fn updates_installed_apps_list_if_not_in_initial_list() {
+        let dna_hash = DnaHash::from_raw_32([1; 32].to_vec());
+        let mut installed_apps = vec![];
+        let allowed_apps = AllowedAppIds::from_str("app_1").unwrap();
+        let mut admin_websocket = AdminWebsocketWrapper::new();
+        let new_installed_apps = vec![new_fake_app_info("app_1", dna_hash.clone())];
+        admin_websocket
+            .expect_list_apps()
+            .return_const(new_installed_apps.clone())
+            .once();
+
+        try_get_valid_app(
+            dna_hash,
+            "app_1".to_string(),
+            &mut installed_apps,
+            &allowed_apps,
+            &admin_websocket,
+        )
+        .await
+        .unwrap();
+
+        assert!(installed_apps == new_installed_apps);
+    }
 }
