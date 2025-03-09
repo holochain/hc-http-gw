@@ -3,38 +3,52 @@
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Json;
-use holochain_types::dna::HoloHashError;
-
-use crate::http::HcGwErrorResponse;
+use holochain_types::{dna::HoloHashError, prelude::SerializedBytesError};
 
 /// Core HTTP Gateway error type
 #[derive(thiserror::Error, Debug)]
 pub enum HcHttpGatewayError {
-    /// Handles system-level I/O errors
+    /// System-level I/O errors
     #[error("IO error: {0}")]
     IoError(#[from] std::io::Error),
-    /// Handles configuration parsing errors
+    /// Configuration parsing errors
     #[error("Configuration error: {0}")]
     ConfigurationError(String),
-    /// Handle path parsing errors
-    #[error("Path parsing error: {0}")]
-    PathParsingError(#[from] axum::extract::rejection::PathRejection),
-    /// Handle base64 decode errors
+    /// URI path errors
+    #[error("Path error: {0}")]
+    PathError(#[from] axum::extract::rejection::PathRejection),
+    /// Identifier length exceeded
+    #[error("Identifier length exceeded: {0} has more than {1} characters")]
+    IdentifierLengthExceeded(String, u8),
+    /// Base64 decode errors
     #[error("Base64 decode error: {0}")]
     Base64DecodeError(#[from] base64::DecodeError),
-    /// Handle holo hash errors
+    /// Holo hash errors
     #[error("HoloHash error: {0}")]
     HoloHashError(#[from] HoloHashError),
-    /// Handle errors deserializing zome call payload to json
+    /// Errors deserializing zome call payload to JSON
     #[error("Failed to deserialize JSON to serde_json::Value: {0}")]
     InvalidJSON(#[from] serde_json::Error),
-    /// Handle invalid payload size errors
+    /// Payload size exceeded
     #[error("Payload size ({size} bytes) exceeds maximum allowed size ({limit} bytes)")]
     PayloadSizeLimitError {
         /// Current size of payload
         size: u32,
         /// Allowed payload size limit
         limit: u32,
+    },
+    /// ExternIO encoding error
+    #[error("Failed to serialize payload to ExternIO: {0}")]
+    PayloadSerializationError(#[from] SerializedBytesError),
+    /// Calling an unauthorized function
+    #[error("Function {function_name} in zome {zome_name} in app {app_id} is not allowed")]
+    UnauthorizedFunction {
+        /// App id
+        app_id: String,
+        /// Zome name
+        zome_name: String,
+        /// Function name
+        function_name: String,
     },
 }
 
@@ -44,52 +58,73 @@ pub type HcHttpGatewayResult<T> = Result<T, HcHttpGatewayError>;
 impl IntoResponse for HcHttpGatewayError {
     fn into_response(self) -> axum::response::Response {
         match self {
-            HcHttpGatewayError::PathParsingError(e) => {
-                tracing::error!("Path deserialization error: {}", e);
-                error_response(400, Some("Invalid request path"))
+            HcHttpGatewayError::PathError(e) => {
+                tracing::error!("Path error: {}", e);
+                (
+                    StatusCode::BAD_REQUEST,
+                    Json("Invalid request path".to_string()),
+                )
+            }
+            HcHttpGatewayError::IdentifierLengthExceeded(identifier, max_length) => {
+                let message =
+                    format!("Identifier {identifier} longer than {max_length} characters");
+                tracing::error!(message);
+                (StatusCode::BAD_REQUEST, Json(message))
             }
             HcHttpGatewayError::Base64DecodeError(e) => {
                 tracing::error!("Base64 decode error: {}", e);
-                error_response(400, Some("Failed to decode base64 encoded string"))
+                (
+                    StatusCode::BAD_REQUEST,
+                    Json("Failed to decode base64 encoded string".to_string()),
+                )
             }
             HcHttpGatewayError::HoloHashError(e) => {
                 tracing::error!("HoloHash error: {}", e);
-                error_response(400, Some("Invalid base64 DNA hash"))
+                (
+                    StatusCode::BAD_REQUEST,
+                    Json("Invalid base64 DNA hash".to_string()),
+                )
             }
             HcHttpGatewayError::InvalidJSON(e) => {
                 tracing::error!("Invalid JSON: {}", e);
-                error_response(400, Some("Payload contains invalid JSON"))
+                (
+                    StatusCode::BAD_REQUEST,
+                    Json("Payload contains invalid JSON".to_string()),
+                )
             }
             HcHttpGatewayError::PayloadSizeLimitError { size, limit } => {
-                tracing::error!(
-                    "Payload size ({} bytes) exceeds maximum allowed size ({} bytes)",
-                    size,
-                    limit
+                let message = format!(
+                    "Payload size ({size} bytes) exceeds maximum allowed size ({limit} bytes)"
                 );
-                error_response(
-                    400,
-                    Some(&format!(
-                        "Payload size exceeds maximum allowed size ({limit} bytes)"
-                    )),
+                tracing::error!(message);
+                (StatusCode::BAD_REQUEST, Json(message))
+            }
+            HcHttpGatewayError::PayloadSerializationError(e) => {
+                tracing::error!("Failed to serialize payload to ExternIO: {e}");
+                (
+                    StatusCode::BAD_REQUEST,
+                    Json("Failed to serialize payload to ExternIO".to_string()),
                 )
+            }
+            HcHttpGatewayError::UnauthorizedFunction {
+                app_id,
+                zome_name,
+                function_name,
+            } => {
+                let message = format!(
+                    "Function {function_name} in zome {zome_name} in app {app_id} is not allowed"
+                );
+                tracing::error!(message);
+                (StatusCode::BAD_REQUEST, Json(message))
             }
             e => {
                 tracing::error!("Internal Error: {}", e);
-                error_response(500, None)
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json("Something went wrong".to_string()),
+                )
             }
         }
-    }
-}
-
-/// Construct an axum http error from a status code and optional message
-pub fn error_response(status_code: u16, message: Option<&str>) -> axum::response::Response {
-    let error_response = HcGwErrorResponse {
-        error: message.unwrap_or("Something Went Wrong").to_string(),
-    };
-
-    (
-        StatusCode::from_u16(status_code).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR),
-        Json(error_response),
-    )
         .into_response()
+    }
 }

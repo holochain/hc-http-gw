@@ -124,6 +124,23 @@ impl Configuration {
     pub fn get_allowed_functions(&self, app_id: &str) -> Option<&AllowedFns> {
         self.allowed_fns.get(app_id)
     }
+
+    /// Check if a function of an app is allowed
+    pub fn is_function_allowed(&self, app_id: &str, zome_name: &str, fn_name: &str) -> bool {
+        match self.get_allowed_functions(app_id) {
+            None => false,
+            Some(allowed_fns) => match allowed_fns {
+                AllowedFns::All => true,
+                AllowedFns::Restricted(zome_fns) => {
+                    let zome_fn = ZomeFn {
+                        zome_name: zome_name.to_string(),
+                        fn_name: fn_name.to_string(),
+                    };
+                    zome_fns.contains(&zome_fn)
+                }
+            },
+        }
+    }
 }
 
 /// Type alias for application identifiers.
@@ -342,6 +359,49 @@ mod tests {
 
             // Test non-existent app
             assert!(config.get_allowed_functions("app3").is_none());
+        }
+
+        #[test]
+        fn is_function_allowed_returns_false_when_app_is_not_found() {
+            let config = create_test_config();
+            assert_eq!(
+                config.is_function_allowed("nopp", "zome_name", "fn_name"),
+                false
+            );
+        }
+
+        #[test]
+        fn is_function_allowed_returns_true_when_all_functions_allowed_for_app() {
+            let config = create_test_config();
+            println!("allwoed fns {:?}", config.allowed_fns);
+            assert_eq!(
+                config.is_function_allowed("app2", "zome_name", "fn_name"),
+                true
+            );
+        }
+
+        #[test]
+        fn is_function_allowed_returns_false_when_zome_not_found() {
+            let config = create_test_config();
+            assert_eq!(
+                config.is_function_allowed("app1", "not_included_zome", "fn_name"),
+                false
+            );
+        }
+
+        #[test]
+        fn is_function_allowed_returns_false_when_function_not_in_restricted_functions() {
+            let config = create_test_config();
+            assert_eq!(
+                config.is_function_allowed("app1", "zome1", "not_included"),
+                false
+            );
+        }
+
+        #[test]
+        fn is_function_allowed_returns_true_when_function_in_restricted_functions() {
+            let config = create_test_config();
+            assert_eq!(config.is_function_allowed("app1", "zome1", "fn1"), true);
         }
 
         #[test]

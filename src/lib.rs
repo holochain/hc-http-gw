@@ -4,7 +4,6 @@
 mod cli;
 pub mod config;
 mod error;
-mod http;
 mod router;
 mod routes;
 mod service;
