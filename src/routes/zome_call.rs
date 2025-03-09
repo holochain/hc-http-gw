@@ -145,7 +145,7 @@ mod tests {
         let uri = format!("/{invalid_dna_hash}/coordinator/zome_name/fn_name");
         let (status_code, body) = router.request(&uri).await;
         assert_eq!(status_code, StatusCode::BAD_REQUEST);
-        assert!(body.contains("Invalid base64 DNA hash"));
+        assert_eq!(body, r#"{"error":"Invalid base64 DNA hash"}"#);
     }
 
     #[tokio::test]
@@ -155,9 +155,12 @@ mod tests {
         let uri = format!("/{DNA_HASH}/{coordinator}/zome_name/fn_name");
         let (status_code, body) = router.request(&uri).await;
         assert_eq!(status_code, StatusCode::BAD_REQUEST);
-        assert!(body.contains(&format!(
-            "Identifier {coordinator} longer than {MAX_IDENTIFIER_CHARS} characters"
-        )));
+        assert_eq!(
+            body,
+            format!(
+                r#"{{"error":"Identifier {coordinator} longer than {MAX_IDENTIFIER_CHARS} characters"}}"#
+            )
+        );
     }
 
     #[tokio::test]
@@ -167,9 +170,12 @@ mod tests {
         let uri = format!("/{DNA_HASH}/coordinator/{zome_name}/fn_name");
         let (status_code, body) = router.request(&uri).await;
         assert_eq!(status_code, StatusCode::BAD_REQUEST);
-        assert!(body.contains(&format!(
-            "Identifier {zome_name} longer than {MAX_IDENTIFIER_CHARS} characters"
-        )));
+        assert_eq!(
+            body,
+            format!(
+                r#"{{"error":"Identifier {zome_name} longer than {MAX_IDENTIFIER_CHARS} characters"}}"#
+            )
+        );
     }
 
     #[tokio::test]
@@ -179,9 +185,12 @@ mod tests {
         let uri = format!("/{DNA_HASH}/coordinator/zome_name/{fn_name}");
         let (status_code, body) = router.request(&uri).await;
         assert_eq!(status_code, StatusCode::BAD_REQUEST);
-        assert!(body.contains(&format!(
-            "Identifier {fn_name} longer than {MAX_IDENTIFIER_CHARS} characters"
-        )));
+        assert_eq!(
+            body,
+            format!(
+                r#"{{"error":"Identifier {fn_name} longer than {MAX_IDENTIFIER_CHARS} characters"}}"#
+            )
+        );
     }
 
     #[tokio::test]
@@ -192,9 +201,12 @@ mod tests {
         let uri = format!("/{DNA_HASH}/coordinator/zome_name/{fn_name}");
         let (status_code, body) = router.request(&uri).await;
         assert_eq!(status_code, StatusCode::BAD_REQUEST);
-        assert!(body.contains(&format!(
-            "Function {fn_name} in zome zome_name in app coordinator is not allowed"
-        )));
+        assert_eq!(
+            body,
+            format!(
+                r#"{{"error":"Function {fn_name} in zome zome_name in app coordinator is not allowed"}}"#
+            )
+        );
     }
 
     #[tokio::test]
@@ -208,9 +220,12 @@ mod tests {
         let uri = format!("/{DNA_HASH}/coordinator/zome_name/fn_name?payload={payload}");
         let (status_code, body) = router.request(&uri).await;
         assert_eq!(status_code, StatusCode::BAD_REQUEST);
-        assert!(body.contains(&format!(
-            "Payload size ({payload_length} bytes) exceeds maximum allowed size (10 bytes)"
-        )));
+        assert_eq!(
+            body,
+            format!(
+                r#"{{"error":"Payload size ({payload_length} bytes) exceeds maximum allowed size (10 bytes)"}}"#
+            )
+        );
     }
 
     #[tokio::test]
@@ -220,7 +235,10 @@ mod tests {
         let uri = format!("/{DNA_HASH}/coordinator/zome_name/fn_name?payload={payload}");
         let (status_code, body) = router.request(&uri).await;
         assert_eq!(status_code, StatusCode::BAD_REQUEST);
-        assert!(body.contains("Failed to decode base64 encoded string"));
+        assert_eq!(
+            body,
+            r#"{"error":"Failed to decode base64 encoded string"}"#
+        );
     }
 
     #[tokio::test]
@@ -230,6 +248,6 @@ mod tests {
         let uri = format!("/{DNA_HASH}/coordinator/zome_name/fn_name?payload={payload}");
         let (status_code, body) = router.request(&uri).await;
         assert_eq!(status_code, StatusCode::BAD_REQUEST);
-        assert!(body.contains("Payload contains invalid JSON"));
+        assert_eq!(body, r#"{"error":"Payload contains invalid JSON"}"#);
     }
 }
