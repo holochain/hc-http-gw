@@ -364,44 +364,31 @@ mod tests {
         #[test]
         fn is_function_allowed_returns_false_when_app_is_not_found() {
             let config = create_test_config();
-            assert_eq!(
-                config.is_function_allowed("nopp", "zome_name", "fn_name"),
-                false
-            );
+            assert!(!config.is_function_allowed("nopp", "zome_name", "fn_name"));
         }
 
         #[test]
         fn is_function_allowed_returns_true_when_all_functions_allowed_for_app() {
             let config = create_test_config();
-            println!("allwoed fns {:?}", config.allowed_fns);
-            assert_eq!(
-                config.is_function_allowed("app2", "zome_name", "fn_name"),
-                true
-            );
+            assert!(config.is_function_allowed("app2", "zome_name", "fn_name"),);
         }
 
         #[test]
         fn is_function_allowed_returns_false_when_zome_not_found() {
             let config = create_test_config();
-            assert_eq!(
-                config.is_function_allowed("app1", "not_included_zome", "fn_name"),
-                false
-            );
+            assert!(!config.is_function_allowed("app1", "not_included_zome", "fn_name"),);
         }
 
         #[test]
         fn is_function_allowed_returns_false_when_function_not_in_restricted_functions() {
             let config = create_test_config();
-            assert_eq!(
-                config.is_function_allowed("app1", "zome1", "not_included"),
-                false
-            );
+            assert!(!config.is_function_allowed("app1", "zome1", "not_included"),);
         }
 
         #[test]
         fn is_function_allowed_returns_true_when_function_in_restricted_functions() {
             let config = create_test_config();
-            assert_eq!(config.is_function_allowed("app1", "zome1", "fn1"), true);
+            assert!(config.is_function_allowed("app1", "zome1", "fn1"));
         }
 
         #[test]

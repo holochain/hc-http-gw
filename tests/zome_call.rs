@@ -67,7 +67,7 @@ async fn zome_call_with_payload_exceeding_limit_fails() {
     let response = app
         .call_zome(
             &dna_hash,
-            "coord98765",
+            "forum",
             "custom_zome",
             "special_function",
             Some(&large_payload),
@@ -91,7 +91,7 @@ async fn zome_call_with_invalid_json_payload_fails() {
     let response = app
         .call_zome(
             &dna_hash,
-            "coord98765",
+            "forum",
             "custom_zome",
             "special_function",
             Some(&invalid_payload),
@@ -115,7 +115,7 @@ async fn zome_call_with_invalid_dna_hash_fails() {
     let response = app
         .call_zome(
             dna_hash,
-            "coord98765",
+            "forum",
             "custom_zome",
             "special_function",
             Some(&payload),
@@ -138,7 +138,7 @@ async fn zome_call_with_non_base64_encoded_payload_fails() {
     let response = app
         .call_zome(
             &dna_hash,
-            "coord98765",
+            "forum",
             "custom_zome",
             "special_function",
             Some(payload),
