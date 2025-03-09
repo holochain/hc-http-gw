@@ -24,13 +24,12 @@ async fn zome_call_with_valid_params() {
     let response = app
         .call_zome(
             &dna_hash,
-            "coord98765",
+            "forum",
             "custom_zome",
             "special_function",
             Some(&payload),
         )
         .await;
-
     assert_eq!(response.status(), StatusCode::OK);
 }
 
@@ -43,13 +42,7 @@ async fn zome_call_with_valid_params_but_no_payload() {
     let dna_hash = fixt!(DnaHash).to_string();
 
     let response = app
-        .call_zome(
-            &dna_hash,
-            "coord98765",
-            "custom_zome",
-            "special_function",
-            None,
-        )
+        .call_zome(&dna_hash, "forum", "custom_zome", "special_function", None)
         .await;
 
     assert_eq!(response.status(), StatusCode::OK);

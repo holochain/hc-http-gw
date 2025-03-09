@@ -15,21 +15,17 @@ pub struct TestApp {
 }
 
 impl TestApp {
-    /// Create a new test application with default configuration
+    /// Create a new test application with default configuration.
+    /// Allowed app ids contains "forum".
+    /// Allowed functions contains all functions of "forum".
     pub async fn spawn() -> Self {
         // Create default allowed functions
         let mut allowed_fns = HashMap::new();
         allowed_fns.insert("forum".to_string(), AllowedFns::All);
-        allowed_fns.insert("hello_world".to_string(), AllowedFns::All);
 
         // Create configuration
-        let config = Configuration::try_new(
-            "ws://localhost:50350",
-            "1024",
-            "forum,hello_world",
-            allowed_fns,
-        )
-        .unwrap();
+        let config =
+            Configuration::try_new("ws://localhost:50350", "1024", "forum", allowed_fns).unwrap();
 
         TestApp::spawn_with_config(config).await
     }
