@@ -35,5 +35,6 @@ url2 = "0.0.6"
 [dev-dependencies]
 fixt = "0.4.1"
 holochain = { version = "0.4.1", features = ["sweettest"] }
+http-body-util = "0.1.2"
 reqwest = { version = "0.12", features = ["rustls-tls"] }
 tower = "0.5.2"
