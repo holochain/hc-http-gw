@@ -18,20 +18,34 @@ pub fn hc_http_gateway_router(configuration: Configuration) -> Router {
 
 #[cfg(test)]
 pub mod tests {
-    use crate::{config::Configuration, router::hc_http_gateway_router};
+    use crate::{
+        config::{AllowedFns, Configuration, ZomeFn},
+        router::hc_http_gateway_router,
+    };
     use axum::{body::Body, http::Request, Router};
     use http_body_util::BodyExt;
     use reqwest::StatusCode;
-    use std::collections::HashMap;
+    use std::collections::{HashMap, HashSet};
     use tower::ServiceExt;
 
     pub struct TestRouter(Router);
 
     impl TestRouter {
         /// Construct a test router with 1024 bytes payload limit.
+        /// Allowed functions are restricted to coordinator "coordinator", zome name "zome_name",
+        /// function name "fn_name".
         pub fn new() -> Self {
+            let mut allowed_fns = HashMap::new();
+            let allowed_zome_fn = ZomeFn {
+                zome_name: "zome_name".to_string(),
+                fn_name: "fn_name".to_string(),
+            };
+            let mut allowed_zome_fns = HashSet::new();
+            allowed_zome_fns.insert(allowed_zome_fn);
+            let restricted_fns = AllowedFns::Restricted(allowed_zome_fns);
+            allowed_fns.insert("coordinator".to_string(), restricted_fns);
             let config =
-                Configuration::try_new("ws://127.0.0.1:1", "1024", "", HashMap::new()).unwrap();
+                Configuration::try_new("ws://127.0.0.1:1", "1024", "", allowed_fns).unwrap();
             Self::new_with_config(config)
         }
 
