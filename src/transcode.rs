@@ -1,17 +1,18 @@
 //! Functions to transcode call payloads and responses.
 //!
-//! The incoming HTTP request's payload is encoded as a base64 JSON string, which has
+//! The incoming HTTP request's payload is a base64 encoded JSON string, which has
 //! to be transcoded to `ExternIO` to be passed through as zome call payload.
 //!
-//! In turn the zome call response is `ExternIO` encoded and needs to be converted
+//! On the way out, the zome call response is `ExternIO` encoded and needs to be converted
 //! to a JSON string.
 
+use crate::HcHttpGatewayResult;
 use base64::{prelude::BASE64_URL_SAFE, Engine};
 use holochain_types::prelude::ExternIO;
 
 /// Function to transcode an incoming base64 encoded payload to Holochain serialized bytes
 /// (type `ExternIO`).
-pub fn base64_json_to_hsb(base64_encoded_payload: &str) -> anyhow::Result<ExternIO> {
+pub fn base64_json_to_hsb(base64_encoded_payload: &str) -> HcHttpGatewayResult<ExternIO> {
     let base64_decoded_payload = BASE64_URL_SAFE.decode(base64_encoded_payload)?;
     let json_payload = serde_json::from_slice::<serde_json::Value>(&base64_decoded_payload)?;
     let msgpack_encoded_payload = ExternIO::encode(json_payload)?;
@@ -27,7 +28,10 @@ pub fn hsb_to_json(hsb_encoded_response: &ExternIO) -> anyhow::Result<String> {
 
 #[cfg(test)]
 mod tests {
-    use crate::transcode::{base64_json_to_hsb, hsb_to_json};
+    use crate::{
+        transcode::{base64_json_to_hsb, hsb_to_json},
+        HcHttpGatewayError,
+    };
     use base64::{prelude::BASE64_URL_SAFE, Engine};
     use holochain_types::prelude::ExternIO;
     use serde::{Deserialize, Serialize};
@@ -61,16 +65,19 @@ mod tests {
         let payload = ZomeCallPayload { field: false };
         let json_payload = serde_json::to_string(&payload).unwrap();
 
-        let hsb_encoded_payload = base64_json_to_hsb(&json_payload);
-        assert!(hsb_encoded_payload.is_err());
+        let result = base64_json_to_hsb(&json_payload);
+        assert!(matches!(
+            result,
+            Err(HcHttpGatewayError::Base64DecodeError(_))
+        ));
     }
 
     #[test]
     fn invalid_json_to_hsb_fails() {
         let base64_encoded_payload = BASE64_URL_SAFE.encode("invalid");
 
-        let hsb_encoded_payload = base64_json_to_hsb(&base64_encoded_payload);
-        assert!(hsb_encoded_payload.is_err());
+        let result = base64_json_to_hsb(&base64_encoded_payload);
+        assert!(matches!(result, Err(HcHttpGatewayError::InvalidJSON(_))));
     }
 
     #[test]
