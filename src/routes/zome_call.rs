@@ -13,7 +13,7 @@ pub struct ZomeCallParams {
     dna_hash: DnaHash,
     coordinator_identifier: String,
     zome_name: String,
-    function_name: String,
+    fn_name: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -21,7 +21,7 @@ struct RawZomeCallParams {
     dna_hash: String,
     coordinator_identifier: String,
     zome_name: String,
-    function_name: String,
+    fn_name: String,
 }
 
 impl<S> FromRequestParts<S> for ZomeCallParams
@@ -39,7 +39,7 @@ where
             dna_hash,
             coordinator_identifier,
             zome_name,
-            function_name,
+            fn_name,
         } = raw_params;
         // Check DNA hash validity.
         let dna_hash = DnaHash::try_from(dna_hash)?;
@@ -56,9 +56,9 @@ where
                 MAX_IDENTIFIER_CHARS,
             ));
         }
-        if function_name.len() > MAX_IDENTIFIER_CHARS as usize {
+        if fn_name.len() > MAX_IDENTIFIER_CHARS as usize {
             return Err(HcHttpGatewayError::IdentifierLengthExceeded(
-                function_name,
+                fn_name,
                 MAX_IDENTIFIER_CHARS,
             ));
         }
@@ -67,7 +67,7 @@ where
             dna_hash,
             coordinator_identifier,
             zome_name,
-            function_name,
+            fn_name,
         })
     }
 }
@@ -86,7 +86,7 @@ pub async fn zome_call(
     let ZomeCallParams {
         coordinator_identifier,
         zome_name,
-        function_name,
+        fn_name,
         ..
     } = params;
     // Check payload byte length does not exceed configured maximum.
@@ -101,12 +101,12 @@ pub async fn zome_call(
     // Check if function name is allowed.
     if !state
         .configuration
-        .is_function_allowed(&coordinator_identifier, &zome_name, &function_name)
+        .is_function_allowed(&coordinator_identifier, &zome_name, &fn_name)
     {
         return Err(HcHttpGatewayError::UnauthorizedFunction {
             app_id: coordinator_identifier,
             zome_name,
-            function_name,
+            fn_name,
         });
     }
 
