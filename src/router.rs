@@ -9,7 +9,7 @@ pub fn hc_http_gateway_router(configuration: Configuration) -> Router {
     let state = AppState { configuration };
     Router::new()
         .route(
-            "/{dna_hash}/{coordinator_identifier}/{zome_name}/{function_name}",
+            "/{dna_hash}/{coordinator_identifier}/{zome_name}/{fn_name}",
             get(zome_call),
         )
         .route("/health", get(health_check))
