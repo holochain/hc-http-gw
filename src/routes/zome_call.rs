@@ -204,7 +204,7 @@ mod tests {
         let fn_name = "unauthorized_fn";
         let uri = format!("/{DNA_HASH}/coordinator/zome_name/{fn_name}");
         let (status_code, body) = router.request(&uri).await;
-        assert_eq!(status_code, StatusCode::BAD_REQUEST);
+        assert_eq!(status_code, StatusCode::FORBIDDEN);
         assert_eq!(
             body,
             format!(
