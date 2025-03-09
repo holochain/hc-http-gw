@@ -41,14 +41,14 @@ pub enum HcHttpGatewayError {
     #[error("Failed to serialize payload to ExternIO: {0}")]
     PayloadSerializationError(#[from] SerializedBytesError),
     /// Calling an unauthorized function
-    #[error("Function {function_name} in zome {zome_name} in app {app_id} is not allowed")]
+    #[error("Function {fn_name} in zome {zome_name} in app {app_id} is not allowed")]
     UnauthorizedFunction {
         /// App id
         app_id: String,
         /// Zome name
         zome_name: String,
         /// Function name
-        function_name: String,
+        fn_name: String,
     },
 }
 
@@ -109,10 +109,10 @@ impl IntoResponse for HcHttpGatewayError {
             HcHttpGatewayError::UnauthorizedFunction {
                 app_id,
                 zome_name,
-                function_name,
+                fn_name,
             } => {
                 let message = format!(
-                    "Function {function_name} in zome {zome_name} in app {app_id} is not allowed"
+                    "Function {fn_name} in zome {zome_name} in app {app_id} is not allowed"
                 );
                 tracing::error!(message);
                 (StatusCode::BAD_REQUEST, Json(message))
