@@ -4,10 +4,11 @@
 mod cli;
 pub mod config;
 mod error;
-mod http;
+mod router;
 mod routes;
 mod service;
 pub mod tracing;
+pub mod transcode;
 
 pub use cli::HcHttpGatewayArgs;
 pub use error::{HcHttpGatewayError, HcHttpGatewayResult};
