@@ -147,7 +147,7 @@ impl IntoResponse for HcHttpGatewayError {
                 );
                 tracing::error!(message);
                 (
-                    StatusCode::BAD_REQUEST,
+                    StatusCode::FORBIDDEN,
                     Json(JsonErrorResponse::from(message)),
                 )
             }
