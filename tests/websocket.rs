@@ -457,6 +457,7 @@ async fn close_old_connections_on_limit() {
         .into_iter()
         .collect(),
         "2",
+        "",
     )
     .unwrap();
     let pool = AppConnPool::new(configuration);
@@ -523,6 +524,7 @@ fn create_test_configuration(admin_port: u16) -> HcHttpGatewayResult<Configurati
         ]
         .into_iter()
         .collect(),
+        "",
         "",
     )
 }
