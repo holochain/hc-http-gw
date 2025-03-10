@@ -1,7 +1,7 @@
 use crate::HcHttpGatewayResult;
 use futures::future::BoxFuture;
 use holochain_client::{
-    AdminWebsocket, AppWebsocket, AuthorizeSigningCredentialsPayload, ExternIO, SigningCredentials,
+    AppWebsocket, AuthorizeSigningCredentialsPayload, ExternIO, SigningCredentials,
 };
 use holochain_conductor_api::{
     AppAuthenticationTokenIssued, AppInterfaceInfo, IssueAppAuthenticationTokenPayload,
@@ -43,7 +43,7 @@ pub trait AdminCall: std::fmt::Debug + Send + Sync {
 
     /// Set the admin websocket connection to use.
     #[cfg(feature = "test-utils")]
-    fn set_admin_ws(&self, admin_ws: AdminWebsocket) -> BoxFuture<'static, ()>;
+    fn set_admin_ws(&self, admin_ws: holochain_client::AdminWebsocket) -> BoxFuture<'static, ()>;
 }
 
 /// A trait for making zome calls with an app connection.

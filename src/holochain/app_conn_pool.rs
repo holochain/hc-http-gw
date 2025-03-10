@@ -3,7 +3,7 @@ use crate::holochain::{AdminCall, AppCall};
 use crate::{HcHttpGatewayError, HcHttpGatewayResult};
 use futures::future::BoxFuture;
 use holochain_client::{
-    AdminWebsocket, AppWebsocket, AuthorizeSigningCredentialsPayload, CellInfo, ClientAgentSigner,
+    AppWebsocket, AuthorizeSigningCredentialsPayload, CellInfo, ClientAgentSigner,
     ConductorApiError, ConnectRequest, ExternIO, GrantedFunctions,
     IssueAppAuthenticationTokenPayload, Timestamp, WebsocketConfig,
 };
@@ -338,7 +338,7 @@ impl AppConnPool {
     ///
     /// This is temporary, we should be using the admin websocket that can reconnect.
     #[cfg(feature = "test-utils")]
-    pub async fn set_admin_ws(&mut self, admin_ws: AdminWebsocket) {
+    pub async fn set_admin_ws(&mut self, admin_ws: holochain_client::AdminWebsocket) {
         self.admin_call.set_admin_ws(admin_ws).await;
     }
 }

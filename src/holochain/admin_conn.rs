@@ -1,6 +1,6 @@
 use crate::{AdminCall, HcHttpGatewayResult};
 use futures::future::BoxFuture;
-use holochain_client::{AdminWebsocket, AuthorizeSigningCredentialsPayload, SigningCredentials};
+use holochain_client::{AuthorizeSigningCredentialsPayload, SigningCredentials};
 use holochain_conductor_api::{
     AppAuthenticationTokenIssued, AppInterfaceInfo, IssueAppAuthenticationTokenPayload,
 };
@@ -41,7 +41,7 @@ impl AdminCall for AdminConn {
     }
 
     #[cfg(feature = "test-utils")]
-    fn set_admin_ws(&self, _admin_ws: AdminWebsocket) -> BoxFuture<'static, ()> {
+    fn set_admin_ws(&self, _admin_ws: holochain_client::AdminWebsocket) -> BoxFuture<'static, ()> {
         todo!()
     }
 }
