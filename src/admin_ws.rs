@@ -162,7 +162,7 @@ impl ReconnectingAdminWebsocket {
         self.ensure_connected().await?;
 
         // Try to execute the operation
-        match self.execute_operation(&f).await {
+        match self.exec(&f).await {
             Ok(result) => Ok(result),
             Err(e) if e.is_disconnect_error() => self.handle_disconnection(f).await,
             Err(e) => Err(e),
@@ -170,7 +170,7 @@ impl ReconnectingAdminWebsocket {
     }
 
     // Helper method to execute an operation with the current connection
-    async fn execute_operation<T, F, Fut>(&mut self, f: &F) -> HcHttpGatewayResult<T>
+    async fn exec<T, F, Fut>(&mut self, f: &F) -> HcHttpGatewayResult<T>
     where
         F: Fn(Arc<AdminWebsocket>) -> Fut + Send,
         Fut: Future<Output = ConductorApiResult<T>> + Send,
@@ -205,7 +205,7 @@ impl ReconnectingAdminWebsocket {
                 tracing::info!("Reconnected successfully. Retrying operation.");
 
                 // Retry the operation with the new connection
-                self.execute_operation(&f).await
+                self.exec(&f).await
             }
             Err(reconnect_err) => Err(HcHttpGatewayError::InternalError(format!(
                 "Disconnection detected but reconnection failed: {}",
