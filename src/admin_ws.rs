@@ -18,7 +18,7 @@ pub struct ReconnectingAdminWebsocket {
     /// The WebSocket URL to connect to
     url: String,
     /// The handle to the AdminWebsocket connection
-    handle: Arc<Mutex<Option<AdminWebsocket>>>,
+    connection_handle: Arc<Mutex<Option<AdminWebsocket>>>,
     /// Current retry attempt counter
     current_retries: usize,
 }
@@ -28,7 +28,7 @@ impl ReconnectingAdminWebsocket {
     pub fn new(url: &str) -> Self {
         ReconnectingAdminWebsocket {
             url: url.to_string(),
-            handle: Arc::new(Mutex::new(None)),
+            connection_handle: Arc::new(Mutex::new(None)),
             current_retries: 0,
         }
     }
@@ -42,7 +42,7 @@ impl ReconnectingAdminWebsocket {
             .await
             .map_err(HcHttpGatewayError::from)?;
 
-        let mut connection = self.handle.lock().map_err(|e| {
+        let mut connection = self.connection_handle.lock().map_err(|e| {
             HcHttpGatewayError::InternalError(format!("Mutex was poisoned during connect: {}", e))
         })?;
 
@@ -54,7 +54,7 @@ impl ReconnectingAdminWebsocket {
 
     /// Checks if there is an active connection
     fn is_connected(&self) -> HcHttpGatewayResult<bool> {
-        let connection = self.handle.lock().map_err(|e| {
+        let connection = self.connection_handle.lock().map_err(|e| {
             HcHttpGatewayError::InternalError(format!(
                 "Mutex was poisoned during is_connected check: {}",
                 e
@@ -88,7 +88,7 @@ impl ReconnectingAdminWebsocket {
         while self.current_retries < ADMIN_WS_CONNECTION_MAX_RETRIES {
             match AdminWebsocket::connect(&self.url).await {
                 Ok(conn) => {
-                    let mut connection = self.handle.lock().map_err(|e| {
+                    let mut connection = self.connection_handle.lock().map_err(|e| {
                         HcHttpGatewayError::InternalError(format!(
                             "Mutex was poisoned during is_connected check: {}",
                             e
@@ -153,7 +153,7 @@ impl ReconnectingAdminWebsocket {
     {
         // block scope to limit MutexGuard lifetime
         let connection = {
-            let mut connection = self.handle.lock().map_err(|e| {
+            let mut connection = self.connection_handle.lock().map_err(|e| {
                 HcHttpGatewayError::InternalError(format!("Connection mutex was poisoned: {e}"))
             })?;
 
