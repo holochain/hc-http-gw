@@ -103,7 +103,7 @@ async fn reuse_connection() {
         app_client_1.cached_app_info().installed_app_id
     );
 
-    // Take out a write lock so that the pool cannot create a new connection
+    // Take out a read lock so that the pool cannot create a new connection
     let inner_pool = pool.get_inner_pool();
     let _read_lock = inner_pool.read().await;
 
