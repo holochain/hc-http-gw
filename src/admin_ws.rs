@@ -107,7 +107,7 @@ impl ReconnectingAdminWebsocket {
                     } else {
                         return Err(HcHttpGatewayError::ConfigurationError(format!(
                             "Maximum connection retry attempts ({}) reached",
-                            ADMIN_WS_CONNECTION_RETRY_DELAY_MS
+                            ADMIN_WS_CONNECTION_MAX_RETRIES
                         )));
                     }
                 }
@@ -133,9 +133,9 @@ impl ReconnectingAdminWebsocket {
     ///
     /// * `Ok(T)` - If the function executed successfully
     /// * `Err(HcHttpGatewayError)` - If an error occurred that could not be recovered from
-    pub async fn call<F, Fut, T>(&mut self, f: F) -> HcHttpGatewayResult<T>
+    pub async fn call<T, F, Fut>(&mut self, f: F) -> HcHttpGatewayResult<T>
     where
-        F: Fn(&AdminWebsocket) -> Fut + Send,
+        F: Fn(Box<AdminWebsocket>) -> Fut + Send,
         Fut: Future<Output = ConductorApiResult<T>> + Send,
     {
         // Ensure we're connected before proceeding
@@ -144,8 +144,8 @@ impl ReconnectingAdminWebsocket {
         // Execute the provided function
         let result = {
             let connection = self.handle.lock().unwrap();
-            let conn = connection.as_ref().unwrap();
-            match f(conn).await {
+            let conn = connection.as_ref().unwrap().to_owned();
+            match f(Box::new(conn)).await {
                 Ok(value) => Ok(value),
                 Err(err) => Err(HcHttpGatewayError::from(err)),
             }
@@ -161,9 +161,9 @@ impl ReconnectingAdminWebsocket {
                     if let Ok(()) = self.reconnect().await {
                         tracing::info!("Reconnected successfully. Retrying operation.");
                         let connection = self.handle.lock().unwrap();
-                        let conn = connection.as_ref().unwrap();
+                        let conn = connection.as_ref().unwrap().to_owned();
                         // Retry the operation with the new connection
-                        match f(conn).await {
+                        match f(Box::new(conn)).await {
                             Ok(value) => Ok(value),
                             Err(err) => Err(HcHttpGatewayError::from(err)),
                         }
