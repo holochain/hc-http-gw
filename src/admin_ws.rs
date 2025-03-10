@@ -25,10 +25,6 @@ pub struct ReconnectingAdminWebsocket {
 
 impl ReconnectingAdminWebsocket {
     /// Creates a new ReconnectingAdminWebsocket with the specified parameters
-    ///
-    /// # Returns
-    ///
-    /// A new ReconnectingAdminWebsocket instance (not yet connected)
     pub fn new(url: &str) -> Self {
         ReconnectingAdminWebsocket {
             url: url.to_string(),
@@ -41,11 +37,6 @@ impl ReconnectingAdminWebsocket {
     ///
     /// This should be called before making any calls to the AdminWebsocket.
     /// It will attempt to establish a connection and store it internally.
-    ///
-    /// # Returns
-    ///
-    /// * `Ok(())` - If the connection was established successfully
-    /// * `Err(HcHttpGatewayError)` - If the connection could not be established
     pub async fn connect(&mut self) -> HcHttpGatewayResult<()> {
         let conn = AdminWebsocket::connect(&self.url)
             .await
@@ -79,9 +70,6 @@ impl ReconnectingAdminWebsocket {
     }
 
     /// Ensures that a connection is established before proceeding
-    ///
-    /// If a connection already exists, this is a no-op.
-    /// If no connection exists, it will attempt to establish one.
     async fn ensure_connected(&mut self) -> HcHttpGatewayResult<()> {
         if self.is_connected()? {
             return Ok(());
@@ -94,11 +82,6 @@ impl ReconnectingAdminWebsocket {
     ///
     /// This will make multiple attempts according to the `max_retries` and
     /// `retry_delay_ms` settings, with exponential backoff between retries.
-    ///
-    /// # Returns
-    ///
-    /// * `Ok(())` - If reconnection was successful
-    /// * `Err(HcHttpGatewayError)` - If reconnection failed after all retry attempts
     pub async fn reconnect(&mut self) -> HcHttpGatewayResult<()> {
         self.current_retries = 0;
 
@@ -146,14 +129,7 @@ impl ReconnectingAdminWebsocket {
 
     /// Allows calling a method on the AdminWebsocket, with automatic reconnection if needed
     ///
-    /// # Arguments
-    ///
-    /// * `f` - A function that takes a Boxed AdminWebsocket and returns a Result with ConductorApiError
-    ///
-    /// # Returns
-    ///
-    /// * `Ok(T)` - If the function executed successfully
-    /// * `Err(HcHttpGatewayError)` - If an error occurred that could not be recovered from
+    /// Accepts a function `f` that takes a AdminWebsocket and returns a Result with ConductorApiError
     pub async fn call<T, F, Fut>(&mut self, f: F) -> HcHttpGatewayResult<T>
     where
         F: Fn(Arc<AdminWebsocket>) -> Fut + Send + Clone,
