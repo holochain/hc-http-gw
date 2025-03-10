@@ -37,14 +37,8 @@ pub enum HcHttpGatewayError {
         limit: u32,
     },
     /// Handles conductor api errors
-    #[error("Conductor API error: {0:?}")]
-    ConductorApiError(holochain_client::ConductorApiError),
-}
-
-impl From<holochain_client::ConductorApiError> for HcHttpGatewayError {
-    fn from(value: holochain_client::ConductorApiError) -> Self {
-        HcHttpGatewayError::ConductorApiError(value)
-    }
+    #[error("Conductor API error: {0}")]
+    ConductorApiError(#[from] holochain_client::ConductorApiError),
 }
 
 /// Type aliased Result
