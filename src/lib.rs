@@ -5,10 +5,11 @@ mod admin_ws;
 mod cli;
 pub mod config;
 mod error;
-mod http;
+mod router;
 mod routes;
 mod service;
 pub mod tracing;
+pub mod transcode;
 
 pub use admin_ws::ReconnectingAdminWebsocket;
 pub use cli::HcHttpGatewayArgs;
