@@ -1,4 +1,7 @@
-use std::sync::{Arc, Mutex};
+use std::{
+    future::Future,
+    sync::{Arc, Mutex},
+};
 use tokio::time::{sleep, Duration};
 
 use holochain_client::{AdminWebsocket, ConductorApiError, ConductorApiResult};
@@ -130,29 +133,25 @@ impl ReconnectingAdminWebsocket {
     ///
     /// * `Ok(T)` - If the function executed successfully
     /// * `Err(HcHttpGatewayError)` - If an error occurred that could not be recovered from
-    pub async fn call<T>(
-        &mut self,
-        f: impl Fn(&AdminWebsocket) -> ConductorApiResult<T>,
-    ) -> HcHttpGatewayResult<T> {
-        self.call_inner(|ws| f(ws).map_err(HcHttpGatewayError::from))
-            .await
-    }
-
-    /// This is the primary method for interacting with the AdminWebsocket. It ensures
-    /// a connection exists before executing the provided function, and will automatically
-    /// attempt to reconnect and retry if a disconnect error occurs during execution.
-    async fn call_inner<T>(
-        &mut self,
-        f: impl Fn(&AdminWebsocket) -> HcHttpGatewayResult<T>,
-    ) -> HcHttpGatewayResult<T> {
+    pub async fn call<F, Fut, T>(&mut self, f: F) -> HcHttpGatewayResult<T>
+    where
+        F: Fn(&AdminWebsocket) -> Fut + Send,
+        Fut: Future<Output = ConductorApiResult<T>> + Send,
+    {
+        // Ensure we're connected before proceeding
         self.ensure_connected().await?;
 
+        // Execute the provided function
         let result = {
             let connection = self.handle.lock().unwrap();
             let conn = connection.as_ref().unwrap();
-            f(conn)
+            match f(conn).await {
+                Ok(value) => Ok(value),
+                Err(err) => Err(HcHttpGatewayError::from(err)),
+            }
         };
 
+        // Handle potential disconnection
         match result {
             Ok(res) => Ok(res),
             Err(e) => {
@@ -163,10 +162,17 @@ impl ReconnectingAdminWebsocket {
                         tracing::info!("Reconnected successfully. Retrying operation.");
                         let connection = self.handle.lock().unwrap();
                         let conn = connection.as_ref().unwrap();
-                        return f(conn);
+                        // Retry the operation with the new connection
+                        match f(conn).await {
+                            Ok(value) => Ok(value),
+                            Err(err) => Err(HcHttpGatewayError::from(err)),
+                        }
+                    } else {
+                        Err(e)
                     }
+                } else {
+                    Err(e)
                 }
-                Err(e)
             }
         }
     }
