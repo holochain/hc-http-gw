@@ -36,6 +36,12 @@ pub enum HcHttpGatewayError {
         /// Allowed payload size limit
         limit: u32,
     },
+    /// Handles Holochain errors
+    #[error("Holochain error: {0}")]
+    HolochainError(#[from] holochain_client::ConductorApiError),
+    /// Error returned when a connection cannot be made to the upstream Holochain service
+    #[error("The upstream Holochain service could not be reached")]
+    UpstreamUnavailable,
 }
 
 /// Type aliased Result
@@ -72,6 +78,9 @@ impl IntoResponse for HcHttpGatewayError {
                         "Payload size exceeds maximum allowed size ({limit} bytes)"
                     )),
                 )
+            }
+            HcHttpGatewayError::UpstreamUnavailable => {
+                error_response(502, Some("Could not connect to Holochain"))
             }
             e => {
                 tracing::error!("Internal Error: {}", e);
