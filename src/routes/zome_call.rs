@@ -1,9 +1,11 @@
+use crate::{
+    service::AppState, transcode::base64_json_to_hsb, HcHttpGatewayError, HcHttpGatewayResult,
+};
 use axum::extract::{FromRequestParts, Path, Query, State};
-use base64::{prelude::BASE64_URL_SAFE, Engine};
-use holochain_types::dna::DnaHash;
+use holochain_types::{dna::DnaHash, prelude::ExternIO};
 use serde::Deserialize;
 
-use crate::{service::AppState, HcHttpGatewayError, HcHttpGatewayResult};
+const MAX_IDENTIFIER_CHARS: u8 = 100;
 
 #[derive(Debug, Deserialize)]
 #[allow(unused, reason = "Temporarily unused fields")]
@@ -11,7 +13,7 @@ pub struct ZomeCallParams {
     dna_hash: DnaHash,
     coordinator_identifier: String,
     zome_name: String,
-    function_name: String,
+    fn_name: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -19,7 +21,7 @@ struct RawZomeCallParams {
     dna_hash: String,
     coordinator_identifier: String,
     zome_name: String,
-    function_name: String,
+    fn_name: String,
 }
 
 impl<S> FromRequestParts<S> for ZomeCallParams
@@ -33,13 +35,39 @@ where
         state: &S,
     ) -> Result<Self, Self::Rejection> {
         let Path(raw_params) = Path::<RawZomeCallParams>::from_request_parts(parts, state).await?;
-        let dna_hash = DnaHash::try_from(raw_params.dna_hash)?;
+        let RawZomeCallParams {
+            dna_hash,
+            coordinator_identifier,
+            zome_name,
+            fn_name,
+        } = raw_params;
+        // Check DNA hash validity.
+        let dna_hash = DnaHash::try_from(dna_hash)?;
+        // Reject identifiers longer than the maximum length.
+        if coordinator_identifier.len() > MAX_IDENTIFIER_CHARS as usize {
+            return Err(HcHttpGatewayError::IdentifierLengthExceeded(
+                coordinator_identifier,
+                MAX_IDENTIFIER_CHARS,
+            ));
+        }
+        if zome_name.len() > MAX_IDENTIFIER_CHARS as usize {
+            return Err(HcHttpGatewayError::IdentifierLengthExceeded(
+                zome_name,
+                MAX_IDENTIFIER_CHARS,
+            ));
+        }
+        if fn_name.len() > MAX_IDENTIFIER_CHARS as usize {
+            return Err(HcHttpGatewayError::IdentifierLengthExceeded(
+                fn_name,
+                MAX_IDENTIFIER_CHARS,
+            ));
+        }
 
         Ok(ZomeCallParams {
             dna_hash,
-            coordinator_identifier: raw_params.coordinator_identifier,
-            zome_name: raw_params.zome_name,
-            function_name: raw_params.function_name,
+            coordinator_identifier,
+            zome_name,
+            fn_name,
         })
     }
 }
@@ -55,53 +83,175 @@ pub async fn zome_call(
     State(state): State<AppState>,
     Query(query): Query<PayloadQuery>,
 ) -> HcHttpGatewayResult<()> {
-    check_payload_size(
-        query.payload.as_ref(),
-        state.configuration.payload_limit_bytes,
-    )?;
-
-    let _decoded_payload = if let Some(payload) = query.payload {
-        let decoded = BASE64_URL_SAFE.decode(payload)?;
-        let json = serde_json::from_slice::<serde_json::Value>(&decoded)?;
-        Some(json)
-    } else {
-        None
-    };
-    Ok(())
-}
-
-fn check_payload_size(
-    payload: Option<&String>,
-    payload_limit_bytes: u32,
-) -> HcHttpGatewayResult<()> {
-    if let Some(encoded_payload) = payload {
-        let estimated_decoded_size = calculate_base64_decoded_size(encoded_payload);
-
-        if estimated_decoded_size > payload_limit_bytes {
+    let ZomeCallParams {
+        coordinator_identifier,
+        zome_name,
+        fn_name,
+        ..
+    } = params;
+    // Check payload byte length does not exceed configured maximum.
+    if let Some(payload) = &query.payload {
+        if payload.as_bytes().len() > state.configuration.payload_limit_bytes as usize {
             return Err(HcHttpGatewayError::PayloadSizeLimitError {
-                size: estimated_decoded_size,
-                limit: payload_limit_bytes,
+                size: payload.as_bytes().len() as u32,
+                limit: state.configuration.payload_limit_bytes,
             });
         }
     }
+    // Check if function name is allowed.
+    if !state
+        .configuration
+        .is_function_allowed(&coordinator_identifier, &zome_name, &fn_name)
+    {
+        return Err(HcHttpGatewayError::UnauthorizedFunction {
+            app_id: coordinator_identifier,
+            zome_name,
+            fn_name,
+        });
+    }
+
+    // Transcode to payload from base64 encoded JSON to ExternIO.
+    let _zome_call_payload = if let Some(payload) = &query.payload {
+        base64_json_to_hsb(payload)?
+    } else {
+        ExternIO::encode(())?
+    };
 
     Ok(())
 }
 
-/// Calculate the approximate decoded size without actually decoding
-/// Base64 encoding: every 4 chars in base64 represent 3 bytes of original data
-/// Need to account for padding characters too ('='), which don't represent data
-fn calculate_base64_decoded_size(encoded_payload: &str) -> u32 {
-    let encoded_len = encoded_payload.len();
-    let padding_count = encoded_payload
-        .chars()
-        .rev()
-        .take_while(|c| *c == '=')
-        .count();
+#[cfg(test)]
+mod tests {
+    use crate::{
+        config::{AllowedFns, Configuration},
+        router::tests::TestRouter,
+        routes::zome_call::MAX_IDENTIFIER_CHARS,
+    };
+    use base64::{prelude::BASE64_URL_SAFE, Engine};
+    use reqwest::StatusCode;
+    use std::collections::HashMap;
 
-    // Adjust the encoded length by removing padding characters
-    let effective_encoded_len = encoded_len - padding_count;
+    // DnaHash::from_raw_32(vec![1; 32]).to_string()
+    const DNA_HASH: &str = "uhC0kAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQF-z86-";
 
-    // Formula: decoded_size = (effective_encoded_len * 3) / 4
-    ((effective_encoded_len * 3) / 4) as u32
+    #[tokio::test]
+    async fn valid_dna_hash_is_accepted() {
+        let router = TestRouter::new();
+        let uri = format!("/{DNA_HASH}/coordinator/zome_name/fn_name");
+        let (status_code, _) = router.request(&uri).await;
+        assert_eq!(status_code, StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn invalid_dna_hash_is_rejected() {
+        let router = TestRouter::new();
+        let invalid_dna_hash = "thisaintnodnahash";
+        let uri = format!("/{invalid_dna_hash}/coordinator/zome_name/fn_name");
+        let (status_code, body) = router.request(&uri).await;
+        assert_eq!(status_code, StatusCode::BAD_REQUEST);
+        assert_eq!(body, r#"{"error":"Invalid base64 DNA hash"}"#);
+    }
+
+    #[tokio::test]
+    async fn coordinator_identifier_with_excess_length_is_rejected() {
+        let router = TestRouter::new();
+        let coordinator = "12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901";
+        let uri = format!("/{DNA_HASH}/{coordinator}/zome_name/fn_name");
+        let (status_code, body) = router.request(&uri).await;
+        assert_eq!(status_code, StatusCode::BAD_REQUEST);
+        assert_eq!(
+            body,
+            format!(
+                r#"{{"error":"Identifier {coordinator} longer than {MAX_IDENTIFIER_CHARS} characters"}}"#
+            )
+        );
+    }
+
+    #[tokio::test]
+    async fn zome_name_with_excess_length_is_rejected() {
+        let router = TestRouter::new();
+        let zome_name = "12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901";
+        let uri = format!("/{DNA_HASH}/coordinator/{zome_name}/fn_name");
+        let (status_code, body) = router.request(&uri).await;
+        assert_eq!(status_code, StatusCode::BAD_REQUEST);
+        assert_eq!(
+            body,
+            format!(
+                r#"{{"error":"Identifier {zome_name} longer than {MAX_IDENTIFIER_CHARS} characters"}}"#
+            )
+        );
+    }
+
+    #[tokio::test]
+    async fn function_name_with_excess_length_is_rejected() {
+        let router = TestRouter::new();
+        let fn_name = "12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901";
+        let uri = format!("/{DNA_HASH}/coordinator/zome_name/{fn_name}");
+        let (status_code, body) = router.request(&uri).await;
+        assert_eq!(status_code, StatusCode::BAD_REQUEST);
+        assert_eq!(
+            body,
+            format!(
+                r#"{{"error":"Identifier {fn_name} longer than {MAX_IDENTIFIER_CHARS} characters"}}"#
+            )
+        );
+    }
+
+    #[tokio::test]
+    async fn unauthorized_function_name_is_rejected() {
+        // Only one allowed function "fn_name" in test router.
+        let router = TestRouter::new();
+        let fn_name = "unauthorized_fn";
+        let uri = format!("/{DNA_HASH}/coordinator/zome_name/{fn_name}");
+        let (status_code, body) = router.request(&uri).await;
+        assert_eq!(status_code, StatusCode::FORBIDDEN);
+        assert_eq!(
+            body,
+            format!(
+                r#"{{"error":"Function {fn_name} in zome zome_name in app coordinator is not allowed"}}"#
+            )
+        );
+    }
+
+    #[tokio::test]
+    async fn payload_with_excess_length_is_rejected() {
+        let mut allowed_fns = HashMap::new();
+        allowed_fns.insert("coordinator".to_string(), AllowedFns::All);
+        let config = Configuration::try_new("ws://127.0.0.1:1", "10", "", allowed_fns).unwrap();
+        let router = TestRouter::new_with_config(config);
+        let payload = BASE64_URL_SAFE.encode(vec![1; 11]);
+        let payload_length = payload.len();
+        let uri = format!("/{DNA_HASH}/coordinator/zome_name/fn_name?payload={payload}");
+        let (status_code, body) = router.request(&uri).await;
+        assert_eq!(status_code, StatusCode::BAD_REQUEST);
+        assert_eq!(
+            body,
+            format!(
+                r#"{{"error":"Payload size ({payload_length} bytes) exceeds maximum allowed size (10 bytes)"}}"#
+            )
+        );
+    }
+
+    #[tokio::test]
+    async fn payload_with_invalid_base64_encoding_is_rejected() {
+        let router = TestRouter::new();
+        let payload = "$%&#";
+        let uri = format!("/{DNA_HASH}/coordinator/zome_name/fn_name?payload={payload}");
+        let (status_code, body) = router.request(&uri).await;
+        assert_eq!(status_code, StatusCode::BAD_REQUEST);
+        assert_eq!(
+            body,
+            r#"{"error":"Failed to decode base64 encoded string"}"#
+        );
+    }
+
+    #[tokio::test]
+    async fn payload_with_invalid_json_is_rejected() {
+        let router = TestRouter::new();
+        let payload = BASE64_URL_SAFE.encode("{invalid}");
+        let uri = format!("/{DNA_HASH}/coordinator/zome_name/fn_name?payload={payload}");
+        let (status_code, body) = router.request(&uri).await;
+        assert_eq!(status_code, StatusCode::BAD_REQUEST);
+        assert_eq!(body, r#"{"error":"Payload contains invalid JSON"}"#);
+    }
 }
