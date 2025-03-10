@@ -5,6 +5,7 @@ use axum::response::IntoResponse;
 use axum::Json;
 use holochain_types::dna::HoloHashError;
 
+use crate::app_selection::AppSelectionError;
 use crate::http::HcGwErrorResponse;
 
 /// Core HTTP Gateway error type
@@ -36,6 +37,9 @@ pub enum HcHttpGatewayError {
         /// Allowed payload size limit
         limit: u32,
     },
+    /// Handle errors specific to app selection
+    #[error("Error selecting a valid app: {0}")]
+    AppSelectionError(#[from] AppSelectionError),
 }
 
 /// Type aliased Result
@@ -72,6 +76,18 @@ impl IntoResponse for HcHttpGatewayError {
                         "Payload size exceeds maximum allowed size ({limit} bytes)"
                     )),
                 )
+            }
+            HcHttpGatewayError::AppSelectionError(AppSelectionError::NotInstalled) => {
+                tracing::error!("{}", self);
+                error_response(404, Some(&self.to_string()))
+            }
+            HcHttpGatewayError::AppSelectionError(AppSelectionError::NotAllowed) => {
+                tracing::error!("{}", self);
+                error_response(403, Some(&self.to_string()))
+            }
+            HcHttpGatewayError::AppSelectionError(AppSelectionError::MultipleMatching) => {
+                tracing::error!("{}", self);
+                error_response(500, Some(&self.to_string()))
             }
             e => {
                 tracing::error!("Internal Error: {}", e);
