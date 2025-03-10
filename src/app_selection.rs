@@ -43,6 +43,14 @@ fn find_installed_app<'a>(
     Ok(app_info)
 }
 
+/// Return the [`AppInfo`] of the matching valid app if unique.
+///
+/// If a single unique app contains the [`DnaHash`] and has a matching coordinator identifier
+/// then return the [`AppInfo`] of that app. Otherwise, return an [`AppSelectionError`].
+///
+/// # Side effects
+/// If a matching app is not found in the provided list of installed apps then a request to the
+/// admin websocket will be made and the list will be updated with the results of that request.
 pub async fn try_get_valid_app(
     dna_hash: DnaHash,
     coordinator_identifier: String,
