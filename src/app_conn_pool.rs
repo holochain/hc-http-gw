@@ -59,10 +59,24 @@ impl AppConnPool {
         admin_websocket: AdminWebsocket,
         execute: impl Fn(AppWebsocket) -> BoxFuture<'static, HcHttpGatewayResult<T>>,
     ) -> HcHttpGatewayResult<T> {
-        for _ in 0..2 {
-            let app_ws = self
+        // The first attempt may discover that the connection is invalid
+        // On the second attempt, we will reconnect without using a cached app port
+        // On the third attempt, we will reconnect permitting creating a new app interface
+        for _ in 0..3 {
+            let app_ws = match self
                 .get_or_connect_app_client(installed_app_id.clone(), admin_websocket.clone())
-                .await?;
+                .await
+            {
+                Ok(app_ws) => app_ws,
+                Err(HcHttpGatewayError::UpstreamUnavailable) => {
+                    tracing::info!("Unable to connect app client, attempting to reconnect without cached settings");
+
+                    // In this case, we tried and failed to open a new connection to Holochain.
+                    // Assume that this was because the port we used is no longer available.
+                    continue;
+                }
+                Err(e) => return Err(e),
+            };
             match execute(app_ws).await {
                 Ok(response) => {
                     return Ok(response);
@@ -73,6 +87,9 @@ impl AppConnPool {
                         e
                     );
                     self.remove_app_client(&installed_app_id).await;
+
+                    // This is the first error we expect to encounter, that the app websocket
+                    // connection is no longer valid. We should attempt to reconnect.
                     continue;
                 }
                 Err(e) => return Err(e),
@@ -111,7 +128,7 @@ impl AppConnPool {
             }
             std::collections::hash_map::Entry::Vacant(entry) => {
                 let app_ws = self
-                    .attempt_connect_app_ws(installed_app_id, admin_ws, 1)
+                    .attempt_connect_app_ws(installed_app_id, admin_ws)
                     .await?;
 
                 entry.insert(AppWebsocketWithState {
@@ -151,7 +168,6 @@ impl AppConnPool {
         &self,
         installed_app_id: InstalledAppId,
         admin_ws: AdminWebsocket,
-        retries: i8,
     ) -> HcHttpGatewayResult<AppWebsocket> {
         tracing::debug!(
             "Attempting to connect to app client for {}",
@@ -214,13 +230,8 @@ impl AppConnPool {
                 // attempt will re-check the app interfaces.
                 *self.cached_app_port.write().expect("Invalid lock") = None;
 
-                // Try again, with one fewer retry permitted
-                return Box::pin(self.attempt_connect_app_ws(
-                    installed_app_id,
-                    admin_ws,
-                    retries - 1,
-                ))
-                .await;
+                // Mark the upstream as unavailable so that the caller can retry
+                return Err(HcHttpGatewayError::UpstreamUnavailable);
             }
         };
         tracing::debug!("Connected to app websocket");

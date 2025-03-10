@@ -308,6 +308,88 @@ async fn reconnect_on_failed_websocket() {
 }
 
 #[tokio::test(flavor = "multi_thread")]
+async fn reconnect_gives_up() {
+    initialize_tracing_subscriber();
+
+    let mut sweet_conductor = SweetConductor::from_standard_config().await;
+
+    let app = install_fixture1(sweet_conductor.clone(), None)
+        .await
+        .unwrap();
+    init_zome(sweet_conductor.clone(), &app, "coordinator1".to_string())
+        .await
+        .unwrap();
+
+    let admin_port = sweet_conductor
+        .get_arbitrary_admin_websocket_port()
+        .unwrap();
+    let admin_ws = AdminWebsocket::connect((Ipv4Addr::LOCALHOST, admin_port))
+        .await
+        .unwrap();
+
+    let pool = AppConnPool::new(create_test_configuration(admin_port).unwrap());
+
+    // Connect while the app is running
+    let app_client = pool
+        .get_or_connect_app_client("fixture1".to_string(), admin_ws.clone())
+        .await
+        .unwrap();
+    assert_eq!(
+        "fixture1".to_string(),
+        app_client.cached_app_info().installed_app_id
+    );
+
+    // Stop the conductor
+    sweet_conductor.shutdown().await;
+
+    let cells = app_client
+        .cached_app_info()
+        .cell_info
+        .values()
+        .flat_map(|app_info| {
+            app_info.iter().filter_map(|cell_info| match cell_info {
+                CellInfo::Provisioned(provisioned) => Some(provisioned.clone()),
+                _ => None,
+            })
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(cells.len(), 1);
+
+    let cell_id = cells[0].cell_id.clone();
+
+    // Now try to make a call, which won't be able to reconnect
+    let err = pool
+        .call::<ExternIO>("fixture1".to_string(), admin_ws.clone(), |app_ws| {
+            Box::pin({
+                let cell_id = cell_id.clone();
+                async move {
+                    let response = app_ws
+                        .call_zome(
+                            ZomeCallTarget::CellId(cell_id),
+                            "coordinator1".into(),
+                            "get_all_1".into(),
+                            ExternIO::encode(()).unwrap(),
+                        )
+                        .await?;
+
+                    Ok(response)
+                }
+            })
+        })
+        .await
+        .unwrap_err();
+
+    assert!(
+        matches!(
+            err,
+            HcHttpGatewayError::HolochainError(ConductorApiError::WebsocketError(_))
+        ),
+        "Expected Holochain websocket error, got {:?}",
+        err
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
 async fn close_old_connections_on_limit() {
     initialize_tracing_subscriber();
 
