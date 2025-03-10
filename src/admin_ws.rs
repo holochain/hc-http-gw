@@ -2,9 +2,9 @@ use std::{
     future::Future,
     sync::{Arc, Mutex},
 };
-use tokio::time::{sleep, Duration};
 
 use holochain_client::{AdminWebsocket, ConductorApiError, ConductorApiResult};
+use tokio::time::{sleep, Duration};
 
 use crate::{HcHttpGatewayError, HcHttpGatewayResult};
 
@@ -90,6 +90,7 @@ impl ReconnectingAdminWebsocket {
     /// * `Err(HcHttpGatewayError)` - If reconnection failed after all retry attempts
     pub async fn reconnect(&mut self) -> HcHttpGatewayResult<()> {
         self.current_retries = 0;
+
         while self.current_retries < ADMIN_WS_CONNECTION_MAX_RETRIES {
             match AdminWebsocket::connect(&self.url).await {
                 Ok(conn) => {
@@ -127,12 +128,9 @@ impl ReconnectingAdminWebsocket {
 
     /// Allows calling a method on the AdminWebsocket, with automatic reconnection if needed
     ///
-    /// This is a convenience wrapper around `call_inner` that automatically converts
-    /// ConductorApiError to HcHttpGatewayError.
-    ///
     /// # Arguments
     ///
-    /// * `f` - A function that takes a reference to an AdminWebsocket and returns a Result with ConductorApiError
+    /// * `f` - A function that takes a Boxed AdminWebsocket and returns a Result with ConductorApiError
     ///
     /// # Returns
     ///
@@ -140,44 +138,67 @@ impl ReconnectingAdminWebsocket {
     /// * `Err(HcHttpGatewayError)` - If an error occurred that could not be recovered from
     pub async fn call<T, F, Fut>(&mut self, f: F) -> HcHttpGatewayResult<T>
     where
-        F: Fn(Box<AdminWebsocket>) -> Fut + Send,
+        F: Fn(Arc<AdminWebsocket>) -> Fut + Send + Clone,
         Fut: Future<Output = ConductorApiResult<T>> + Send,
     {
-        // Ensure we're connected before proceeding
         self.ensure_connected().await?;
 
-        // Execute the provided function
-        let result = {
-            let connection = self.handle.lock().unwrap();
-            let conn = connection.as_ref().unwrap().to_owned();
-            match f(Box::new(conn)).await {
-                Ok(value) => Ok(value),
-                Err(err) => Err(HcHttpGatewayError::from(err)),
+        // Try to execute the operation
+        match self.execute_operation(&f).await {
+            Ok(result) => Ok(result),
+            Err(e) if e.is_disconnect_error() => self.handle_disconnection(f).await,
+            Err(e) => Err(e),
+        }
+    }
+
+    // Helper method to execute an operation with the current connection
+    async fn execute_operation<T, F, Fut>(&mut self, f: &F) -> HcHttpGatewayResult<T>
+    where
+        F: Fn(Arc<AdminWebsocket>) -> Fut + Send,
+        Fut: Future<Output = ConductorApiResult<T>> + Send,
+    {
+        let mut connection = match self.handle.lock() {
+            Ok(guard) => guard,
+            Err(e) => {
+                return Err(HcHttpGatewayError::InternalError(format!(
+                    "Connection mutex was poisoned: {e}"
+                )));
             }
         };
 
-        // Handle potential disconnection
-        match result {
-            Ok(res) => Ok(res),
-            Err(e) => {
-                // If the error indicates a disconnect, try to reconnect and retry once
-                if e.is_disconnect_error() {
-                    tracing::warn!("Detected disconnection. Attempting to reconnect...");
-                    if let Ok(()) = self.reconnect().await {
-                        tracing::info!("Reconnected successfully. Retrying operation.");
-                        let connection = self.handle.lock().unwrap();
-                        let conn = connection.as_ref().unwrap().to_owned();
-                        // Retry the operation with the new connection
-                        match f(Box::new(conn)).await {
-                            Ok(value) => Ok(value),
-                            Err(err) => Err(HcHttpGatewayError::from(err)),
-                        }
-                    } else {
-                        Err(e)
-                    }
-                } else {
-                    Err(e)
-                }
+        let connection = match connection.take() {
+            Some(conn) => conn,
+            None => {
+                return Err(HcHttpGatewayError::InternalError(
+                    "No connection available despite ensure_connected check".to_string(),
+                ));
+            }
+        };
+
+        let connection = Arc::new(connection);
+
+        f(connection).await.map_err(HcHttpGatewayError::from)
+    }
+
+    async fn handle_disconnection<T, F, Fut>(&mut self, f: F) -> HcHttpGatewayResult<T>
+    where
+        F: Fn(Arc<AdminWebsocket>) -> Fut + Send,
+        Fut: Future<Output = ConductorApiResult<T>> + Send,
+    {
+        tracing::warn!("Detected disconnection. Attempting to reconnect...");
+
+        match self.reconnect().await {
+            Ok(()) => {
+                tracing::info!("Reconnected successfully. Retrying operation.");
+                // Retry the operation with the new connection
+                self.execute_operation(&f).await
+            }
+            Err(reconnect_err) => {
+                tracing::error!("Failed to reconnect: {:?}", reconnect_err);
+                Err(HcHttpGatewayError::InternalError(format!(
+                    "Disconnection detected but reconnection failed: {}",
+                    reconnect_err
+                )))
             }
         }
     }

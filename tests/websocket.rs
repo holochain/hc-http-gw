@@ -57,7 +57,6 @@ async fn connect_admin_websocket() {
         Err(HcHttpGatewayError::ConductorApiError(
             holochain_client::ConductorApiError::WebsocketError(error),
         )) => {
-            println!("{:?}", error);
             assert!(
                 error.to_string().contains("connection") || error.to_string().contains("closed"),
                 "Expected connection error, got: {}",
