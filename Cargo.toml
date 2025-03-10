@@ -19,6 +19,7 @@ base64 = "0.22.1"
 clap = { version = "4.5.30", features = ["derive", "env"] }
 holochain_client = "0.6.2"
 holochain_types = "0.4.1"
+holochain_conductor_api = "0.4.1"
 serde = { version = "=1.0.203", features = ["derive"] }
 serde_json = "1.0.140"
 thiserror = "2.0.11"

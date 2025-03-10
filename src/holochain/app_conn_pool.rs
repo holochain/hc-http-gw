@@ -1,10 +1,11 @@
 use crate::config::{AllowedFns, Configuration};
+use crate::holochain::{AdminCall, AppCall};
 use crate::{HcHttpGatewayError, HcHttpGatewayResult};
 use futures::future::BoxFuture;
 use holochain_client::{
     AdminWebsocket, AppWebsocket, AuthorizeSigningCredentialsPayload, CellInfo, ClientAgentSigner,
-    ConductorApiError, ConnectRequest, GrantedFunctions, IssueAppAuthenticationTokenPayload,
-    Timestamp, WebsocketConfig,
+    ConductorApiError, ConnectRequest, ExternIO, GrantedFunctions,
+    IssueAppAuthenticationTokenPayload, Timestamp, WebsocketConfig,
 };
 use holochain_types::app::InstalledAppId;
 use holochain_types::websocket::AllowedOrigins;
@@ -32,15 +33,17 @@ pub struct AppWebsocketWithState {
 #[derive(Debug, Clone)]
 pub struct AppConnPool {
     configuration: Configuration,
+    admin_call: Arc<dyn AdminCall>,
     cached_app_port: Arc<RwLock<Option<u16>>>,
     app_clients: Arc<tokio::sync::RwLock<HashMap<InstalledAppId, AppWebsocketWithState>>>,
 }
 
 impl AppConnPool {
     /// Create a new app connection pool with the given configuration.
-    pub fn new(configuration: Configuration) -> Self {
+    pub fn new(configuration: Configuration, admin_call: Arc<dyn AdminCall>) -> Self {
         Self {
             configuration,
+            admin_call,
             cached_app_port: Default::default(),
             app_clients: Default::default(),
         }
@@ -56,7 +59,6 @@ impl AppConnPool {
     pub async fn call<T>(
         &self,
         installed_app_id: InstalledAppId,
-        admin_websocket: AdminWebsocket,
         execute: impl Fn(AppWebsocket) -> BoxFuture<'static, HcHttpGatewayResult<T>>,
     ) -> HcHttpGatewayResult<T> {
         // The first attempt may discover that the connection is invalid
@@ -64,7 +66,7 @@ impl AppConnPool {
         // On the third attempt, we will reconnect permitting creating a new app interface
         for _ in 0..3 {
             let app_ws = match self
-                .get_or_connect_app_client(installed_app_id.clone(), admin_websocket.clone())
+                .get_or_connect_app_client(installed_app_id.clone(), self.admin_call.clone())
                 .await
             {
                 Ok(app_ws) => app_ws,
@@ -109,7 +111,7 @@ impl AppConnPool {
     pub async fn get_or_connect_app_client(
         &self,
         installed_app_id: InstalledAppId,
-        admin_ws: AdminWebsocket,
+        admin_ws: Arc<dyn AdminCall>,
     ) -> HcHttpGatewayResult<AppWebsocket> {
         {
             let app_clients = self.app_clients.read().await;
@@ -167,7 +169,7 @@ impl AppConnPool {
     async fn attempt_connect_app_ws(
         &self,
         installed_app_id: InstalledAppId,
-        admin_ws: AdminWebsocket,
+        admin_call: Arc<dyn AdminCall>,
     ) -> HcHttpGatewayResult<AppWebsocket> {
         tracing::debug!(
             "Attempting to connect to app client for {}",
@@ -176,12 +178,12 @@ impl AppConnPool {
 
         // Get the app port for a compatible app interface, which may be a cached value.
         let app_port = self
-            .get_app_port(&installed_app_id, admin_ws.clone())
+            .get_app_port(&installed_app_id, admin_call.clone())
             .await?;
         tracing::debug!("Using app port {}", app_port);
 
         // Issue an app authentication token to allow us to connect a new client.
-        let issued = admin_ws
+        let issued = admin_call
             .issue_app_auth_token(IssueAppAuthenticationTokenPayload::for_installed_app_id(
                 installed_app_id.clone(),
             ))
@@ -274,7 +276,7 @@ impl AppConnPool {
 
         // For each cell in the app, authorize signing credentials for the granted functions
         for cell_id in cells {
-            let credentials = admin_ws
+            let credentials = admin_call
                 .authorize_signing_credentials(AuthorizeSigningCredentialsPayload {
                     cell_id: cell_id.clone(),
                     functions: Some(granted_functions.clone()),
@@ -291,7 +293,7 @@ impl AppConnPool {
     async fn get_app_port(
         &self,
         installed_app_id: &InstalledAppId,
-        admin_ws: AdminWebsocket,
+        admin_call: Arc<dyn AdminCall>,
     ) -> HcHttpGatewayResult<u16> {
         {
             if let Some(app_port) = self.cached_app_port.read().expect("Invalid lock").as_ref() {
@@ -299,7 +301,7 @@ impl AppConnPool {
             }
         }
 
-        let app_interfaces = admin_ws.list_app_interfaces().await?;
+        let app_interfaces = admin_call.list_app_interfaces().await?;
 
         let selected_app_interface = app_interfaces.into_iter().find(|app_interface| {
             if let Some(ref for_app_id) = app_interface.installed_app_id {
@@ -314,7 +316,7 @@ impl AppConnPool {
         let app_port = match selected_app_interface {
             Some(app_interface) => app_interface.port,
             None => {
-                admin_ws
+                admin_call
                     .attach_app_interface(0, AllowedOrigins::from(HTTP_GW_ORIGIN.to_string()), None)
                     .await?
             }
@@ -330,5 +332,24 @@ impl AppConnPool {
         &self,
     ) -> Arc<tokio::sync::RwLock<HashMap<InstalledAppId, AppWebsocketWithState>>> {
         self.app_clients.clone()
+    }
+
+    /// Set the admin websocket for testing purposes.
+    ///
+    /// This is temporary, we should be using the admin websocket that can reconnect.
+    #[cfg(feature = "test-utils")]
+    pub async fn set_admin_ws(&mut self, admin_ws: AdminWebsocket) {
+        self.admin_call.set_admin_ws(admin_ws).await;
+    }
+}
+
+impl AppCall for AppConnPool {
+    fn handle_zome_call(
+        &self,
+        installed_app_id: InstalledAppId,
+        execute: fn(AppWebsocket) -> BoxFuture<'static, HcHttpGatewayResult<ExternIO>>,
+    ) -> BoxFuture<'static, HcHttpGatewayResult<ExternIO>> {
+        let this = self.clone();
+        Box::pin(async move { this.call(installed_app_id, execute).await })
     }
 }

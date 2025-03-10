@@ -1,12 +1,23 @@
+use crate::holochain::AppCall;
 use crate::{
     config::Configuration,
     routes::{health_check, zome_call},
     service::AppState,
+    AdminCall,
 };
 use axum::{http::StatusCode, routing::get, Router};
+use std::sync::Arc;
 
-pub fn hc_http_gateway_router(configuration: Configuration) -> Router {
-    let state = AppState { configuration };
+pub fn hc_http_gateway_router(
+    configuration: Configuration,
+    admin_call: Arc<dyn AdminCall>,
+    app_call: Arc<dyn AppCall>,
+) -> Router {
+    let state = AppState {
+        configuration,
+        admin_call,
+        app_call,
+    };
     Router::new()
         .route("/health", get(health_check))
         .route(
@@ -19,15 +30,47 @@ pub fn hc_http_gateway_router(configuration: Configuration) -> Router {
 
 #[cfg(test)]
 pub mod tests {
+    use crate::holochain::AppCall;
     use crate::{
         config::{AllowedFns, Configuration, ZomeFn},
         router::hc_http_gateway_router,
+        AdminConn, HcHttpGatewayResult,
     };
     use axum::{body::Body, http::Request, Router};
+    use futures::future::BoxFuture;
+    use holochain::prelude::ExternIO;
+    use holochain_client::{AppWebsocket, SerializedBytes};
+    use holochain_serialized_bytes::prelude::*;
+    use holochain_types::app::InstalledAppId;
     use http_body_util::BodyExt;
     use reqwest::StatusCode;
+    use serde::{Deserialize, Serialize};
     use std::collections::{HashMap, HashSet};
+    use std::sync::Arc;
     use tower::ServiceExt;
+
+    #[derive(Debug, Serialize, Deserialize, SerializedBytes)]
+    pub struct TestZomeResponse {
+        hello: String,
+    }
+
+    #[derive(Debug)]
+    struct TestAppPool;
+
+    impl AppCall for TestAppPool {
+        fn handle_zome_call(
+            &self,
+            _installed_app_id: InstalledAppId,
+            _execute: fn(AppWebsocket) -> BoxFuture<'static, HcHttpGatewayResult<ExternIO>>,
+        ) -> BoxFuture<'static, HcHttpGatewayResult<ExternIO>> {
+            Box::pin(async move {
+                let response = TestZomeResponse {
+                    hello: "world".to_string(),
+                };
+                Ok(ExternIO::encode(response)?)
+            })
+        }
+    }
 
     pub struct TestRouter(Router);
 
@@ -52,7 +95,11 @@ pub mod tests {
         }
 
         pub fn new_with_config(config: Configuration) -> Self {
-            Self(hc_http_gateway_router(config))
+            Self(hc_http_gateway_router(
+                config,
+                Arc::new(AdminConn),
+                Arc::new(TestAppPool),
+            ))
         }
 
         // Send request and return status code and body of response.

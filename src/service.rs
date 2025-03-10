@@ -1,11 +1,13 @@
 //! HTTP gateway service for Holochain
 
+use crate::holochain::{AdminCall, AppCall};
 use crate::{
     config::Configuration, error::HcHttpGatewayResult, router::hc_http_gateway_router,
     HcHttpGatewayError,
 };
 use axum::Router;
 use std::net::{IpAddr, SocketAddr};
+use std::sync::Arc;
 use tokio::net::TcpListener;
 
 /// Core Holochain HTTP gateway service
@@ -19,6 +21,16 @@ pub struct HcHttpGatewayService {
 #[derive(Debug, Clone)]
 pub struct AppState {
     pub configuration: Configuration,
+    #[allow(
+        dead_code,
+        reason = "This will be used when we start making zome calls"
+    )]
+    pub admin_call: Arc<dyn AdminCall>,
+    #[allow(
+        dead_code,
+        reason = "This will be used when we start making zome calls"
+    )]
+    pub app_call: Arc<dyn AppCall>,
 }
 
 impl HcHttpGatewayService {
@@ -27,10 +39,12 @@ impl HcHttpGatewayService {
         address: impl Into<IpAddr>,
         port: u16,
         configuration: Configuration,
+        admin_call: Arc<dyn AdminCall>,
+        app_call: Arc<dyn AppCall>,
     ) -> HcHttpGatewayResult<Self> {
         tracing::info!("Configuration: {:?}", configuration);
 
-        let router = hc_http_gateway_router(configuration);
+        let router = hc_http_gateway_router(configuration, admin_call, app_call);
         let address = SocketAddr::new(address.into(), port);
         let listener = TcpListener::bind(address).await?;
 
