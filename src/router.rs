@@ -7,12 +7,13 @@ use crate::{
 use axum::{http::StatusCode, routing::get, Router};
 
 pub fn hc_http_gateway_router(configuration: Configuration) -> Router {
-    let admin_ws = ReconnectingAdminWebsocket::new(&configuration.admin_ws_url.to_string());
+    let admin_ws = ReconnectingAdminWebsocket::new(configuration.admin_ws_url.as_ref());
 
     let state = AppState {
         configuration,
         admin_ws,
     };
+
     Router::new()
         .route("/health", get(health_check))
         .route(
