@@ -33,25 +33,6 @@ impl ReconnectingAdminWebsocket {
         }
     }
 
-    /// Establishes the initial connection to the AdminWebsocket
-    ///
-    /// This should be called before making any calls to the AdminWebsocket.
-    /// It will attempt to establish a connection and store it internally.
-    pub async fn connect(&mut self) -> HcHttpGatewayResult<()> {
-        let conn = AdminWebsocket::connect(&self.url)
-            .await
-            .map_err(HcHttpGatewayError::from)?;
-
-        let mut connection = self.connection_handle.lock().map_err(|e| {
-            HcHttpGatewayError::InternalError(format!("Mutex was poisoned during connect: {}", e))
-        })?;
-
-        *connection = Some(conn);
-        self.current_retries = 0;
-
-        Ok(())
-    }
-
     /// Checks if there is an active connection
     fn is_connected(&self) -> HcHttpGatewayResult<bool> {
         let connection = self.connection_handle.lock().map_err(|e| {
@@ -75,14 +56,14 @@ impl ReconnectingAdminWebsocket {
             return Ok(());
         }
 
-        self.reconnect().await
+        self.connect().await
     }
 
-    /// Attempts to reconnect to the AdminWebsocket
+    /// Attempts to connect to the AdminWebsocket
     ///
     /// This will make multiple attempts according to the `max_retries` and
     /// `retry_delay_ms` settings, with exponential backoff between retries.
-    pub async fn reconnect(&mut self) -> HcHttpGatewayResult<()> {
+    pub async fn connect(&mut self) -> HcHttpGatewayResult<()> {
         self.current_retries = 0;
 
         while self.current_retries < ADMIN_WS_CONNECTION_MAX_RETRIES {
@@ -176,7 +157,7 @@ impl ReconnectingAdminWebsocket {
     {
         tracing::warn!("Detected disconnection. Attempting to reconnect...");
 
-        match self.reconnect().await {
+        match self.connect().await {
             Ok(()) => {
                 tracing::info!("Reconnected successfully. Retrying operation.");
 
