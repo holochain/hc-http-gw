@@ -293,8 +293,10 @@ impl AppConnPool {
         installed_app_id: &InstalledAppId,
         admin_ws: AdminWebsocket,
     ) -> HcHttpGatewayResult<u16> {
-        if let Some(app_port) = self.cached_app_port.read().expect("Invalid lock").as_ref() {
-            return Ok(*app_port);
+        {
+            if let Some(app_port) = self.cached_app_port.read().expect("Invalid lock").as_ref() {
+                return Ok(*app_port);
+            }
         }
 
         let app_interfaces = admin_ws.list_app_interfaces().await?;
