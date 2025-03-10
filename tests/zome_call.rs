@@ -56,7 +56,7 @@ async fn zome_call_with_payload_exceeding_limit_fails() {
 
     // Custom configuration with a very small payload limit
     let config =
-        Configuration::try_new("ws://localhost:50350", "10", "forum", allowed_fns).unwrap();
+        Configuration::try_new("ws://localhost:50350", "10", "forum", allowed_fns, "", "").unwrap();
 
     let app = TestApp::spawn_with_config(config).await;
 

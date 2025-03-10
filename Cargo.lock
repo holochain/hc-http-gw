@@ -45,17 +45,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "again"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "05802a5ad4d172eaf796f7047b42d0af9db513585d16d4169660a21613d34b93"
-dependencies = [
- "log",
- "rand 0.7.3",
- "wasm-timer",
-]
-
-[[package]]
 name = "ahash"
 version = "0.3.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2651,11 +2640,10 @@ dependencies = [
 
 [[package]]
 name = "holochain_client"
-version = "0.6.0"
+version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "16e8ae49c9b46f3c22850c2ed77f0499165974410e6589157d421baca14f36c9"
+checksum = "291f9b65a67fef0a167273bb54e59a2966e577a4180be34c8f38b2874b3c5afe"
 dependencies = [
- "again",
  "anyhow",
  "async-trait",
  "ed25519-dalek",
@@ -2672,6 +2660,7 @@ dependencies = [
  "parking_lot 0.12.3",
  "rand 0.8.5",
  "serde",
+ "thiserror 2.0.11",
  "tokio",
 ]
 
@@ -2740,8 +2729,11 @@ dependencies = [
  "base64 0.22.1",
  "clap 4.5.30",
  "fixt",
+ "futures",
  "holochain",
  "holochain_client",
+ "holochain_http_gateway",
+ "holochain_serialized_bytes",
  "holochain_types",
  "http-body-util",
  "reqwest 0.12.12",
@@ -8127,21 +8119,6 @@ checksum = "15053d8d85c7eccdbefef60f06769760a563c7f0a9d6902a13d35c7800b0ad65"
 dependencies = [
  "futures-util",
  "js-sys",
- "wasm-bindgen",
- "wasm-bindgen-futures",
- "web-sys",
-]
-
-[[package]]
-name = "wasm-timer"
-version = "0.2.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "be0ecb0db480561e9a7642b5d3e4187c128914e58aa84330b9493e3eb68c5e7f"
-dependencies = [
- "futures",
- "js-sys",
- "parking_lot 0.11.2",
- "pin-utils",
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",
