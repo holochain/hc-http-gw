@@ -36,6 +36,12 @@ pub enum HcHttpGatewayError {
         /// Allowed payload size limit
         limit: u32,
     },
+    /// Handles conductor api errors
+    #[error("Conductor API error: {0}")]
+    ConductorApiError(#[from] holochain_client::ConductorApiError),
+    /// Handles miscellaneous internal errors
+    #[error("Internal Error: {0}")]
+    InternalError(String),
 }
 
 /// Type aliased Result

@@ -9,7 +9,7 @@ use crate::{
     config::Configuration,
     error::HcHttpGatewayResult,
     routes::{health_check, zome_call},
-    HcHttpGatewayError,
+    HcHttpGatewayError, ReconnectingAdminWebsocket,
 };
 
 /// Core Holochain HTTP gateway service
@@ -20,9 +20,11 @@ pub struct HcHttpGatewayService {
 }
 
 /// Shared application state
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct AppState {
     pub configuration: Configuration,
+    #[allow(unused, reason = "Temporary")]
+    pub admin_ws: ReconnectingAdminWebsocket,
 }
 
 impl HcHttpGatewayService {
@@ -33,8 +35,12 @@ impl HcHttpGatewayService {
         configuration: Configuration,
     ) -> HcHttpGatewayResult<Self> {
         let address = SocketAddr::new(address.into(), port);
+        let admin_ws = ReconnectingAdminWebsocket::new(configuration.admin_ws_url.as_ref());
 
-        let state = AppState { configuration };
+        let state = AppState {
+            configuration,
+            admin_ws,
+        };
 
         let router = Router::new()
             .route(
