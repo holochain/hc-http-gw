@@ -62,6 +62,11 @@ impl ReconnectingAdminWebsocket {
         Ok(connection.is_some())
     }
 
+    /// Gets reconnection retry count
+    pub fn get_reconnection_retries(&self) -> usize {
+        self.current_retries
+    }
+
     /// Ensures that a connection is established before proceeding
     ///
     /// If a connection already exists, this is a no-op.
