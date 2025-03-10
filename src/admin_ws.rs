@@ -47,18 +47,29 @@ impl ReconnectingAdminWebsocket {
     /// * `Ok(())` - If the connection was established successfully
     /// * `Err(HcHttpGatewayError)` - If the connection could not be established
     pub async fn connect(&mut self) -> HcHttpGatewayResult<()> {
-        let conn = AdminWebsocket::connect(&self.url).await?;
+        let conn = AdminWebsocket::connect(&self.url)
+            .await
+            .map_err(|e| HcHttpGatewayError::from(e))?;
 
-        let mut connection = self.handle.lock().unwrap();
+        let mut connection = self.handle.lock().map_err(|e| {
+            HcHttpGatewayError::InternalError(format!("Mutex was poisoned during connect: {}", e))
+        })?;
+
         *connection = Some(conn);
-
         self.current_retries = 0;
+
         Ok(())
     }
 
     /// Checks if there is an active connection
     fn is_connected(&self) -> HcHttpGatewayResult<bool> {
-        let connection = self.handle.lock().unwrap();
+        let connection = self.handle.lock().map_err(|e| {
+            HcHttpGatewayError::InternalError(format!(
+                "Mutex was poisoned during is_connected check: {}",
+                e
+            ))
+        })?;
+
         Ok(connection.is_some())
     }
 
@@ -157,25 +168,20 @@ impl ReconnectingAdminWebsocket {
         F: Fn(Arc<AdminWebsocket>) -> Fut + Send,
         Fut: Future<Output = ConductorApiResult<T>> + Send,
     {
-        let mut connection = match self.handle.lock() {
-            Ok(guard) => guard,
-            Err(e) => {
-                return Err(HcHttpGatewayError::InternalError(format!(
-                    "Connection mutex was poisoned: {e}"
-                )));
-            }
-        };
+        // block scope to limit MutexGuard lifetime
+        let connection = {
+            let mut connection = self.handle.lock().map_err(|e| {
+                HcHttpGatewayError::InternalError(format!("Connection mutex was poisoned: {e}"))
+            })?;
 
-        let connection = match connection.take() {
-            Some(conn) => conn,
-            None => {
-                return Err(HcHttpGatewayError::InternalError(
+            let connection = connection.take().ok_or_else(|| {
+                HcHttpGatewayError::InternalError(
                     "No connection available despite ensure_connected check".to_string(),
-                ));
-            }
-        };
+                )
+            })?;
 
-        let connection = Arc::new(connection);
+            Arc::new(connection)
+        };
 
         f(connection).await.map_err(HcHttpGatewayError::from)
     }
@@ -190,16 +196,14 @@ impl ReconnectingAdminWebsocket {
         match self.reconnect().await {
             Ok(()) => {
                 tracing::info!("Reconnected successfully. Retrying operation.");
+
                 // Retry the operation with the new connection
                 self.execute_operation(&f).await
             }
-            Err(reconnect_err) => {
-                tracing::error!("Failed to reconnect: {:?}", reconnect_err);
-                Err(HcHttpGatewayError::InternalError(format!(
-                    "Disconnection detected but reconnection failed: {}",
-                    reconnect_err
-                )))
-            }
+            Err(reconnect_err) => Err(HcHttpGatewayError::InternalError(format!(
+                "Disconnection detected but reconnection failed: {}",
+                reconnect_err
+            ))),
         }
     }
 }
