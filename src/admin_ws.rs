@@ -49,7 +49,7 @@ impl ReconnectingAdminWebsocket {
     pub async fn connect(&mut self) -> HcHttpGatewayResult<()> {
         let conn = AdminWebsocket::connect(&self.url)
             .await
-            .map_err(|e| HcHttpGatewayError::from(e))?;
+            .map_err(HcHttpGatewayError::from)?;
 
         let mut connection = self.handle.lock().map_err(|e| {
             HcHttpGatewayError::InternalError(format!("Mutex was poisoned during connect: {}", e))
@@ -105,9 +105,16 @@ impl ReconnectingAdminWebsocket {
         while self.current_retries < ADMIN_WS_CONNECTION_MAX_RETRIES {
             match AdminWebsocket::connect(&self.url).await {
                 Ok(conn) => {
-                    let mut connection = self.handle.lock().unwrap();
+                    let mut connection = self.handle.lock().map_err(|e| {
+                        HcHttpGatewayError::InternalError(format!(
+                            "Mutex was poisoned during is_connected check: {}",
+                            e
+                        ))
+                    })?;
+
                     *connection = Some(conn);
                     self.current_retries = 0;
+
                     return Ok(());
                 }
                 Err(e) => {
