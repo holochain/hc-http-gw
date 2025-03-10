@@ -2,7 +2,6 @@ use holochain_http_gateway::{
     config::{AllowedFns, Configuration},
     AdminConn, AppConnPool, HcHttpGatewayService,
 };
-
 use reqwest::{Client, Response};
 use std::collections::HashMap;
 use std::sync::Arc;

@@ -14,5 +14,4 @@ pub mod transcode;
 pub use cli::HcHttpGatewayArgs;
 pub use error::{HcHttpGatewayError, HcHttpGatewayResult};
 pub use holochain::*;
-pub use holochain::{AdminCall, AppCall};
 pub use service::HcHttpGatewayService;
