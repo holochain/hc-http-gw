@@ -1,12 +1,11 @@
 pub mod setup;
 
 use base64::{prelude::BASE64_URL_SAFE, Engine};
-use fixt::fixt;
+use holochain::core::DnaHash;
 use holochain_http_gateway::{
     config::{AllowedFns, Configuration},
     tracing::initialize_tracing_subscriber,
 };
-use holochain_types::dna::fixt::DnaHashFixturator;
 use reqwest::StatusCode;
 
 use setup::TestApp;
@@ -17,7 +16,7 @@ async fn zome_call_with_valid_params() {
 
     let app = TestApp::spawn().await;
 
-    let dna_hash = fixt!(DnaHash).to_string();
+    let dna_hash = DnaHash::from_raw_32(vec![1; 32]).to_string();
     let payload = r#"{"limit": 100, "offset": 10}"#;
     let payload = BASE64_URL_SAFE.encode(payload);
 
@@ -40,7 +39,7 @@ async fn zome_call_with_valid_params_but_no_payload() {
 
     let app = TestApp::spawn().await;
 
-    let dna_hash = fixt!(DnaHash).to_string();
+    let dna_hash = DnaHash::from_raw_32(vec![1; 32]).to_string();
 
     let response = app
         .call_zome(
@@ -68,7 +67,7 @@ async fn zome_call_with_payload_exceeding_limit_fails() {
 
     let app = TestApp::spawn_with_config(config).await;
 
-    let dna_hash = fixt!(DnaHash).to_string();
+    let dna_hash = DnaHash::from_raw_32(vec![1; 32]).to_string();
     let large_payload = r#"{"limit":100,"offset":0,"filters":{"author":"user123","tags":["important","featured","latest"],"content_contains":"search term","date_range":{"from":"2023-01-01","to":"2023-12-31"}}"#;
     let large_payload = BASE64_URL_SAFE.encode(large_payload);
 
@@ -92,7 +91,7 @@ async fn zome_call_with_invalid_json_payload_fails() {
     let app = TestApp::spawn().await;
 
     // Invalid JSON payload
-    let dna_hash = fixt!(DnaHash).to_string();
+    let dna_hash = DnaHash::from_raw_32(vec![1; 32]).to_string();
     let invalid_payload = r#"{"limit":10, offset: 0,}"#;
     let invalid_payload = BASE64_URL_SAFE.encode(invalid_payload);
 
@@ -139,7 +138,7 @@ async fn zome_call_with_non_base64_encoded_payload_fails() {
 
     let app = TestApp::spawn().await;
 
-    let dna_hash = fixt!(DnaHash).to_string();
+    let dna_hash = DnaHash::from_raw_32(vec![1; 32]).to_string();
     // Sending a raw JSON string without base64 encoding
     let payload = r#"{"limit":10}"#;
 
