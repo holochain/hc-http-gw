@@ -1,5 +1,3 @@
-pub mod hc_sandbox;
-
 use std::collections::HashMap;
 
 use holochain_http_gateway::{
