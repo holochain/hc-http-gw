@@ -1,5 +1,5 @@
 use std::{
-    io::{BufRead, BufReader, Write},
+    io::{BufRead, BufReader, Read, Write},
     process::{Child, Command, Stdio},
 };
 
@@ -11,24 +11,17 @@ const HOST_URL: &str = "http://localhost";
 const LAIR_PASSWORD: &str = "test-password";
 const DEFAULT_TIMEOUT: u64 = 30000; // 30 seconds
 
-pub struct Conductor {
+pub struct SandboxConductor {
     process: Option<Child>,
     conductor_dir: Option<String>,
     admin_api_url: Url2,
-    timeout: u64,
 }
 
-impl Conductor {
+impl SandboxConductor {
     pub fn create(
         signaling_server_url: &str,
-        network_type: &str,
         bootstrap_server_url: Option<&str>,
-        timeout: Option<u64>,
     ) -> anyhow::Result<Self> {
-        if bootstrap_server_url.is_some() && !matches!(network_type, "webrtc") {
-            bail!("Error creating conductor: bootstrap service can only be set for webrtc network");
-        }
-
         let mut args = vec![
             "sandbox",
             "--piped",
@@ -42,7 +35,7 @@ impl Conductor {
             args.push(bootstrap_url);
         }
 
-        args.push(network_type);
+        args.push("webrtc");
         args.push(signaling_server_url);
 
         tracing::info!("Creating conductor with args {:?}", args);
@@ -67,7 +60,6 @@ impl Conductor {
             process: Some(create_process),
             conductor_dir: None,
             admin_api_url: Url2::parse(HOST_URL),
-            timeout: timeout.unwrap_or(DEFAULT_TIMEOUT),
         };
 
         // Process stdout to extract the conductor directory
@@ -222,3 +214,4 @@ impl Conductor {
         Ok(())
     }
 }
+
