@@ -134,6 +134,12 @@ async fn reuse_connection() {
     assert!(inner_pool.try_write().is_err());
 }
 
+/// When making calls using the app connection pool, we need to reconnect websockets that are
+/// closed or otherwise in a problem state. However, we don't want to reconnect for other errors.
+/// In this test, we connect an app websocket and then disable the target app. We then prevent the
+/// pool from opening new connections and try to make a call. The call should fail with an error
+/// immediately, without trying to reconnect.
+/// If the code did try to reconnect, this test will fail with a timeout instead.
 #[tokio::test(flavor = "multi_thread")]
 async fn does_not_reconnect_on_non_websocket_error() {
     initialize_tracing_subscriber();
@@ -191,8 +197,8 @@ async fn does_not_reconnect_on_non_websocket_error() {
 
     let cell_id = cells[0].cell_id.clone();
 
-    let err = pool
-        .call::<ExternIO>("fixture1".to_string(), admin_ws.clone(), |app_ws| {
+    let err = tokio::time::timeout(std::time::Duration::from_secs(30), async move {
+        pool.call::<ExternIO>("fixture1".to_string(), admin_ws.clone(), |app_ws| {
             Box::pin({
                 let cell_id = cell_id.clone();
                 async move {
@@ -210,7 +216,10 @@ async fn does_not_reconnect_on_non_websocket_error() {
             })
         })
         .await
-        .unwrap_err();
+    })
+    .await
+    .expect("Timeout waiting for call to error")
+    .unwrap_err();
 
     assert!(matches!(
         err,
