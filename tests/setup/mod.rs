@@ -52,14 +52,14 @@ impl TestApp {
     pub async fn call_zome(
         &self,
         dna_hash: &str,
-        coordiator_identifier: &str,
+        coordinator_identifier: &str,
         zome: &str,
         zome_fn: &str,
         payload: Option<&str>,
     ) -> Response {
         let url = {
             let mut url = format!(
-                "http://{}/{dna_hash}/{coordiator_identifier}/{zome}/{zome_fn}",
+                "http://{}/{dna_hash}/{coordinator_identifier}/{zome}/{zome_fn}",
                 self.address
             );
             if let Some(payload) = payload {

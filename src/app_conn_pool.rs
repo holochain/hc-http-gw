@@ -206,10 +206,12 @@ impl AppConnPool {
             .try_set_header("Origin", HTTP_GW_ORIGIN)?;
 
         // Create a websocket client configuration and lower the default timeout. We are connecting
-        // locally to a running Holochain. If requests take longer than 10s then we want to free up
-        // the HTTP gateway to handle other requests.
+        // locally to a running Holochain. If requests take longer than the configured timeout then
+        // we want to free up the HTTP gateway to handle other requests.
+        // Note that the zome call timeout that we're configuring here also applies to the
+        // connection timeout. There's no way to set them separately.
         let mut config = WebsocketConfig::CLIENT_DEFAULT;
-        config.default_request_timeout = std::time::Duration::from_secs(10);
+        config.default_request_timeout = self.configuration.zome_call_timeout;
 
         let client_signer = ClientAgentSigner::default();
 
