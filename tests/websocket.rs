@@ -3,9 +3,7 @@ use holochain::sweettest::SweetConductor;
 use holochain_client::{AdminWebsocket, CellInfo, ConductorApiError, ExternIO, ZomeCallTarget};
 use holochain_http_gateway::config::{AllowedFns, Configuration, ZomeFn};
 use holochain_http_gateway::tracing::initialize_tracing_subscriber;
-use holochain_http_gateway::{
-    AppConnPool, HcHttpGatewayError, HcHttpGatewayResult, HTTP_GW_ORIGIN,
-};
+use holochain_http_gateway::{AppConnPool, HcHttpGatewayError, HTTP_GW_ORIGIN};
 use holochain_types::app::DisabledAppReason;
 use std::net::Ipv4Addr;
 
@@ -40,7 +38,7 @@ async fn connect_app_websocket() {
     let apps = admin_ws.list_apps(None).await.unwrap();
     assert_eq!(apps.len(), 2);
 
-    let pool = AppConnPool::new(create_test_configuration(admin_port).unwrap());
+    let pool = AppConnPool::new(create_test_configuration(admin_port));
 
     let app_client_1 = pool
         .get_or_connect_app_client("fixture1".to_string(), admin_ws.clone())
@@ -92,7 +90,7 @@ async fn reuse_connection() {
         .await
         .unwrap();
 
-    let pool = AppConnPool::new(create_test_configuration(admin_port).unwrap());
+    let pool = AppConnPool::new(create_test_configuration(admin_port));
 
     let app_client_1 = pool
         .get_or_connect_app_client("fixture1".to_string(), admin_ws.clone())
@@ -160,7 +158,7 @@ async fn does_not_reconnect_on_non_websocket_error() {
         .await
         .unwrap();
 
-    let pool = AppConnPool::new(create_test_configuration(admin_port).unwrap());
+    let pool = AppConnPool::new(create_test_configuration(admin_port));
 
     // Connect while the app is running
     let app_client = pool
@@ -247,7 +245,7 @@ async fn reconnect_on_failed_websocket() {
         .await
         .unwrap();
 
-    let pool = AppConnPool::new(create_test_configuration(admin_port).unwrap());
+    let pool = AppConnPool::new(create_test_configuration(admin_port));
 
     // Connect while the app is running
     let app_client = pool
@@ -336,7 +334,7 @@ async fn reconnect_gives_up() {
         .await
         .unwrap();
 
-    let pool = AppConnPool::new(create_test_configuration(admin_port).unwrap());
+    let pool = AppConnPool::new(create_test_configuration(admin_port));
 
     // Connect while the app is running
     let app_client = pool
@@ -502,7 +500,7 @@ async fn close_old_connections_on_limit() {
     assert_eq!(ws_for_apps, vec!["app_1", "app_3"]);
 }
 
-fn create_test_configuration(admin_port: u16) -> HcHttpGatewayResult<Configuration> {
+fn create_test_configuration(admin_port: u16) -> Configuration {
     Configuration::try_new(
         &format!("ws://127.0.0.1:{}", admin_port),
         "",
@@ -536,4 +534,5 @@ fn create_test_configuration(admin_port: u16) -> HcHttpGatewayResult<Configurati
         "",
         "",
     )
+    .unwrap()
 }

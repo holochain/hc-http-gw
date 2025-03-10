@@ -34,7 +34,9 @@ where
         parts: &mut axum::http::request::Parts,
         state: &S,
     ) -> Result<Self, Self::Rejection> {
-        let Path(raw_params) = Path::<RawZomeCallParams>::from_request_parts(parts, state).await?;
+        let Path(raw_params) = Path::<RawZomeCallParams>::from_request_parts(parts, state)
+            .await
+            .map_err(|err| HcHttpGatewayError::RequestMalformed(err.to_string()))?;
         let RawZomeCallParams {
             dna_hash,
             coordinator_identifier,
@@ -42,25 +44,23 @@ where
             fn_name,
         } = raw_params;
         // Check DNA hash validity.
-        let dna_hash = DnaHash::try_from(dna_hash)?;
+        let dna_hash = DnaHash::try_from(dna_hash)
+            .map_err(|_| HcHttpGatewayError::RequestMalformed("Invalid DNA hash".to_string()))?;
         // Reject identifiers longer than the maximum length.
-        if coordinator_identifier.len() > MAX_IDENTIFIER_CHARS as usize {
-            return Err(HcHttpGatewayError::IdentifierLengthExceeded(
-                coordinator_identifier,
-                MAX_IDENTIFIER_CHARS,
-            ));
+        if coordinator_identifier.chars().count() > MAX_IDENTIFIER_CHARS as usize {
+            return Err(HcHttpGatewayError::RequestMalformed(format!(
+                "Identifier {coordinator_identifier} longer than {MAX_IDENTIFIER_CHARS} characters"
+            )));
         }
-        if zome_name.len() > MAX_IDENTIFIER_CHARS as usize {
-            return Err(HcHttpGatewayError::IdentifierLengthExceeded(
-                zome_name,
-                MAX_IDENTIFIER_CHARS,
-            ));
+        if zome_name.chars().count() > MAX_IDENTIFIER_CHARS as usize {
+            return Err(HcHttpGatewayError::RequestMalformed(format!(
+                "Identifier {zome_name} longer than {MAX_IDENTIFIER_CHARS} characters"
+            )));
         }
-        if fn_name.len() > MAX_IDENTIFIER_CHARS as usize {
-            return Err(HcHttpGatewayError::IdentifierLengthExceeded(
-                fn_name,
-                MAX_IDENTIFIER_CHARS,
-            ));
+        if fn_name.chars().count() > MAX_IDENTIFIER_CHARS as usize {
+            return Err(HcHttpGatewayError::RequestMalformed(format!(
+                "Identifier {fn_name} longer than {MAX_IDENTIFIER_CHARS} characters"
+            )));
         }
 
         Ok(ZomeCallParams {
@@ -91,11 +91,12 @@ pub async fn zome_call(
     } = params;
     // Check payload byte length does not exceed configured maximum.
     if let Some(payload) = &query.payload {
-        if payload.as_bytes().len() > state.configuration.payload_limit_bytes as usize {
-            return Err(HcHttpGatewayError::PayloadSizeLimitError {
-                size: payload.as_bytes().len() as u32,
-                limit: state.configuration.payload_limit_bytes,
-            });
+        // `len()` of a string is not the number of characters, but the number of bytes.
+        if payload.len() > state.configuration.payload_limit_bytes as usize {
+            return Err(HcHttpGatewayError::RequestMalformed(format!(
+                "Payload exceeds {} bytes",
+                state.configuration.payload_limit_bytes
+            )));
         }
     }
     // Check if function name is allowed.
@@ -114,7 +115,9 @@ pub async fn zome_call(
     let _zome_call_payload = if let Some(payload) = &query.payload {
         base64_json_to_hsb(payload)?
     } else {
-        ExternIO::encode(())?
+        ExternIO::encode(()).map_err(|err| {
+            HcHttpGatewayError::RequestMalformed(format!("Failure to serialize payload - {err}"))
+        })?
     };
 
     Ok(())
@@ -149,7 +152,10 @@ mod tests {
         let uri = format!("/{invalid_dna_hash}/coordinator/zome_name/fn_name");
         let (status_code, body) = router.request(&uri).await;
         assert_eq!(status_code, StatusCode::BAD_REQUEST);
-        assert_eq!(body, r#"{"error":"Invalid base64 DNA hash"}"#);
+        assert_eq!(
+            body,
+            r#"{"error":"Request is malformed: Invalid DNA hash"}"#
+        );
     }
 
     #[tokio::test]
@@ -162,7 +168,7 @@ mod tests {
         assert_eq!(
             body,
             format!(
-                r#"{{"error":"Identifier {coordinator} longer than {MAX_IDENTIFIER_CHARS} characters"}}"#
+                r#"{{"error":"Request is malformed: Identifier {coordinator} longer than {MAX_IDENTIFIER_CHARS} characters"}}"#
             )
         );
     }
@@ -177,7 +183,7 @@ mod tests {
         assert_eq!(
             body,
             format!(
-                r#"{{"error":"Identifier {zome_name} longer than {MAX_IDENTIFIER_CHARS} characters"}}"#
+                r#"{{"error":"Request is malformed: Identifier {zome_name} longer than {MAX_IDENTIFIER_CHARS} characters"}}"#
             )
         );
     }
@@ -192,7 +198,7 @@ mod tests {
         assert_eq!(
             body,
             format!(
-                r#"{{"error":"Identifier {fn_name} longer than {MAX_IDENTIFIER_CHARS} characters"}}"#
+                r#"{{"error":"Request is malformed: Identifier {fn_name} longer than {MAX_IDENTIFIER_CHARS} characters"}}"#
             )
         );
     }
@@ -221,15 +227,12 @@ mod tests {
             Configuration::try_new("ws://127.0.0.1:1", "10", "", allowed_fns, "", "").unwrap();
         let router = TestRouter::new_with_config(config);
         let payload = BASE64_URL_SAFE.encode(vec![1; 11]);
-        let payload_length = payload.len();
         let uri = format!("/{DNA_HASH}/coordinator/zome_name/fn_name?payload={payload}");
         let (status_code, body) = router.request(&uri).await;
         assert_eq!(status_code, StatusCode::BAD_REQUEST);
         assert_eq!(
             body,
-            format!(
-                r#"{{"error":"Payload size ({payload_length} bytes) exceeds maximum allowed size (10 bytes)"}}"#
-            )
+            format!(r#"{{"error":"Request is malformed: Payload exceeds 10 bytes"}}"#)
         );
     }
 
@@ -242,7 +245,7 @@ mod tests {
         assert_eq!(status_code, StatusCode::BAD_REQUEST);
         assert_eq!(
             body,
-            r#"{"error":"Failed to decode base64 encoded string"}"#
+            r#"{"error":"Request is malformed: Invalid base64 encoding"}"#
         );
     }
 
@@ -253,6 +256,9 @@ mod tests {
         let uri = format!("/{DNA_HASH}/coordinator/zome_name/fn_name?payload={payload}");
         let (status_code, body) = router.request(&uri).await;
         assert_eq!(status_code, StatusCode::BAD_REQUEST);
-        assert_eq!(body, r#"{"error":"Payload contains invalid JSON"}"#);
+        assert_eq!(
+            body,
+            r#"{"error":"Request is malformed: Invalid JSON value"}"#
+        );
     }
 }

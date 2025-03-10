@@ -6,16 +6,21 @@
 //! On the way out, the zome call response is `ExternIO` encoded and needs to be converted
 //! to a JSON string.
 
-use crate::HcHttpGatewayResult;
+use crate::{HcHttpGatewayError, HcHttpGatewayResult};
 use base64::{prelude::BASE64_URL_SAFE, Engine};
 use holochain_types::prelude::ExternIO;
 
 /// Function to transcode an incoming base64 encoded payload to Holochain serialized bytes
 /// (type `ExternIO`).
 pub fn base64_json_to_hsb(base64_encoded_payload: &str) -> HcHttpGatewayResult<ExternIO> {
-    let base64_decoded_payload = BASE64_URL_SAFE.decode(base64_encoded_payload)?;
-    let json_payload = serde_json::from_slice::<serde_json::Value>(&base64_decoded_payload)?;
-    let msgpack_encoded_payload = ExternIO::encode(json_payload)?;
+    let base64_decoded_payload = BASE64_URL_SAFE
+        .decode(base64_encoded_payload)
+        .map_err(|_| HcHttpGatewayError::RequestMalformed("Invalid base64 encoding".to_string()))?;
+    let json_payload = serde_json::from_slice::<serde_json::Value>(&base64_decoded_payload)
+        .map_err(|_| HcHttpGatewayError::RequestMalformed("Invalid JSON value".to_string()))?;
+    let msgpack_encoded_payload = ExternIO::encode(json_payload).map_err(|err| {
+        HcHttpGatewayError::RequestMalformed(format!("Failure to serialize payload - {err}"))
+    })?;
     Ok(msgpack_encoded_payload)
 }
 
@@ -32,6 +37,7 @@ mod tests {
         transcode::{base64_json_to_hsb, hsb_to_json},
         HcHttpGatewayError,
     };
+    use assert2::let_assert;
     use base64::{prelude::BASE64_URL_SAFE, Engine};
     use holochain_types::prelude::ExternIO;
     use serde::{Deserialize, Serialize};
@@ -66,10 +72,8 @@ mod tests {
         let json_payload = serde_json::to_string(&payload).unwrap();
 
         let result = base64_json_to_hsb(&json_payload);
-        assert!(matches!(
-            result,
-            Err(HcHttpGatewayError::Base64DecodeError(_))
-        ));
+        let_assert!(HcHttpGatewayError::RequestMalformed(err) = result.unwrap_err());
+        assert_eq!(err.to_string(), "Invalid base64 encoding");
     }
 
     #[test]
@@ -77,7 +81,8 @@ mod tests {
         let base64_encoded_payload = BASE64_URL_SAFE.encode("invalid");
 
         let result = base64_json_to_hsb(&base64_encoded_payload);
-        assert!(matches!(result, Err(HcHttpGatewayError::InvalidJSON(_))));
+        let_assert!(HcHttpGatewayError::RequestMalformed(err) = result.unwrap_err());
+        assert_eq!(err.to_string(), "Invalid JSON value");
     }
 
     #[test]
