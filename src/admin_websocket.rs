@@ -12,7 +12,7 @@ mod real_wrapper {
 
     use super::*;
 
-    /// Fake AdminWebsocket until https://github.com/holochain/hc-http-gw/issues/11 is done.
+    /// Fake AdminWebsocket until <https://github.com/holochain/hc-http-gw/issues/11> is done.
     #[derive(Clone)]
     pub struct AdminWebsocketWrapper {
         inner: Arc<Mutex<AdminWebsocket>>,
