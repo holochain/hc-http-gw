@@ -148,9 +148,10 @@ impl IntoResponse for HcHttpGatewayError {
                 tracing::error!(message);
                 (StatusCode::FORBIDDEN, Json(ErrorResponse::from(message)))
             }
-            HcHttpGatewayError::UpstreamUnavailable => {
-                error_response(502, Some("Could not connect to Holochain"))
-            }
+            HcHttpGatewayError::UpstreamUnavailable => (
+                StatusCode::BAD_GATEWAY,
+                Json(ErrorResponse::from("Could not connect to Holochain")),
+            ),
             e => {
                 tracing::error!("Internal Error: {}", e);
                 (

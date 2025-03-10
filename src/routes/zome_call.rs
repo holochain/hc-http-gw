@@ -217,7 +217,8 @@ mod tests {
     async fn payload_with_excess_length_is_rejected() {
         let mut allowed_fns = HashMap::new();
         allowed_fns.insert("coordinator".to_string(), AllowedFns::All);
-        let config = Configuration::try_new("ws://127.0.0.1:1", "10", "", allowed_fns).unwrap();
+        let config =
+            Configuration::try_new("ws://127.0.0.1:1", "10", "", allowed_fns, "", "").unwrap();
         let router = TestRouter::new_with_config(config);
         let payload = BASE64_URL_SAFE.encode(vec![1; 11]);
         let payload_length = payload.len();

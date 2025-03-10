@@ -25,7 +25,8 @@ impl TestApp {
 
         // Create configuration
         let config =
-            Configuration::try_new("ws://localhost:50350", "1024", "forum", allowed_fns).unwrap();
+            Configuration::try_new("ws://localhost:50350", "1024", "forum", allowed_fns, "", "")
+                .unwrap();
 
         TestApp::spawn_with_config(config).await
     }

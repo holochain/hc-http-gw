@@ -1,6 +1,5 @@
 //! HTTP gateway service for Holochain
 
-use crate::app_conn_pool::AppConnPool;
 use crate::{
     config::Configuration, error::HcHttpGatewayResult, router::hc_http_gateway_router,
     HcHttpGatewayError,
@@ -19,11 +18,6 @@ pub struct HcHttpGatewayService {
 /// Shared application state
 #[derive(Debug, Clone)]
 pub struct AppState {
-    #[allow(
-        dead_code,
-        reason = "This will be used when we start making zome calls"
-    )]
-    pub app_conn_pool: AppConnPool,
     pub configuration: Configuration,
 }
 
