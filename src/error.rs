@@ -42,6 +42,9 @@ pub enum HcHttpGatewayError {
     /// Handles miscellaneous internal errors
     #[error("Internal Error: {0}")]
     InternalError(String),
+    /// Error returned when a connection cannot be made to the upstream Holochain service
+    #[error("The upstream Holochain service could not be reached")]
+    UpstreamUnavailable,
 }
 
 /// Type aliased Result
@@ -78,6 +81,9 @@ impl IntoResponse for HcHttpGatewayError {
                         "Payload size exceeds maximum allowed size ({limit} bytes)"
                     )),
                 )
+            }
+            HcHttpGatewayError::UpstreamUnavailable => {
+                error_response(502, Some("Could not connect to Holochain"))
             }
             e => {
                 tracing::error!("Internal Error: {}", e);

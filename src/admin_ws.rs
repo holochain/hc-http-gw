@@ -93,10 +93,7 @@ impl ReconnectingAdminWebsocket {
                     if self.current_retries < ADMIN_WS_CONNECTION_MAX_RETRIES {
                         sleep(Duration::from_millis(ADMIN_WS_CONNECTION_RETRY_DELAY_MS)).await;
                     } else {
-                        return Err(HcHttpGatewayError::ConfigurationError(format!(
-                            "Maximum connection retry attempts ({}) reached",
-                            ADMIN_WS_CONNECTION_MAX_RETRIES
-                        )));
+                        return Err(HcHttpGatewayError::UpstreamUnavailable);
                     }
                 }
             }
@@ -155,7 +152,7 @@ impl ReconnectingAdminWebsocket {
         F: Fn(Arc<AdminWebsocket>) -> Fut + Send,
         Fut: Future<Output = ConductorApiResult<T>> + Send,
     {
-        tracing::warn!("Detected disconnection. Attempting to reconnect...");
+        tracing::warn!("Detected disconnection. Attempting to connect...");
 
         match self.connect().await {
             Ok(()) => {
@@ -164,10 +161,7 @@ impl ReconnectingAdminWebsocket {
                 // Retry the operation with the new connection
                 self.exec(&f).await
             }
-            Err(reconnect_err) => Err(HcHttpGatewayError::InternalError(format!(
-                "Disconnection detected but reconnection failed: {}",
-                reconnect_err
-            ))),
+            Err(connect_err) => Err(connect_err),
         }
     }
 }

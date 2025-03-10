@@ -53,17 +53,9 @@ async fn connect_admin_websocket() {
         .call(|ws| async move { ws.list_apps(None).await })
         .await;
 
-    match apps {
-        Err(HcHttpGatewayError::ConductorApiError(
-            holochain_client::ConductorApiError::WebsocketError(error),
-        )) => {
-            assert!(
-                error.to_string().contains("connection") || error.to_string().contains("closed"),
-                "Expected connection error, got: {}",
-                error
-            );
-            assert_eq!(admin_ws.get_reconnection_retries(), 1);
-        }
-        other => panic!("Expected WebsocketError but got: {:?}", other),
+    if let Err(err) = apps {
+        assert!(matches!(err, HcHttpGatewayError::UpstreamUnavailable));
+    } else {
+        panic!("Expected UpstreamUnavailable error, found: {apps:?}");
     }
 }
