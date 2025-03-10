@@ -16,6 +16,12 @@ use crate::{HcHttpGatewayError, HcHttpGatewayResult};
 /// Default payload size limit (10 kilobytes)
 pub const DEFAULT_PAYLOAD_LIMIT_BYTES: u32 = 10 * 1024;
 
+/// Default maximum number of app connections that the gateway will maintain concurrently.
+pub const DEFAULT_MAX_APP_CONNECTIONS: u32 = 500;
+
+/// Default timeout for zome calls
+pub const DEFAULT_ZOME_CALL_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(10);
+
 /// Main configuration structure for the HTTP Gateway.
 #[derive(Debug, Clone)]
 pub struct Configuration {
@@ -27,6 +33,10 @@ pub struct Configuration {
     pub allowed_app_ids: AllowedAppIds,
     /// Maps application IDs to their allowed function configurations
     pub allowed_fns: HashMap<AppId, AllowedFns>,
+    /// Maximum number of app connections that the gateway will maintain concurrently.
+    pub max_app_connections: u32,
+    /// Timeout for zome calls
+    pub zome_call_timeout: std::time::Duration,
 }
 
 impl Configuration {
@@ -43,6 +53,8 @@ impl Configuration {
         payload_limit_bytes: &str,
         allowed_app_ids: &str,
         allowed_fns: HashMap<AppId, AllowedFns>,
+        max_app_connections: &str,
+        zome_call_timeout: &str,
     ) -> HcHttpGatewayResult<Self> {
         let admin_ws_url = Url2::try_parse(admin_ws_url).map_err(|e| {
             HcHttpGatewayError::ConfigurationError(format!("Url parse error: {}", e))
@@ -70,11 +82,35 @@ impl Configuration {
             }
         }
 
+        let max_app_connections = if max_app_connections.is_empty() {
+            DEFAULT_MAX_APP_CONNECTIONS
+        } else {
+            max_app_connections.parse::<u32>().map_err(|e| {
+                HcHttpGatewayError::ConfigurationError(format!(
+                    "Failed to parse the max app connections value: {}",
+                    e
+                ))
+            })?
+        };
+
+        let zome_call_timeout = if zome_call_timeout.is_empty() {
+            DEFAULT_ZOME_CALL_TIMEOUT
+        } else {
+            std::time::Duration::from_millis(zome_call_timeout.parse::<u64>().map_err(|e| {
+                HcHttpGatewayError::ConfigurationError(format!(
+                    "Failed to parse the zome call timeout value: {}",
+                    e
+                ))
+            })?)
+        };
+
         Ok(Configuration {
             admin_ws_url,
             payload_limit_bytes,
             allowed_app_ids,
             allowed_fns,
+            max_app_connections,
+            zome_call_timeout,
         })
     }
 }
@@ -235,6 +271,8 @@ mod tests {
             payload_limit_bytes: 1024 * 1024,
             allowed_app_ids: AllowedAppIds(HashSet::from(["app1".to_string(), "app2".to_string()])),
             allowed_fns,
+            max_app_connections: DEFAULT_MAX_APP_CONNECTIONS,
+            zome_call_timeout: DEFAULT_ZOME_CALL_TIMEOUT,
         }
     }
 
@@ -402,14 +440,22 @@ mod tests {
             allowed_fns.insert("app2".to_string(), AllowedFns::All);
 
             // Create configuration with valid inputs
-            let config =
-                Configuration::try_new("ws://localhost:8888", "1048576", "app1,app2", allowed_fns)
-                    .unwrap();
+            let config = Configuration::try_new(
+                "ws://localhost:8888",
+                "1048576",
+                "app1,app2",
+                allowed_fns,
+                "50",
+                "1000",
+            )
+            .unwrap();
 
             // Verify configuration
             assert_eq!(config.admin_ws_url.to_string(), "ws://localhost:8888/");
             assert_eq!(config.payload_limit_bytes, 1048576);
             assert_eq!(config.allowed_app_ids.len(), 2);
+            assert_eq!(config.max_app_connections, 50);
+            assert_eq!(config.zome_call_timeout.as_millis(), 1000);
         }
 
         #[test]
@@ -418,8 +464,14 @@ mod tests {
             allowed_fns.insert("app1".to_string(), AllowedFns::All);
 
             // Invalid URL
-            let result =
-                Configuration::try_new("not-a-valid-url", "1048576", "app1", allowed_fns.clone());
+            let result = Configuration::try_new(
+                "not-a-valid-url",
+                "1048576",
+                "app1",
+                allowed_fns.clone(),
+                "",
+                "",
+            );
             assert!(result.is_err());
 
             // Invalid payload limit
@@ -428,12 +480,42 @@ mod tests {
                 "not-a-number",
                 "app1",
                 allowed_fns.clone(),
+                "",
+                "",
             );
             assert!(result.is_err());
 
             // Missing allowed function for app2
-            let result =
-                Configuration::try_new("ws://localhost:8888", "1048576", "app1,app2", allowed_fns);
+            let result = Configuration::try_new(
+                "ws://localhost:8888",
+                "1048576",
+                "app1,app2",
+                allowed_fns.clone(),
+                "",
+                "",
+            );
+            assert!(result.is_err());
+
+            // Max app connections is not a valid number
+            let result = Configuration::try_new(
+                "ws://localhost:8888",
+                "1048576",
+                "app1,app2",
+                allowed_fns.clone(),
+                "not-a-number",
+                "",
+            );
+            assert!(result.is_err());
+
+            // Zome call timeout is not a valid number
+            let result = Configuration::try_new(
+                "ws://localhost:8888",
+                "1048576",
+                "app1,app2",
+                allowed_fns,
+                "",
+                "not-a-number",
+            );
             assert!(result.is_err());
         }
     }

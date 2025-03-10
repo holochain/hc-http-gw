@@ -28,7 +28,9 @@ jobs:
         run: |
           nix develop -c ./fixture/package.sh
       - name: Run tests
-        run: cargo test --no-fail-fast
+        env:
+          RUST_LOG: warn,holochain_http_gateway=info
+        run: cargo test --no-fail-fast -- --test-threads=1
 
   ci_pass:
     if: ${{ always() }}
