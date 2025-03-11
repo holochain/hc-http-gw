@@ -11,7 +11,7 @@ const ADMIN_WS_CONNECTION_MAX_RETRIES: usize = 1;
 
 /// A wrapper around AdminWebsocket that automatically handles reconnection
 /// when the connection is lost due to network issues or other failures.
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct HcHttpGwAdminWebsocket {
     /// The WebSocket URL to connect to
     url: String,
