@@ -67,12 +67,12 @@ impl HcHttpGwAdminWebsocket {
                 "{}:{}",
                 self.url
                     .host_str()
-                    .ok_or_else(|| HcHttpGatewayError::ConfigurationError(
+                    .ok_or_else(|| HcHttpGatewayError::InternalError(
                         "Invalid admin ws host".to_string()
                     ))?,
                 self.url
                     .port()
-                    .ok_or_else(|| HcHttpGatewayError::ConfigurationError(
+                    .ok_or_else(|| HcHttpGatewayError::InternalError(
                         "Port is absent from the admin ws url".to_string()
                     ))?
             );
@@ -104,7 +104,7 @@ impl HcHttpGwAdminWebsocket {
             }
         }
 
-        Err(HcHttpGatewayError::ConfigurationError(format!(
+        Err(HcHttpGatewayError::InternalError(format!(
             "Maximum connection retry attempts ({}) reached",
             ADMIN_WS_CONNECTION_MAX_RETRIES
         )))
@@ -196,7 +196,6 @@ impl HcHttpGatewayErrorExt for HcHttpGatewayError {
                 // Check for websocket errors inside the ConductorApiError
                 matches!(api_error, ConductorApiError::WebsocketError(_))
             }
-            HcHttpGatewayError::IoError(_) => true,
             // All other errors don't trigger reconnection
             _ => false,
         }
