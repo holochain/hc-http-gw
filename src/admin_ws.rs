@@ -1,8 +1,6 @@
 use holochain_client::{AdminWebsocket, ConductorApiError, ConductorApiResult};
-use std::{
-    future::Future,
-    sync::{Arc, Mutex},
-};
+use std::{future::Future, sync::Arc};
+use tokio::sync::RwLock;
 
 use crate::{HcHttpGatewayError, HcHttpGatewayResult};
 
@@ -15,7 +13,7 @@ pub struct HcHttpGwAdminWebsocket {
     /// The WebSocket URL to connect to
     url: String,
     /// The handle to the AdminWebsocket connection
-    connection_handle: Arc<Mutex<Option<AdminWebsocket>>>,
+    connection_handle: Arc<RwLock<Option<AdminWebsocket>>>,
     /// Current retry attempt counter
     current_retries: usize,
 }
@@ -25,15 +23,14 @@ impl HcHttpGwAdminWebsocket {
     pub fn new(url: &str) -> Self {
         HcHttpGwAdminWebsocket {
             url: url.to_string(),
-            connection_handle: Arc::new(Mutex::new(None)),
+            connection_handle: Arc::new(RwLock::new(None)),
             current_retries: 0,
         }
     }
 
     /// Checks if there is an active connection
-    fn is_connected(&self) -> HcHttpGatewayResult<bool> {
-        let connection = self.connection_handle.lock().unwrap();
-
+    async fn is_connected(&self) -> HcHttpGatewayResult<bool> {
+        let connection = self.connection_handle.read().await;
         Ok(connection.is_some())
     }
 
@@ -44,7 +41,7 @@ impl HcHttpGwAdminWebsocket {
 
     /// Ensures that a connection is established before proceeding
     async fn ensure_connected(&mut self) -> HcHttpGatewayResult<()> {
-        if self.is_connected()? {
+        if self.is_connected().await? {
             return Ok(());
         }
 
@@ -61,7 +58,7 @@ impl HcHttpGwAdminWebsocket {
         while self.current_retries < ADMIN_WS_CONNECTION_MAX_RETRIES {
             match AdminWebsocket::connect(&self.url).await {
                 Ok(conn) => {
-                    let mut connection = self.connection_handle.lock().unwrap();
+                    let mut connection = self.connection_handle.write().await;
                     *connection = Some(conn);
                     self.current_retries = 0;
 
@@ -115,9 +112,8 @@ impl HcHttpGwAdminWebsocket {
         F: Fn(Arc<AdminWebsocket>) -> Fut + Send,
         Fut: Future<Output = ConductorApiResult<T>> + Send,
     {
-        // block scope to limit MutexGuard lifetime
         let connection = {
-            let mut connection = self.connection_handle.lock().unwrap();
+            let mut connection = self.connection_handle.write().await;
             let connection = connection.take().ok_or_else(|| {
                 HcHttpGatewayError::InternalError(
                     "No connection available despite ensure_connected check".to_string(),
@@ -127,7 +123,20 @@ impl HcHttpGwAdminWebsocket {
             Arc::new(connection)
         };
 
-        f(connection).await.map_err(HcHttpGatewayError::from)
+        let result = f(connection.clone())
+            .await
+            .map_err(HcHttpGatewayError::from);
+
+        if result.is_ok() {
+            if let Ok(conn) = Arc::try_unwrap(connection.clone()) {
+                let mut connection_handle = self.connection_handle.write().await;
+                *connection_handle = Some(conn);
+            } else {
+                tracing::warn!("Connection Arc still has strong references when returning to pool");
+            }
+        }
+
+        result
     }
 
     async fn handle_disconnection<T, F, Fut>(&mut self, f: F) -> HcHttpGatewayResult<T>
