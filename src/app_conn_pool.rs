@@ -197,13 +197,13 @@ impl AppConnPool {
         tracing::info!("Connecting to app websocket at {}:{}", host, app_port);
 
         // Build a connection request
-        let request =
-            ConnectRequest::from(format!("{host}:{app_port}").parse::<SocketAddr>().map_err(
-                |e| {
-                    HcHttpGatewayError::ConfigurationError(format!("Invalid socket address: {}", e))
-                },
-            )?)
-            .try_set_header("Origin", HTTP_GW_ORIGIN)?;
+        let request = ConnectRequest::from(
+            format!("{host}:{app_port}")
+                .parse::<SocketAddr>()
+                .expect("Host and app port must be valid"),
+        )
+        .try_set_header("Origin", HTTP_GW_ORIGIN)
+        .expect("Origin headers have gone out of fashion");
 
         // Create a websocket client configuration and lower the default timeout. We are connecting
         // locally to a running Holochain. If requests take longer than the configured timeout then

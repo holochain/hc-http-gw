@@ -1,9 +1,6 @@
 //! HTTP gateway service for Holochain
 
-use crate::{
-    config::Configuration, error::HcHttpGatewayResult, router::hc_http_gateway_router,
-    HcHttpGatewayError,
-};
+use crate::{config::Configuration, router::hc_http_gateway_router};
 use axum::Router;
 use std::net::{IpAddr, SocketAddr};
 use tokio::net::TcpListener;
@@ -27,7 +24,7 @@ impl HcHttpGatewayService {
         address: impl Into<IpAddr>,
         port: u16,
         configuration: Configuration,
-    ) -> HcHttpGatewayResult<Self> {
+    ) -> std::io::Result<Self> {
         tracing::info!("Configuration: {:?}", configuration);
 
         let router = hc_http_gateway_router(configuration);
@@ -38,20 +35,16 @@ impl HcHttpGatewayService {
     }
 
     /// Get the socket address the service is configured to use
-    pub fn address(&self) -> HcHttpGatewayResult<SocketAddr> {
-        self.listener
-            .local_addr()
-            .map_err(HcHttpGatewayError::IoError)
+    pub fn address(&self) -> std::io::Result<SocketAddr> {
+        self.listener.local_addr()
     }
 
     /// Start the HTTP server and run until terminated
-    pub async fn run(self) -> HcHttpGatewayResult<()> {
+    pub async fn run(self) -> std::io::Result<()> {
         let address = self.address()?;
 
         tracing::info!("Starting server on {}", address);
-        axum::serve(self.listener, self.router)
-            .await
-            .inspect_err(|e| tracing::error!("Failed to bind to {}: {}", address, e))?;
+        axum::serve(self.listener, self.router).await?;
 
         Ok(())
     }
