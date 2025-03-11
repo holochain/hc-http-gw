@@ -8,6 +8,7 @@ use holochain_http_gateway::{
 };
 use holochain_types::app::DisabledAppReason;
 use std::net::Ipv4Addr;
+use url2::url2;
 
 mod setup;
 mod sweet;
@@ -546,9 +547,9 @@ async fn connect_admin_websocket() {
     let admin_port = sweet_conductor
         .get_arbitrary_admin_websocket_port()
         .unwrap();
-    let url = format!("localhost:{admin_port}");
+    let url = url2!("ws://localhost:{admin_port}");
 
-    let mut admin_ws = HcHttpGwAdminWebsocket::new(&url);
+    let mut admin_ws = HcHttpGwAdminWebsocket::connect(&url).await.unwrap();
 
     // First call should succeed
     let apps = admin_ws

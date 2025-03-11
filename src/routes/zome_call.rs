@@ -136,7 +136,7 @@ mod tests {
 
     #[tokio::test]
     async fn valid_dna_hash_is_accepted() {
-        let router = TestRouter::new();
+        let router = TestRouter::new().await;
         let uri = format!("/{DNA_HASH}/coordinator/zome_name/fn_name");
         let (status_code, _) = router.request(&uri).await;
         assert_eq!(status_code, StatusCode::OK);
@@ -144,7 +144,7 @@ mod tests {
 
     #[tokio::test]
     async fn invalid_dna_hash_is_rejected() {
-        let router = TestRouter::new();
+        let router = TestRouter::new().await;
         let invalid_dna_hash = "thisaintnodnahash";
         let uri = format!("/{invalid_dna_hash}/coordinator/zome_name/fn_name");
         let (status_code, body) = router.request(&uri).await;
@@ -154,7 +154,7 @@ mod tests {
 
     #[tokio::test]
     async fn coordinator_identifier_with_excess_length_is_rejected() {
-        let router = TestRouter::new();
+        let router = TestRouter::new().await;
         let coordinator = "12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901";
         let uri = format!("/{DNA_HASH}/{coordinator}/zome_name/fn_name");
         let (status_code, body) = router.request(&uri).await;
@@ -169,7 +169,7 @@ mod tests {
 
     #[tokio::test]
     async fn zome_name_with_excess_length_is_rejected() {
-        let router = TestRouter::new();
+        let router = TestRouter::new().await;
         let zome_name = "12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901";
         let uri = format!("/{DNA_HASH}/coordinator/{zome_name}/fn_name");
         let (status_code, body) = router.request(&uri).await;
@@ -184,7 +184,7 @@ mod tests {
 
     #[tokio::test]
     async fn function_name_with_excess_length_is_rejected() {
-        let router = TestRouter::new();
+        let router = TestRouter::new().await;
         let fn_name = "12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901";
         let uri = format!("/{DNA_HASH}/coordinator/zome_name/{fn_name}");
         let (status_code, body) = router.request(&uri).await;
@@ -200,7 +200,7 @@ mod tests {
     #[tokio::test]
     async fn unauthorized_function_name_is_rejected() {
         // Only one allowed function "fn_name" in test router.
-        let router = TestRouter::new();
+        let router = TestRouter::new().await;
         let fn_name = "unauthorized_fn";
         let uri = format!("/{DNA_HASH}/coordinator/zome_name/{fn_name}");
         let (status_code, body) = router.request(&uri).await;
@@ -219,7 +219,7 @@ mod tests {
         allowed_fns.insert("coordinator".to_string(), AllowedFns::All);
         let config =
             Configuration::try_new("ws://127.0.0.1:1", "10", "", allowed_fns, "", "").unwrap();
-        let router = TestRouter::new_with_config(config);
+        let router = TestRouter::new_with_config(config).await;
         let payload = BASE64_URL_SAFE.encode(vec![1; 11]);
         let payload_length = payload.len();
         let uri = format!("/{DNA_HASH}/coordinator/zome_name/fn_name?payload={payload}");
@@ -235,7 +235,7 @@ mod tests {
 
     #[tokio::test]
     async fn payload_with_invalid_base64_encoding_is_rejected() {
-        let router = TestRouter::new();
+        let router = TestRouter::new().await;
         let payload = "$%&#";
         let uri = format!("/{DNA_HASH}/coordinator/zome_name/fn_name?payload={payload}");
         let (status_code, body) = router.request(&uri).await;
@@ -248,7 +248,7 @@ mod tests {
 
     #[tokio::test]
     async fn payload_with_invalid_json_is_rejected() {
-        let router = TestRouter::new();
+        let router = TestRouter::new().await;
         let payload = BASE64_URL_SAFE.encode("{invalid}");
         let uri = format!("/{DNA_HASH}/coordinator/zome_name/fn_name?payload={payload}");
         let (status_code, body) = router.request(&uri).await;

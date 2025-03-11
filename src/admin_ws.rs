@@ -1,6 +1,7 @@
 use holochain_client::{AdminWebsocket, ConductorApiError, ConductorApiResult};
 use std::{future::Future, sync::Arc};
 use tokio::sync::RwLock;
+use url2::Url2;
 
 use crate::{HcHttpGatewayError, HcHttpGatewayResult};
 
@@ -11,7 +12,7 @@ const ADMIN_WS_CONNECTION_MAX_RETRIES: usize = 1;
 #[derive(Debug, Clone)]
 pub struct HcHttpGwAdminWebsocket {
     /// The WebSocket URL to connect to
-    url: String,
+    url: Url2,
     /// The handle to the AdminWebsocket connection
     connection_handle: Arc<RwLock<Option<AdminWebsocket>>>,
     /// Current retry attempt counter
@@ -19,13 +20,19 @@ pub struct HcHttpGwAdminWebsocket {
 }
 
 impl HcHttpGwAdminWebsocket {
-    /// Creates a new ReconnectingAdminWebsocket with the specified parameters
-    pub fn new(url: &str) -> Self {
-        HcHttpGwAdminWebsocket {
-            url: url.to_string(),
+    /// Creates a new HcHttpGwAdminWebsocket and attempts to connect immediately
+    ///
+    /// This will make multiple attempts according to the `max_retries`
+    /// setting, with exponential backoff between retries.
+    pub async fn connect(url: &Url2) -> HcHttpGatewayResult<Self> {
+        let mut instance = Self {
+            url: url.clone(),
             connection_handle: Arc::new(RwLock::new(None)),
             current_retries: 0,
-        }
+        };
+
+        instance.attempt_connection().await?;
+        Ok(instance)
     }
 
     /// Checks if there is an active connection
@@ -45,18 +52,18 @@ impl HcHttpGwAdminWebsocket {
             return Ok(());
         }
 
-        self.connect().await
+        self.attempt_connection().await
     }
 
     /// Attempts to connect to the AdminWebsocket
     ///
     /// This will make multiple attempts according to the `max_retries`
     /// setting, with exponential backoff between retries.
-    pub async fn connect(&mut self) -> HcHttpGatewayResult<()> {
+    async fn attempt_connection(&mut self) -> HcHttpGatewayResult<()> {
         self.current_retries = 0;
 
         while self.current_retries < ADMIN_WS_CONNECTION_MAX_RETRIES {
-            match AdminWebsocket::connect(&self.url).await {
+            match AdminWebsocket::connect(&self.url.to_string()).await {
                 Ok(conn) => {
                     let mut connection = self.connection_handle.write().await;
                     *connection = Some(conn);
@@ -112,6 +119,7 @@ impl HcHttpGwAdminWebsocket {
         F: Fn(Arc<AdminWebsocket>) -> Fut + Send,
         Fut: Future<Output = ConductorApiResult<T>> + Send,
     {
+        // Take the connection while holding a write lock
         let connection = {
             let mut connection = self.connection_handle.write().await;
             let connection = connection.take().ok_or_else(|| {
@@ -123,10 +131,12 @@ impl HcHttpGwAdminWebsocket {
             Arc::new(connection)
         };
 
+        // Execute the function with the connection
         let result = f(connection.clone())
             .await
             .map_err(HcHttpGatewayError::from);
 
+        // If we get here without error, we need to put the connection back
         if result.is_ok() {
             if let Ok(conn) = Arc::try_unwrap(connection.clone()) {
                 let mut connection_handle = self.connection_handle.write().await;
@@ -146,7 +156,7 @@ impl HcHttpGwAdminWebsocket {
     {
         tracing::warn!("Detected disconnection. Attempting to connect...");
 
-        match self.connect().await {
+        match self.attempt_connection().await {
             Ok(()) => {
                 tracing::info!("Reconnected successfully. Retrying operation.");
 

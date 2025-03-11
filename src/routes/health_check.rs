@@ -10,7 +10,7 @@ mod tests {
 
     #[tokio::test]
     async fn get_request_health_check_succeeds() {
-        let router = TestRouter::new();
+        let router = TestRouter::new().await;
         let (status_code, body) = router.request("/health").await;
         assert_eq!(status_code, StatusCode::OK);
         assert_eq!(body, "Ok");

@@ -2,26 +2,28 @@ use crate::{
     config::Configuration,
     routes::{health_check, zome_call},
     service::AppState,
-    HcHttpGwAdminWebsocket,
+    HcHttpGatewayResult, HcHttpGwAdminWebsocket,
 };
 use axum::{http::StatusCode, routing::get, Router};
 
-pub fn hc_http_gateway_router(configuration: Configuration) -> Router {
-    let admin_ws = HcHttpGwAdminWebsocket::new(configuration.admin_ws_url.as_ref());
+pub async fn hc_http_gateway_router(configuration: Configuration) -> HcHttpGatewayResult<Router> {
+    let admin_ws = HcHttpGwAdminWebsocket::connect(&configuration.admin_ws_url).await?;
 
     let state = AppState {
         configuration,
         admin_ws,
     };
 
-    Router::new()
+    let router = Router::new()
         .route("/health", get(health_check))
         .route(
             "/{dna_hash}/{coordinator_identifier}/{zome_name}/{fn_name}",
             get(zome_call),
         )
         .method_not_allowed_fallback(|| async { (StatusCode::METHOD_NOT_ALLOWED, ()) })
-        .with_state(state)
+        .with_state(state);
+
+    Ok(router)
 }
 
 #[cfg(test)]
@@ -42,7 +44,7 @@ pub mod tests {
         /// Construct a test router with 1024 bytes payload limit.
         /// Allowed functions are restricted to coordinator "coordinator", zome name "zome_name",
         /// function name "fn_name".
-        pub fn new() -> Self {
+        pub async fn new() -> Self {
             let mut allowed_fns = HashMap::new();
             let allowed_zome_fn = ZomeFn {
                 zome_name: "zome_name".to_string(),
@@ -55,11 +57,11 @@ pub mod tests {
             let config =
                 Configuration::try_new("ws://127.0.0.1:1", "1024", "", allowed_fns, "", "")
                     .unwrap();
-            Self::new_with_config(config)
+            Self::new_with_config(config).await
         }
 
-        pub fn new_with_config(config: Configuration) -> Self {
-            Self(hc_http_gateway_router(config))
+        pub async fn new_with_config(config: Configuration) -> Self {
+            Self(hc_http_gateway_router(config).await.unwrap())
         }
 
         // Send request and return status code and body of response.
@@ -86,14 +88,14 @@ pub mod tests {
 
     #[tokio::test]
     async fn get_request_to_root_fails() {
-        let router = TestRouter::new();
+        let router = TestRouter::new().await;
         let (status_code, _) = router.request("/").await;
         assert_eq!(status_code, StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
     async fn post_method_to_health_fails() {
-        let router = TestRouter::new();
+        let router = TestRouter::new().await;
         let response = router
             .0
             .oneshot(
@@ -110,7 +112,7 @@ pub mod tests {
 
     #[tokio::test]
     async fn post_method_to_zome_call_fails() {
-        let router = TestRouter::new();
+        let router = TestRouter::new().await;
         let response = router
             .0
             .oneshot(

@@ -32,7 +32,7 @@ impl HcHttpGatewayService {
     ) -> HcHttpGatewayResult<Self> {
         tracing::info!("Configuration: {:?}", configuration);
 
-        let router = hc_http_gateway_router(configuration);
+        let router = hc_http_gateway_router(configuration).await?;
         let address = SocketAddr::new(address.into(), port);
         let listener = TcpListener::bind(address).await?;
 
