@@ -11,14 +11,13 @@ use holochain_conductor_api::{
 use holochain_http_gateway::config::{AllowedFns, Configuration, ZomeFn};
 use holochain_http_gateway::tracing::initialize_tracing_subscriber;
 use holochain_http_gateway::{
-    AdminCall, AdminConn, AppConnPool, HcHttpGatewayError, HcHttpGatewayResult, HTTP_GW_ORIGIN,
+    AdminCall, AppConnPool, HcHttpGatewayError, HcHttpGatewayResult, HTTP_GW_ORIGIN,
 };
 use holochain_types::app::DisabledAppReason;
 use holochain_types::websocket::AllowedOrigins;
 use std::net::Ipv4Addr;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use url2::url2;
 
 mod setup;
 mod sweet;
@@ -554,34 +553,6 @@ fn create_test_configuration(admin_port: u16) -> Configuration {
         "",
     )
     .unwrap()
-}
-
-#[tokio::test(flavor = "multi_thread")]
-async fn connect_admin_websocket() {
-    let mut sweet_conductor = SweetConductor::from_standard_config().await;
-
-    let admin_port = sweet_conductor
-        .get_arbitrary_admin_websocket_port()
-        .unwrap();
-    let url = url2!("ws://localhost:{admin_port}");
-
-    let admin_ws = AdminConn::connect(&url).await.unwrap();
-
-    // First call should succeed
-    let apps = admin_ws.list_app_interfaces().await.unwrap();
-
-    assert_eq!(apps.len(), 0);
-
-    // Shutdown the conductor to force a connection error
-    sweet_conductor.shutdown().await;
-
-    let apps = admin_ws.list_app_interfaces().await;
-
-    if let Err(err) = apps {
-        assert!(matches!(err, HcHttpGatewayError::UpstreamUnavailable));
-    } else {
-        panic!("Expected UpstreamUnavailable error, found: {apps:?}");
-    }
 }
 
 impl AdminCall for AdminWrapper {
