@@ -63,7 +63,7 @@ impl AppConnPool {
     ) -> HcHttpGatewayResult<T> {
         // The first attempt may discover that the connection is invalid
         // On the second attempt, we will reconnect without using a cached app port
-        // On the third attempt, we will reconnect permitting creating a new app interface
+        // On the third attempt, we will reconnect permitting that a new app interface can be created
         for _ in 0..3 {
             let app_ws = match self
                 .get_or_connect_app_client(installed_app_id.clone())
