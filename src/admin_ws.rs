@@ -4,12 +4,10 @@ use std::{
 };
 
 use holochain_client::{AdminWebsocket, ConductorApiError, ConductorApiResult};
-use tokio::time::{sleep, Duration};
 
 use crate::{HcHttpGatewayError, HcHttpGatewayResult};
 
 const ADMIN_WS_CONNECTION_MAX_RETRIES: usize = 1;
-const ADMIN_WS_CONNECTION_RETRY_DELAY_MS: u64 = 1000;
 
 /// A wrapper around AdminWebsocket that automatically handles reconnection
 /// when the connection is lost due to network issues or other failures.
@@ -91,7 +89,7 @@ impl ReconnectingAdminWebsocket {
                     );
 
                     if self.current_retries < ADMIN_WS_CONNECTION_MAX_RETRIES {
-                        sleep(Duration::from_millis(ADMIN_WS_CONNECTION_RETRY_DELAY_MS)).await;
+                        continue;
                     } else {
                         return Err(HcHttpGatewayError::UpstreamUnavailable);
                     }
