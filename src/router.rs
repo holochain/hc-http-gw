@@ -2,12 +2,12 @@ use crate::{
     config::Configuration,
     routes::{health_check, zome_call},
     service::AppState,
-    ReconnectingAdminWebsocket,
+    HcHttpGwAdminWebsocket,
 };
 use axum::{http::StatusCode, routing::get, Router};
 
 pub fn hc_http_gateway_router(configuration: Configuration) -> Router {
-    let admin_ws = ReconnectingAdminWebsocket::new(configuration.admin_ws_url.as_ref());
+    let admin_ws = HcHttpGwAdminWebsocket::new(configuration.admin_ws_url.as_ref());
 
     let state = AppState {
         configuration,

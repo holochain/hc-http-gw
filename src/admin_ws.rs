@@ -12,7 +12,7 @@ const ADMIN_WS_CONNECTION_MAX_RETRIES: usize = 1;
 /// A wrapper around AdminWebsocket that automatically handles reconnection
 /// when the connection is lost due to network issues or other failures.
 #[derive(Clone)]
-pub struct ReconnectingAdminWebsocket {
+pub struct HcHttpGwAdminWebsocket {
     /// The WebSocket URL to connect to
     url: String,
     /// The handle to the AdminWebsocket connection
@@ -21,10 +21,10 @@ pub struct ReconnectingAdminWebsocket {
     current_retries: usize,
 }
 
-impl ReconnectingAdminWebsocket {
+impl HcHttpGwAdminWebsocket {
     /// Creates a new ReconnectingAdminWebsocket with the specified parameters
     pub fn new(url: &str) -> Self {
-        ReconnectingAdminWebsocket {
+        HcHttpGwAdminWebsocket {
             url: url.to_string(),
             connection_handle: Arc::new(Mutex::new(None)),
             current_retries: 0,

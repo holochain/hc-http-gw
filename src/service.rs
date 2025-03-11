@@ -2,7 +2,7 @@
 
 use crate::{
     config::Configuration, error::HcHttpGatewayResult, router::hc_http_gateway_router,
-    HcHttpGatewayError, ReconnectingAdminWebsocket,
+    HcHttpGatewayError, HcHttpGwAdminWebsocket,
 };
 use axum::Router;
 use std::net::{IpAddr, SocketAddr};
@@ -20,7 +20,7 @@ pub struct HcHttpGatewayService {
 pub struct AppState {
     pub configuration: Configuration,
     #[allow(unused, reason = "Temporary")]
-    pub admin_ws: ReconnectingAdminWebsocket,
+    pub admin_ws: HcHttpGwAdminWebsocket,
 }
 
 impl HcHttpGatewayService {
