@@ -132,7 +132,7 @@ impl AdminConn {
         // Create and call the first closure
         match fn_factory()(connection).await {
             Ok(result) => Ok(result),
-            Err(e) if matches!(e, ConductorApiError::WebsocketError(_)) => {
+            Err(ConductorApiError::WebsocketError(_)) => {
                 tracing::warn!("Detected disconnection. Attempting to reconnect...");
 
                 match self.reconnect().await {
@@ -193,13 +193,13 @@ impl AdminCall for AdminConn {
 
         Box::pin(async move {
             let factory = move || {
-                let payload_clone = payload.clone();
+                let payload = payload.clone();
 
                 move |admin_ws: Arc<AdminWebsocket>| -> BoxFuture<'static, ConductorApiResult<SigningCredentials>> {
                 let admin_ws = admin_ws.clone();
 
                 Box::pin(async move {
-                    admin_ws.authorize_signing_credentials(payload_clone).await
+                    admin_ws.authorize_signing_credentials(payload).await
                 })
             }
             };
