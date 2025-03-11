@@ -39,13 +39,13 @@ pub mod tests {
     use crate::{HcHttpGatewayError, MockAppCall};
     use axum::{body::Body, http::Request, Router};
     use holochain::prelude::ExternIO;
-    use holochain::sweettest::SweetConductor;
     use holochain_client::SerializedBytes;
     use holochain_serialized_bytes::prelude::*;
     use http_body_util::BodyExt;
     use reqwest::StatusCode;
     use serde::{Deserialize, Serialize};
     use std::collections::{HashMap, HashSet};
+    use std::net::{Ipv4Addr, SocketAddr};
     use std::sync::Arc;
     use tower::ServiceExt;
 
@@ -71,13 +71,8 @@ pub mod tests {
             let restricted_fns = AllowedFns::Restricted(allowed_zome_fns);
             allowed_fns.insert("coordinator".to_string(), restricted_fns);
 
-            let sweet_conductor = SweetConductor::from_standard_config().await;
-            let admin_port = sweet_conductor
-                .get_arbitrary_admin_websocket_port()
-                .unwrap();
-
             let config = Configuration::try_new(
-                format!("ws://127.0.0.1:{admin_port}").as_str(),
+                SocketAddr::new(Ipv4Addr::LOCALHOST.into(), 8888),
                 "1024",
                 "",
                 allowed_fns,
@@ -95,12 +90,13 @@ pub mod tests {
                     let response = TestZomeResponse {
                         hello: "world".to_string(),
                     };
-                    Ok(ExternIO::encode(response)
-                        .map_err(|e| HcHttpGatewayError::RequestMalformed(e.to_string()))?)
+                    ExternIO::encode(response)
+                        .map_err(|e| HcHttpGatewayError::RequestMalformed(e.to_string()))
                 })
             });
 
-            let admin_call = AdminConn::connect(&config.admin_ws_url).await.unwrap();
+            // TODO This should be a mock. Done on another PR...
+            let admin_call = AdminConn::new(config.admin_socket_addr);
 
             Self(hc_http_gateway_router(
                 config,

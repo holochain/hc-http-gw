@@ -3,12 +3,12 @@
 //! This module provides the configuration structure and related types for
 //! controlling the behavior of the HTTP Gateway.
 
+use std::net::SocketAddr;
 use std::{
     collections::{HashMap, HashSet},
     ops::Deref,
     str::FromStr,
 };
-use url2::Url2;
 
 /// Default payload size limit (10 kilobytes)
 pub const DEFAULT_PAYLOAD_LIMIT_BYTES: u32 = 10 * 1024;
@@ -22,9 +22,6 @@ pub const DEFAULT_ZOME_CALL_TIMEOUT: std::time::Duration = std::time::Duration::
 /// Errors when parsing config arguments.
 #[derive(Debug, thiserror::Error)]
 pub enum ConfigParseError {
-    /// Error when parsing URL.
-    #[error("URL parse error: {0}")]
-    UrlParseError(#[from] url2::Url2Error),
     /// Error when parsing an integer.
     #[error("Integer parse error: {0}")]
     IntParseError(#[from] std::num::ParseIntError),
@@ -34,13 +31,13 @@ pub enum ConfigParseError {
 }
 
 /// Result of parsing config arguments.
-pub type ConfigParseResult<T> = std::result::Result<T, ConfigParseError>;
+pub type ConfigParseResult<T> = Result<T, ConfigParseError>;
 
 /// Main configuration structure for the HTTP Gateway.
 #[derive(Debug, Clone)]
 pub struct Configuration {
     /// WebSocket URL for admin connections and management interfaces
-    pub admin_ws_url: Url2,
+    pub admin_socket_addr: SocketAddr,
     /// Maximum size in bytes that request payloads can be
     pub payload_limit_bytes: u32,
     /// Controls which applications are permitted to connect to the gateway
@@ -63,15 +60,13 @@ impl Configuration {
     /// * The app IDs are correctly parsed from a comma-separated string
     /// * Every app ID listed has a corresponding entry in the allowed_fns map
     pub fn try_new(
-        admin_ws_url: &str,
+        admin_socket_addr: SocketAddr,
         payload_limit_bytes: &str,
         allowed_app_ids: &str,
         allowed_fns: HashMap<AppId, AllowedFns>,
         max_app_connections: &str,
         zome_call_timeout: &str,
     ) -> ConfigParseResult<Self> {
-        let admin_ws_url = Url2::try_parse(admin_ws_url)?;
-
         let payload_limit_bytes = if payload_limit_bytes.is_empty() {
             DEFAULT_PAYLOAD_LIMIT_BYTES
         } else {
@@ -102,7 +97,7 @@ impl Configuration {
         };
 
         Ok(Configuration {
-            admin_ws_url,
+            admin_socket_addr,
             payload_limit_bytes,
             allowed_app_ids,
             allowed_fns,
@@ -242,6 +237,7 @@ impl FromStr for AllowedFns {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::net::Ipv4Addr;
     use std::str::FromStr;
 
     // Helper function to create a ZomeFn
@@ -254,8 +250,6 @@ mod tests {
 
     // Helper function to create a test Configuration
     fn create_test_config() -> Configuration {
-        let admin_ws_url = Url2::parse("ws://localhost:8888");
-
         let zome1_fn1 = create_zome_fn("zome1", "fn1");
         let app1_fns = HashSet::from([zome1_fn1.clone()]);
 
@@ -264,7 +258,7 @@ mod tests {
         allowed_fns.insert("app2".to_string(), AllowedFns::All);
 
         Configuration {
-            admin_ws_url,
+            admin_socket_addr: SocketAddr::new(Ipv4Addr::LOCALHOST.into(), 8888),
             payload_limit_bytes: 1024 * 1024,
             allowed_app_ids: AllowedAppIds(HashSet::from(["app1".to_string(), "app2".to_string()])),
             allowed_fns,
@@ -353,12 +347,12 @@ mod tests {
 
     mod configuration_tests {
         use super::*;
+        use std::net::Ipv4Addr;
 
         #[test]
         fn creation_sets_up_correct_fields() {
             let config = create_test_config();
 
-            assert_eq!(config.admin_ws_url.to_string(), "ws://localhost:8888/");
             assert_eq!(config.payload_limit_bytes, 1024 * 1024);
             assert_eq!(config.allowed_app_ids.len(), 2);
         }
@@ -438,7 +432,7 @@ mod tests {
 
             // Create configuration with valid inputs
             let config = Configuration::try_new(
-                "ws://localhost:8888",
+                SocketAddr::new(Ipv4Addr::LOCALHOST.into(), 8888),
                 "1048576",
                 "app1,app2",
                 allowed_fns,
@@ -448,7 +442,6 @@ mod tests {
             .unwrap();
 
             // Verify configuration
-            assert_eq!(config.admin_ws_url.to_string(), "ws://localhost:8888/");
             assert_eq!(config.payload_limit_bytes, 1048576);
             assert_eq!(config.allowed_app_ids.len(), 2);
             assert_eq!(config.max_app_connections, 50);
@@ -460,20 +453,9 @@ mod tests {
             let mut allowed_fns = HashMap::new();
             allowed_fns.insert("app1".to_string(), AllowedFns::All);
 
-            // Invalid URL
-            let result = Configuration::try_new(
-                "not-a-valid-url",
-                "1048576",
-                "app1",
-                allowed_fns.clone(),
-                "",
-                "",
-            );
-            assert!(result.is_err());
-
             // Invalid payload limit
             let result = Configuration::try_new(
-                "ws://localhost:8888",
+                SocketAddr::new(Ipv4Addr::LOCALHOST.into(), 8888),
                 "not-a-number",
                 "app1",
                 allowed_fns.clone(),
@@ -484,7 +466,7 @@ mod tests {
 
             // Missing allowed function for app2
             let result = Configuration::try_new(
-                "ws://localhost:8888",
+                SocketAddr::new(Ipv4Addr::LOCALHOST.into(), 8888),
                 "1048576",
                 "app1,app2",
                 allowed_fns.clone(),
@@ -495,7 +477,7 @@ mod tests {
 
             // Max app connections is not a valid number
             let result = Configuration::try_new(
-                "ws://localhost:8888",
+                SocketAddr::new(Ipv4Addr::LOCALHOST.into(), 8888),
                 "1048576",
                 "app1,app2",
                 allowed_fns.clone(),
@@ -506,7 +488,7 @@ mod tests {
 
             // Zome call timeout is not a valid number
             let result = Configuration::try_new(
-                "ws://localhost:8888",
+                SocketAddr::new(Ipv4Addr::LOCALHOST.into(), 8888),
                 "1048576",
                 "app1,app2",
                 allowed_fns,

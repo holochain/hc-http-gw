@@ -7,6 +7,7 @@ use holochain_http_gateway::{
 };
 use reqwest::{Client, Response};
 use std::collections::HashMap;
+use std::net::{Ipv4Addr, SocketAddr};
 use std::sync::Arc;
 use tokio::task::JoinHandle;
 
@@ -33,7 +34,7 @@ impl TestApp {
 
         // Create configuration
         let config = Configuration::try_new(
-            format!("ws://127.0.0.1:{admin_port}").as_str(),
+            SocketAddr::new(Ipv4Addr::LOCALHOST.into(), admin_port),
             "1024",
             "forum",
             allowed_fns,
@@ -47,7 +48,7 @@ impl TestApp {
 
     /// Create a test app with custom configuration
     pub async fn spawn_with_config(config: Configuration) -> Self {
-        let admin_call = Arc::new(AdminConn::connect(&config.admin_ws_url).await.unwrap());
+        let admin_call = Arc::new(AdminConn::new(config.admin_socket_addr));
         let app_call = Arc::new(AppConnPool::new(config.clone(), admin_call.clone()));
 
         let service =

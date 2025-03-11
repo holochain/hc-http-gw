@@ -134,6 +134,7 @@ mod tests {
     use holochain::sweettest::SweetConductor;
     use reqwest::StatusCode;
     use std::collections::HashMap;
+    use std::net::{Ipv4Addr, SocketAddr};
 
     // DnaHash::from_raw_32(vec![1; 32]).to_string()
     const DNA_HASH: &str = "uhC0kAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQF-z86-";
@@ -231,7 +232,7 @@ mod tests {
             .unwrap();
 
         let config = Configuration::try_new(
-            format!("ws://127.0.0.1:{admin_port}").as_str(),
+            SocketAddr::new(Ipv4Addr::LOCALHOST.into(), admin_port),
             "10",
             "",
             allowed_fns,

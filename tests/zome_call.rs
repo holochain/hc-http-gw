@@ -7,6 +7,7 @@ use holochain_http_gateway::{
     tracing::initialize_tracing_subscriber,
 };
 use reqwest::StatusCode;
+use std::net::{Ipv4Addr, SocketAddr};
 
 use setup::TestApp;
 
@@ -61,7 +62,7 @@ async fn zome_call_with_payload_exceeding_limit_fails() {
 
     // Custom configuration with a very small payload limit
     let config = Configuration::try_new(
-        format!("ws://127.0.0.1:{admin_port}").as_str(),
+        SocketAddr::new(Ipv4Addr::LOCALHOST.into(), admin_port),
         "10",
         "forum",
         allowed_fns,

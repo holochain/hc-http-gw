@@ -43,10 +43,6 @@ pub trait AdminCall: std::fmt::Debug + Send + Sync {
         allowed_origins: AllowedOrigins,
         installed_app_id: Option<String>,
     ) -> BoxFuture<'static, HcHttpGatewayResult<u16>>;
-
-    /// Set the admin websocket connection to use.
-    #[cfg(feature = "test-utils")]
-    fn set_admin_ws(&self, admin_ws: holochain_client::AdminWebsocket) -> BoxFuture<'static, ()>;
 }
 
 /// A trait for making zome calls with an app connection.
