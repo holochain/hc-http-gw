@@ -22,20 +22,20 @@ pub struct AdminConn {
     socket_addr: SocketAddr,
 
     /// The handle to the AdminWebsocket connection - always contains a valid connection
-    connection_handle: Arc<RwLock<Option<AdminWebsocket>>>,
+    handle: Arc<RwLock<Option<AdminWebsocket>>>,
 }
 
 impl AdminConn {
-    /// Creates a new [AdminConn] that will attempt to maintain an [AdminWebsocket] connection
+    /// Creates a new [`AdminConn`] that will attempt to maintain an [`AdminWebsocket`] connection
     /// to the specified socket address.
     pub fn new(socket_addr: SocketAddr) -> Self {
         Self {
             socket_addr,
-            connection_handle: Default::default(),
+            handle: Default::default(),
         }
     }
 
-    /// Allows calling a method on the [AdminWebsocket], with automatic reconnection if needed
+    /// Allows calling a method on the [`AdminWebsocket`], with automatic reconnection if needed
     pub async fn call<T>(
         &self,
         execute: impl Fn(AdminWebsocket) -> BoxFuture<'static, HcHttpGatewayResult<T>>,
@@ -50,7 +50,7 @@ impl AdminConn {
                         ?e,
                         "Detected admin websocket disconnection. Attempting to reconnect"
                     );
-                    *self.connection_handle.write().await = None;
+                    *self.handle.write().await = None;
                     continue;
                 }
                 Err(e) => return Err(e),
@@ -62,14 +62,14 @@ impl AdminConn {
 
     async fn get_admin_ws(&self) -> HcHttpGatewayResult<AdminWebsocket> {
         {
-            let lock = self.connection_handle.read().await;
+            let lock = self.handle.read().await;
 
             if let Some(admin_ws) = lock.as_ref() {
                 return Ok(admin_ws.clone());
             }
         }
 
-        let mut lock = self.connection_handle.write().await;
+        let mut lock = self.handle.write().await;
 
         match AdminWebsocket::connect(self.socket_addr).await {
             Ok(admin_ws) => {

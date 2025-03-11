@@ -27,6 +27,9 @@ impl TestApp {
         let mut allowed_fns = HashMap::new();
         allowed_fns.insert("forum".to_string(), AllowedFns::All);
 
+        // TODO This is no good. The conductor will shut down as soon as this handle is dropped.
+        //      Again, this is already updated on another PR so as long as the tests pass, I'm
+        //      Not going to change it for now and it will disappear on a rebase.
         let sweet_conductor = SweetConductor::from_standard_config().await;
         let admin_port = sweet_conductor
             .get_arbitrary_admin_websocket_port()

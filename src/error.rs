@@ -29,9 +29,6 @@ pub enum HcHttpGatewayError {
     /// Error returned when a connection cannot be made to the upstream Holochain service
     #[error("The upstream Holochain service could not be reached")]
     UpstreamUnavailable,
-    /// Handles miscellaneous internal errors
-    #[error("Internal Error: {0}")]
-    InternalError(String),
 }
 
 /// Type aliased Result

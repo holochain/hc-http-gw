@@ -60,7 +60,7 @@ pub mod tests {
         /// Construct a test router with 1024 bytes payload limit.
         /// Allowed functions are restricted to coordinator "coordinator", zome name "zome_name",
         /// function name "fn_name".
-        pub async fn new() -> Self {
+        pub fn new() -> Self {
             let mut allowed_fns = HashMap::new();
             let allowed_zome_fn = ZomeFn {
                 zome_name: "zome_name".to_string(),
@@ -80,10 +80,10 @@ pub mod tests {
                 "",
             )
             .unwrap();
-            Self::new_with_config(config).await
+            Self::new_with_config(config)
         }
 
-        pub async fn new_with_config(config: Configuration) -> Self {
+        pub fn new_with_config(config: Configuration) -> Self {
             let mut app_call = MockAppCall::new();
             app_call.expect_handle_zome_call().returning(|_, _| {
                 Box::pin(async {
@@ -127,16 +127,16 @@ pub mod tests {
         }
     }
 
-    #[tokio::test(flavor = "multi_thread")]
+    #[tokio::test]
     async fn get_request_to_root_fails() {
-        let router = TestRouter::new().await;
+        let router = TestRouter::new();
         let (status_code, _) = router.request("/").await;
         assert_eq!(status_code, StatusCode::NOT_FOUND);
     }
 
-    #[tokio::test(flavor = "multi_thread")]
+    #[tokio::test]
     async fn post_method_to_health_fails() {
-        let router = TestRouter::new().await;
+        let router = TestRouter::new();
         let response = router
             .0
             .oneshot(
@@ -151,9 +151,9 @@ pub mod tests {
         assert_eq!(response.status(), StatusCode::METHOD_NOT_ALLOWED);
     }
 
-    #[tokio::test(flavor = "multi_thread")]
+    #[tokio::test]
     async fn post_method_to_zome_call_fails() {
-        let router = TestRouter::new().await;
+        let router = TestRouter::new();
         let response = router
             .0
             .oneshot(

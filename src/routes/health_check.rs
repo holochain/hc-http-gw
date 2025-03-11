@@ -8,9 +8,9 @@ mod tests {
     use crate::router::tests::TestRouter;
     use reqwest::StatusCode;
 
-    #[tokio::test(flavor = "multi_thread")]
+    #[tokio::test]
     async fn get_request_health_check_succeeds() {
-        let router = TestRouter::new().await;
+        let router = TestRouter::new();
         let (status_code, body) = router.request("/health").await;
         assert_eq!(status_code, StatusCode::OK);
         assert_eq!(body, "Ok");

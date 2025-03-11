@@ -131,7 +131,6 @@ mod tests {
         routes::zome_call::MAX_IDENTIFIER_CHARS,
     };
     use base64::{prelude::BASE64_URL_SAFE, Engine};
-    use holochain::sweettest::SweetConductor;
     use reqwest::StatusCode;
     use std::collections::HashMap;
     use std::net::{Ipv4Addr, SocketAddr};
@@ -139,17 +138,17 @@ mod tests {
     // DnaHash::from_raw_32(vec![1; 32]).to_string()
     const DNA_HASH: &str = "uhC0kAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQF-z86-";
 
-    #[tokio::test(flavor = "multi_thread")]
+    #[tokio::test]
     async fn valid_dna_hash_is_accepted() {
-        let router = TestRouter::new().await;
+        let router = TestRouter::new();
         let uri = format!("/{DNA_HASH}/coordinator/zome_name/fn_name");
         let (status_code, _) = router.request(&uri).await;
         assert_eq!(status_code, StatusCode::OK);
     }
 
-    #[tokio::test(flavor = "multi_thread")]
+    #[tokio::test]
     async fn invalid_dna_hash_is_rejected() {
-        let router = TestRouter::new().await;
+        let router = TestRouter::new();
         let invalid_dna_hash = "thisaintnodnahash";
         let uri = format!("/{invalid_dna_hash}/coordinator/zome_name/fn_name");
         let (status_code, body) = router.request(&uri).await;
@@ -160,9 +159,9 @@ mod tests {
         );
     }
 
-    #[tokio::test(flavor = "multi_thread")]
+    #[tokio::test]
     async fn coordinator_identifier_with_excess_length_is_rejected() {
-        let router = TestRouter::new().await;
+        let router = TestRouter::new();
         let coordinator = "12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901";
         let uri = format!("/{DNA_HASH}/{coordinator}/zome_name/fn_name");
         let (status_code, body) = router.request(&uri).await;
@@ -175,9 +174,9 @@ mod tests {
         );
     }
 
-    #[tokio::test(flavor = "multi_thread")]
+    #[tokio::test]
     async fn zome_name_with_excess_length_is_rejected() {
-        let router = TestRouter::new().await;
+        let router = TestRouter::new();
         let zome_name = "12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901";
         let uri = format!("/{DNA_HASH}/coordinator/{zome_name}/fn_name");
         let (status_code, body) = router.request(&uri).await;
@@ -190,9 +189,9 @@ mod tests {
         );
     }
 
-    #[tokio::test(flavor = "multi_thread")]
+    #[tokio::test]
     async fn function_name_with_excess_length_is_rejected() {
-        let router = TestRouter::new().await;
+        let router = TestRouter::new();
         let fn_name = "12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901";
         let uri = format!("/{DNA_HASH}/coordinator/zome_name/{fn_name}");
         let (status_code, body) = router.request(&uri).await;
@@ -205,10 +204,10 @@ mod tests {
         );
     }
 
-    #[tokio::test(flavor = "multi_thread")]
+    #[tokio::test]
     async fn unauthorized_function_name_is_rejected() {
         // Only one allowed function "fn_name" in test router.
-        let router = TestRouter::new().await;
+        let router = TestRouter::new();
         let fn_name = "unauthorized_fn";
         let uri = format!("/{DNA_HASH}/coordinator/zome_name/{fn_name}");
         let (status_code, body) = router.request(&uri).await;
@@ -221,18 +220,13 @@ mod tests {
         );
     }
 
-    #[tokio::test(flavor = "multi_thread")]
+    #[tokio::test]
     async fn payload_with_excess_length_is_rejected() {
         let mut allowed_fns = HashMap::new();
         allowed_fns.insert("coordinator".to_string(), AllowedFns::All);
 
-        let sweet_conductor = SweetConductor::from_standard_config().await;
-        let admin_port = sweet_conductor
-            .get_arbitrary_admin_websocket_port()
-            .unwrap();
-
         let config = Configuration::try_new(
-            SocketAddr::new(Ipv4Addr::LOCALHOST.into(), admin_port),
+            SocketAddr::new(Ipv4Addr::LOCALHOST.into(), 8888),
             "10",
             "",
             allowed_fns,
@@ -240,7 +234,7 @@ mod tests {
             "",
         )
         .unwrap();
-        let router = TestRouter::new_with_config(config).await;
+        let router = TestRouter::new_with_config(config);
         let payload = BASE64_URL_SAFE.encode(vec![1; 11]);
         let uri = format!("/{DNA_HASH}/coordinator/zome_name/fn_name?payload={payload}");
         let (status_code, body) = router.request(&uri).await;
@@ -251,9 +245,9 @@ mod tests {
         );
     }
 
-    #[tokio::test(flavor = "multi_thread")]
+    #[tokio::test]
     async fn payload_with_invalid_base64_encoding_is_rejected() {
-        let router = TestRouter::new().await;
+        let router = TestRouter::new();
         let payload = "$%&#";
         let uri = format!("/{DNA_HASH}/coordinator/zome_name/fn_name?payload={payload}");
         let (status_code, body) = router.request(&uri).await;
@@ -264,9 +258,9 @@ mod tests {
         );
     }
 
-    #[tokio::test(flavor = "multi_thread")]
+    #[tokio::test]
     async fn payload_with_invalid_json_is_rejected() {
-        let router = TestRouter::new().await;
+        let router = TestRouter::new();
         let payload = BASE64_URL_SAFE.encode("{invalid}");
         let uri = format!("/{DNA_HASH}/coordinator/zome_name/fn_name?payload={payload}");
         let (status_code, body) = router.request(&uri).await;
