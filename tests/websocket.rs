@@ -51,10 +51,7 @@ async fn connect_app_websocket() {
     assert_eq!(apps.len(), 2);
 
     let admin_call = Arc::new(AdminWrapper::new(admin_ws));
-    let pool = AppConnPool::new(
-        create_test_configuration(admin_port).unwrap(),
-        admin_call.clone(),
-    );
+    let pool = AppConnPool::new(create_test_configuration(admin_port), admin_call.clone());
 
     let app_client_1 = pool
         .get_or_connect_app_client("fixture1".to_string())
@@ -107,10 +104,7 @@ async fn reuse_connection() {
         .unwrap();
 
     let admin_call = Arc::new(AdminWrapper::new(admin_ws));
-    let pool = AppConnPool::new(
-        create_test_configuration(admin_port).unwrap(),
-        admin_call.clone(),
-    );
+    let pool = AppConnPool::new(create_test_configuration(admin_port), admin_call.clone());
 
     let app_client_1 = pool
         .get_or_connect_app_client("fixture1".to_string())
@@ -175,10 +169,7 @@ async fn does_not_reconnect_on_non_websocket_error() {
         .unwrap();
 
     let admin_call = Arc::new(AdminWrapper::new(admin_ws));
-    let pool = AppConnPool::new(
-        create_test_configuration(admin_port).unwrap(),
-        admin_call.clone(),
-    );
+    let pool = AppConnPool::new(create_test_configuration(admin_port), admin_call.clone());
 
     // Connect while the app is running
     let app_client = pool
@@ -266,10 +257,7 @@ async fn reconnect_on_failed_websocket() {
         .unwrap();
 
     let admin_call = Arc::new(AdminWrapper::new(admin_ws));
-    let mut pool = AppConnPool::new(
-        create_test_configuration(admin_port).unwrap(),
-        admin_call.clone(),
-    );
+    let mut pool = AppConnPool::new(create_test_configuration(admin_port), admin_call.clone());
 
     // Connect while the app is running
     let app_client = pool
@@ -361,10 +349,7 @@ async fn reconnect_gives_up() {
         .unwrap();
 
     let admin_call = Arc::new(AdminWrapper::new(admin_ws));
-    let pool = AppConnPool::new(
-        create_test_configuration(admin_port).unwrap(),
-        admin_call.clone(),
-    );
+    let pool = AppConnPool::new(create_test_configuration(admin_port), admin_call.clone());
 
     // Connect while the app is running
     let app_client = pool
@@ -532,7 +517,7 @@ async fn close_old_connections_on_limit() {
     assert_eq!(ws_for_apps, vec!["app_1", "app_3"]);
 }
 
-fn create_test_configuration(admin_port: u16) -> HcHttpGatewayResult<Configuration> {
+fn create_test_configuration(admin_port: u16) -> Configuration {
     Configuration::try_new(
         &format!("ws://127.0.0.1:{}", admin_port),
         "",
@@ -566,6 +551,7 @@ fn create_test_configuration(admin_port: u16) -> HcHttpGatewayResult<Configurati
         "",
         "",
     )
+    .unwrap()
 }
 
 impl AdminCall for AdminWrapper {

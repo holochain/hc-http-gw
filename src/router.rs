@@ -30,12 +30,12 @@ pub fn hc_http_gateway_router(
 
 #[cfg(test)]
 pub mod tests {
-    use crate::MockAppCall;
     use crate::{
         config::{AllowedFns, Configuration, ZomeFn},
         router::hc_http_gateway_router,
         AdminConn,
     };
+    use crate::{HcHttpGatewayError, MockAppCall};
     use axum::{body::Body, http::Request, Router};
     use holochain::prelude::ExternIO;
     use holochain_client::SerializedBytes;
@@ -81,7 +81,8 @@ pub mod tests {
                     let response = TestZomeResponse {
                         hello: "world".to_string(),
                     };
-                    Ok(ExternIO::encode(response)?)
+                    Ok(ExternIO::encode(response)
+                        .map_err(|e| HcHttpGatewayError::RequestMalformed(e.to_string()))?)
                 })
             });
 

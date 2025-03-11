@@ -8,10 +8,7 @@ use std::{
     ops::Deref,
     str::FromStr,
 };
-
 use url2::Url2;
-
-use crate::{HcHttpGatewayError, HcHttpGatewayResult};
 
 /// Default payload size limit (10 kilobytes)
 pub const DEFAULT_PAYLOAD_LIMIT_BYTES: u32 = 10 * 1024;
@@ -21,6 +18,23 @@ pub const DEFAULT_MAX_APP_CONNECTIONS: u32 = 500;
 
 /// Default timeout for zome calls
 pub const DEFAULT_ZOME_CALL_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(10);
+
+/// Errors when parsing config arguments.
+#[derive(Debug, thiserror::Error)]
+pub enum ConfigParseError {
+    /// Error when parsing URL.
+    #[error("URL parse error: {0}")]
+    UrlParseError(#[from] url2::Url2Error),
+    /// Error when parsing an integer.
+    #[error("Integer parse error: {0}")]
+    IntParseError(#[from] std::num::ParseIntError),
+    /// Other parsing error.
+    #[error("Parse error: {0}")]
+    Other(String),
+}
+
+/// Result of parsing config arguments.
+pub type ConfigParseResult<T> = std::result::Result<T, ConfigParseError>;
 
 /// Main configuration structure for the HTTP Gateway.
 #[derive(Debug, Clone)]
@@ -55,27 +69,20 @@ impl Configuration {
         allowed_fns: HashMap<AppId, AllowedFns>,
         max_app_connections: &str,
         zome_call_timeout: &str,
-    ) -> HcHttpGatewayResult<Self> {
-        let admin_ws_url = Url2::try_parse(admin_ws_url).map_err(|e| {
-            HcHttpGatewayError::ConfigurationError(format!("Url parse error: {}", e))
-        })?;
+    ) -> ConfigParseResult<Self> {
+        let admin_ws_url = Url2::try_parse(admin_ws_url)?;
 
         let payload_limit_bytes = if payload_limit_bytes.is_empty() {
             DEFAULT_PAYLOAD_LIMIT_BYTES
         } else {
-            payload_limit_bytes.parse::<u32>().map_err(|e| {
-                HcHttpGatewayError::ConfigurationError(format!(
-                    "Failed to parse the payload limit bytes value: {}",
-                    e
-                ))
-            })?
+            payload_limit_bytes.parse::<u32>()?
         };
 
         let allowed_app_ids = AllowedAppIds::from_str(allowed_app_ids)?;
 
         for app_id in allowed_app_ids.iter() {
             if !allowed_fns.contains_key(app_id) {
-                return Err(HcHttpGatewayError::ConfigurationError(format!(
+                return Err(ConfigParseError::Other(format!(
                     "{} is not present in allowed_fns",
                     app_id
                 )));
@@ -85,23 +92,13 @@ impl Configuration {
         let max_app_connections = if max_app_connections.is_empty() {
             DEFAULT_MAX_APP_CONNECTIONS
         } else {
-            max_app_connections.parse::<u32>().map_err(|e| {
-                HcHttpGatewayError::ConfigurationError(format!(
-                    "Failed to parse the max app connections value: {}",
-                    e
-                ))
-            })?
+            max_app_connections.parse::<u32>()?
         };
 
         let zome_call_timeout = if zome_call_timeout.is_empty() {
             DEFAULT_ZOME_CALL_TIMEOUT
         } else {
-            std::time::Duration::from_millis(zome_call_timeout.parse::<u64>().map_err(|e| {
-                HcHttpGatewayError::ConfigurationError(format!(
-                    "Failed to parse the zome call timeout value: {}",
-                    e
-                ))
-            })?)
+            std::time::Duration::from_millis(zome_call_timeout.parse::<u64>()?)
         };
 
         Ok(Configuration {
@@ -128,11 +125,11 @@ impl Deref for AllowedAppIds {
 }
 
 impl FromStr for AllowedAppIds {
-    type Err = HcHttpGatewayError;
+    type Err = ConfigParseError;
 
     /// Expected format:
     /// - A comma separated string of allowed app_ids e.g "app1,app2,app3"
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn from_str(s: &str) -> ConfigParseResult<Self> {
         let allowed_app_ids = s
             .trim()
             .split(',')
@@ -202,13 +199,13 @@ pub struct ZomeFn {
 }
 
 impl FromStr for AllowedFns {
-    type Err = HcHttpGatewayError;
+    type Err = ConfigParseError;
 
     /// Expected format
     /// - A comma separated string of zome_name/fn_name pairs, which should be separated
     ///   by a forward slash (/)
     /// - An asterix ("*") indicating that all functions in all zomes are allowed
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn from_str(s: &str) -> ConfigParseResult<Self> {
         match s.trim() {
             "*" => Ok(AllowedFns::All),
             s => {
@@ -217,14 +214,14 @@ impl FromStr for AllowedFns {
 
                 for zome_fn_path in csv {
                     let Some((zome_name, fn_name)) = zome_fn_path.trim().split_once('/') else {
-                        return Err(HcHttpGatewayError::ConfigurationError(format!(
+                        return Err(ConfigParseError::Other(format!(
                             "Failed to parse the zome name and function name from value: {}",
-                            zome_fn_path
+                            zome_fn_path,
                         )));
                     };
 
                     if zome_name.is_empty() || fn_name.is_empty() {
-                        return Err(HcHttpGatewayError::ConfigurationError(format!(
+                        return Err(ConfigParseError::Other(format!(
                             "Zome name or function name is empty for value: {}",
                             zome_fn_path
                         )));
