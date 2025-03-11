@@ -8,7 +8,7 @@ use holochain_conductor_api::{
     AppAuthenticationTokenIssued, AppInterfaceInfo, IssueAppAuthenticationTokenPayload,
 };
 use holochain_types::websocket::AllowedOrigins;
-use std::{future::Future, sync::Arc};
+use std::sync::Arc;
 use tokio::sync::RwLock;
 use url2::Url2;
 
@@ -22,89 +22,36 @@ const ADMIN_WS_CONNECTION_MAX_RETRIES: usize = 1;
 pub struct AdminConn {
     /// The WebSocket URL to connect to
     url: Url2,
-    /// The handle to the AdminWebsocket connection
-    connection_handle: Arc<RwLock<Option<AdminWebsocket>>>,
-    /// Current retry attempt counter
-    current_retries: usize,
+    /// The handle to the AdminWebsocket connection - always contains a valid connection
+    connection_handle: Arc<RwLock<AdminWebsocket>>,
 }
 
 impl AdminConn {
-    /// Creates a new HcHttpGwAdminWebsocket and attempts to connect immediately
+    /// Creates a new AdminConn by establishing a connection to the given URL
     ///
-    /// This will make multiple attempts according to the `max_retries`
-    /// setting, with exponential backoff between retries.
+    /// This will make multiple attempts according to the `max_retries` setting.
     pub async fn connect(url: &Url2) -> HcHttpGatewayResult<Self> {
-        let mut instance = Self {
-            url: url.clone(),
-            connection_handle: Arc::new(RwLock::new(None)),
-            current_retries: 0,
-        };
+        let admin_ws_url = Self::format_ws_url(url)?;
+        let mut current_retries = 0;
 
-        instance.attempt_connection().await?;
-        Ok(instance)
-    }
-
-    /// Checks if there is an active connection
-    async fn is_connected(&self) -> HcHttpGatewayResult<bool> {
-        let connection = self.connection_handle.read().await;
-        Ok(connection.is_some())
-    }
-
-    /// Gets reconnection retry count
-    pub fn get_reconnection_retries(&self) -> usize {
-        self.current_retries
-    }
-
-    /// Ensures that a connection is established before proceeding
-    async fn ensure_connected(&mut self) -> HcHttpGatewayResult<()> {
-        if self.is_connected().await? {
-            return Ok(());
-        }
-
-        self.attempt_connection().await
-    }
-
-    /// Attempts to connect to the AdminWebsocket
-    ///
-    /// This will make multiple attempts according to the `max_retries`
-    /// setting, with exponential backoff between retries.
-    async fn attempt_connection(&mut self) -> HcHttpGatewayResult<()> {
-        self.current_retries = 0;
-
-        while self.current_retries < ADMIN_WS_CONNECTION_MAX_RETRIES {
-            let admin_ws_url = format!(
-                "{}:{}",
-                self.url
-                    .host_str()
-                    .ok_or_else(|| HcHttpGatewayError::InternalError(
-                        "Invalid admin ws host".to_string()
-                    ))?,
-                self.url
-                    .port()
-                    .ok_or_else(|| HcHttpGatewayError::InternalError(
-                        "Port is absent from the admin ws url".to_string()
-                    ))?
-            );
-            let admin_ws = AdminWebsocket::connect(&admin_ws_url).await;
-
-            match admin_ws {
+        while current_retries < ADMIN_WS_CONNECTION_MAX_RETRIES {
+            match AdminWebsocket::connect(&admin_ws_url).await {
                 Ok(conn) => {
-                    let mut connection = self.connection_handle.write().await;
-                    *connection = Some(conn);
-                    self.current_retries = 0;
-
-                    return Ok(());
+                    return Ok(Self {
+                        url: url.clone(),
+                        connection_handle: Arc::new(RwLock::new(conn)),
+                    });
                 }
                 Err(e) => {
-                    self.current_retries += 1;
+                    current_retries += 1;
                     tracing::warn!(
                         "Failed to connect to WebSocket (attempt {}/{}): {:?}",
-                        self.current_retries,
+                        current_retries,
                         ADMIN_WS_CONNECTION_MAX_RETRIES,
                         e
                     );
 
-                    if self.current_retries < ADMIN_WS_CONNECTION_MAX_RETRIES {
+                    if current_retries < ADMIN_WS_CONNECTION_MAX_RETRIES {
                         continue;
                     } else {
                         return Err(HcHttpGatewayError::UpstreamUnavailable);
@@ -119,75 +66,96 @@ impl AdminConn {
         )))
     }
 
+    /// Formats the WebSocket URL from the provided Url2
+    fn format_ws_url(url: &Url2) -> HcHttpGatewayResult<String> {
+        let host = url.host_str().ok_or_else(|| {
+            HcHttpGatewayError::InternalError("Invalid admin ws host".to_string())
+        })?;
+
+        let port = url.port().ok_or_else(|| {
+            HcHttpGatewayError::InternalError("Port is absent from the admin ws url".to_string())
+        })?;
+
+        Ok(format!("{}:{}", host, port))
+    }
+
+    /// Attempts to reconnect to the AdminWebsocket when a connection failure is detected
+    async fn reconnect(&self) -> HcHttpGatewayResult<()> {
+        let admin_ws_url = Self::format_ws_url(&self.url)?;
+        let mut current_retries = 0;
+
+        while current_retries < ADMIN_WS_CONNECTION_MAX_RETRIES {
+            match AdminWebsocket::connect(&admin_ws_url).await {
+                Ok(conn) => {
+                    // Replace the existing connection with the new one
+                    let mut connection = self.connection_handle.write().await;
+                    *connection = conn;
+                    return Ok(());
+                }
+                Err(e) => {
+                    current_retries += 1;
+                    tracing::warn!(
+                        "Failed to reconnect to WebSocket (attempt {}/{}): {:?}",
+                        current_retries,
+                        ADMIN_WS_CONNECTION_MAX_RETRIES,
+                        e
+                    );
+
+                    if current_retries < ADMIN_WS_CONNECTION_MAX_RETRIES {
+                        continue;
+                    } else {
+                        return Err(HcHttpGatewayError::UpstreamUnavailable);
+                    }
+                }
+            }
+        }
+
+        Err(HcHttpGatewayError::InternalError(format!(
+            "Maximum reconnection retry attempts ({}) reached",
+            ADMIN_WS_CONNECTION_MAX_RETRIES
+        )))
+    }
+
     /// Allows calling a method on the AdminWebsocket, with automatic reconnection if needed
     ///
-    /// Accepts a function `f` that takes a AdminWebsocket and returns a Result with ConductorApiError
-    pub async fn call<T, F, Fut>(&mut self, f: F) -> HcHttpGatewayResult<T>
+    /// Accepts a function `f` that takes an Arc<AdminWebsocket> and returns a Result
+    pub async fn call<T, F, FnFactory>(&self, fn_factory: FnFactory) -> HcHttpGatewayResult<T>
     where
-        F: Fn(Arc<AdminWebsocket>) -> Fut + Send + Clone,
-        Fut: Future<Output = ConductorApiResult<T>> + Send,
+        F: FnOnce(Arc<AdminWebsocket>) -> BoxFuture<'static, ConductorApiResult<T>> + Send,
+        FnFactory: Fn() -> F + Send + Sync + 'static,
+        T: Send + 'static,
     {
-        self.ensure_connected().await?;
-
-        // Try to execute the operation
-        match self.exec(&f).await {
-            Ok(result) => Ok(result),
-            Err(e) if e.is_disconnect_error() => self.handle_disconnection(f).await,
-            Err(e) => Err(e),
-        }
-    }
-
-    // Helper method to execute an operation with the current connection
-    async fn exec<T, F, Fut>(&mut self, f: &F) -> HcHttpGatewayResult<T>
-    where
-        F: Fn(Arc<AdminWebsocket>) -> Fut + Send,
-        Fut: Future<Output = ConductorApiResult<T>> + Send,
-    {
-        // Take the connection while holding a write lock
+        // First attempt
         let connection = {
-            let mut connection = self.connection_handle.write().await;
-            let connection = connection.take().ok_or_else(|| {
-                HcHttpGatewayError::InternalError(
-                    "No connection available despite ensure_connected check".to_string(),
-                )
-            })?;
-
-            Arc::new(connection)
+            let connection = self.connection_handle.read().await;
+            Arc::new(connection.clone())
         };
 
-        // Execute the function with the connection
-        let result = f(connection.clone())
-            .await
-            .map_err(HcHttpGatewayError::from);
+        // Create and call the first closure
+        match fn_factory()(connection).await {
+            Ok(result) => Ok(result),
+            Err(e) if matches!(e, ConductorApiError::WebsocketError(_)) => {
+                tracing::warn!("Detected disconnection. Attempting to reconnect...");
 
-        // If we get here without error, we need to put the connection back
-        if result.is_ok() {
-            if let Ok(conn) = Arc::try_unwrap(connection.clone()) {
-                let mut connection_handle = self.connection_handle.write().await;
-                *connection_handle = Some(conn);
-            } else {
-                tracing::warn!("Connection Arc still has strong references when returning to pool");
+                match self.reconnect().await {
+                    Ok(()) => {
+                        tracing::info!("Reconnected successfully. Retrying operation.");
+
+                        // Get a new connection after reconnection
+                        let connection = {
+                            let connection = self.connection_handle.read().await;
+                            Arc::new(connection.clone())
+                        };
+
+                        // Create and call a new closure for the retry
+                        fn_factory()(connection)
+                            .await
+                            .map_err(HcHttpGatewayError::from)
+                    }
+                    Err(connect_err) => Err(connect_err),
+                }
             }
-        }
-
-        result
-    }
-
-    async fn handle_disconnection<T, F, Fut>(&mut self, f: F) -> HcHttpGatewayResult<T>
-    where
-        F: Fn(Arc<AdminWebsocket>) -> Fut + Send,
-        Fut: Future<Output = ConductorApiResult<T>> + Send,
-    {
-        tracing::warn!("Detected disconnection. Attempting to connect...");
-
-        match self.attempt_connection().await {
-            Ok(()) => {
-                tracing::info!("Reconnected successfully. Retrying operation.");
-
-                // Retry the operation with the new connection
-                self.exec(&f).await
-            }
-            Err(connect_err) => Err(connect_err),
+            Err(e) => Err(HcHttpGatewayError::from(e)),
         }
     }
 }
@@ -196,7 +164,20 @@ impl AdminCall for AdminConn {
     fn list_app_interfaces(
         &self,
     ) -> BoxFuture<'static, HcHttpGatewayResult<Vec<AppInterfaceInfo>>> {
-        todo!()
+        let this = self.clone();
+
+        Box::pin(async move {
+            let factory = move || {
+                move |admin_ws: Arc<AdminWebsocket>| -> BoxFuture<'static, ConductorApiResult<Vec<AppInterfaceInfo>>> {
+                let admin_ws = admin_ws.clone();
+
+                Box::pin(async move {
+                    admin_ws.list_app_interfaces().await
+                })
+            }
+            };
+            this.call(factory).await
+        })
     }
 
     fn issue_app_auth_token(
@@ -208,41 +189,57 @@ impl AdminCall for AdminConn {
 
     fn authorize_signing_credentials(
         &self,
-        _payload: AuthorizeSigningCredentialsPayload,
+        payload: AuthorizeSigningCredentialsPayload,
     ) -> BoxFuture<'static, HcHttpGatewayResult<SigningCredentials>> {
-        todo!()
+        let this = self.clone();
+
+        Box::pin(async move {
+            let factory = move || {
+                let payload_clone = payload.clone();
+
+                move |admin_ws: Arc<AdminWebsocket>| -> BoxFuture<'static, ConductorApiResult<SigningCredentials>> {
+                let admin_ws = admin_ws.clone();
+
+                Box::pin(async move {
+                    admin_ws.authorize_signing_credentials(payload_clone).await
+                })
+            }
+            };
+
+            this.call(factory).await
+        })
     }
 
     fn attach_app_interface(
         &self,
-        _port: u16,
-        _allowed_origins: AllowedOrigins,
-        _installed_app_id: Option<String>,
+        port: u16,
+        allowed_origins: AllowedOrigins,
+        installed_app_id: Option<String>,
     ) -> BoxFuture<'static, HcHttpGatewayResult<u16>> {
-        todo!()
+        let this = self.clone();
+
+        Box::pin(async move {
+            let factory = move || {
+                let allowed_origins = allowed_origins.clone();
+                let installed_app_id = installed_app_id.clone();
+
+                move |admin_ws: Arc<AdminWebsocket>| -> BoxFuture<'static, ConductorApiResult<u16>> {
+                    let admin_ws = admin_ws.clone();
+
+                    Box::pin(async move {
+                        admin_ws
+                            .attach_app_interface(port, allowed_origins, installed_app_id)
+                            .await
+                    })
+                }
+            };
+
+            this.call(factory).await
+        })
     }
 
     #[cfg(feature = "test-utils")]
     fn set_admin_ws(&self, _admin_ws: holochain_client::AdminWebsocket) -> BoxFuture<'static, ()> {
         todo!()
-    }
-}
-
-/// Extension on HcHttpGatewayError to check if it's a disconnect error
-trait HcHttpGatewayErrorExt {
-    fn is_disconnect_error(&self) -> bool;
-}
-
-impl HcHttpGatewayErrorExt for HcHttpGatewayError {
-    fn is_disconnect_error(&self) -> bool {
-        match self {
-            // Specifically checking for WebsocketError (inside ConductorApiError) and IoError as mentioned
-            HcHttpGatewayError::HolochainError(api_error) => {
-                // Check for websocket errors inside the ConductorApiError
-                matches!(api_error, ConductorApiError::WebsocketError(_))
-            }
-            // All other errors don't trigger reconnection
-            _ => false,
-        }
     }
 }

@@ -565,23 +565,17 @@ async fn connect_admin_websocket() {
         .unwrap();
     let url = url2!("ws://localhost:{admin_port}");
 
-    let mut admin_ws = AdminConn::connect(&url).await.unwrap();
+    let admin_ws = AdminConn::connect(&url).await.unwrap();
 
     // First call should succeed
-    let apps = admin_ws
-        .call(|ws| async move { ws.list_apps(None).await })
-        .await
-        .unwrap();
+    let apps = admin_ws.list_app_interfaces().await.unwrap();
 
     assert_eq!(apps.len(), 0);
-    assert_eq!(admin_ws.get_reconnection_retries(), 0);
 
     // Shutdown the conductor to force a connection error
     sweet_conductor.shutdown().await;
 
-    let apps = admin_ws
-        .call(|ws| async move { ws.list_apps(None).await })
-        .await;
+    let apps = admin_ws.list_app_interfaces().await;
 
     if let Err(err) = apps {
         assert!(matches!(err, HcHttpGatewayError::UpstreamUnavailable));
