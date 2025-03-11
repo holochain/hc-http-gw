@@ -57,7 +57,7 @@ async fn connect_app_websocket() {
     );
 
     let app_client_1 = pool
-        .get_or_connect_app_client("fixture1".to_string(), admin_call.clone())
+        .get_or_connect_app_client("fixture1".to_string())
         .await
         .unwrap();
     assert_eq!(
@@ -66,7 +66,7 @@ async fn connect_app_websocket() {
     );
 
     let app_client_2 = pool
-        .get_or_connect_app_client("fixture2".to_string(), admin_call.clone())
+        .get_or_connect_app_client("fixture2".to_string())
         .await
         .unwrap();
     assert_eq!(
@@ -113,7 +113,7 @@ async fn reuse_connection() {
     );
 
     let app_client_1 = pool
-        .get_or_connect_app_client("fixture1".to_string(), admin_call.clone())
+        .get_or_connect_app_client("fixture1".to_string())
         .await
         .unwrap();
     assert_eq!(
@@ -127,11 +127,7 @@ async fn reuse_connection() {
 
     let app_client_1_handle = tokio::time::timeout(std::time::Duration::from_millis(100), {
         let pool = pool.clone();
-        let admin_call = admin_call.clone();
-        async move {
-            pool.get_or_connect_app_client("fixture1".to_string(), admin_call)
-                .await
-        }
+        async move { pool.get_or_connect_app_client("fixture1".to_string()).await }
     })
     .await
     .unwrap()
@@ -186,7 +182,7 @@ async fn does_not_reconnect_on_non_websocket_error() {
 
     // Connect while the app is running
     let app_client = pool
-        .get_or_connect_app_client("fixture1".to_string(), admin_call.clone())
+        .get_or_connect_app_client("fixture1".to_string())
         .await
         .unwrap();
     assert_eq!(
@@ -277,7 +273,7 @@ async fn reconnect_on_failed_websocket() {
 
     // Connect while the app is running
     let app_client = pool
-        .get_or_connect_app_client("fixture1".to_string(), admin_call.clone())
+        .get_or_connect_app_client("fixture1".to_string())
         .await
         .unwrap();
     assert_eq!(
@@ -372,7 +368,7 @@ async fn reconnect_gives_up() {
 
     // Connect while the app is running
     let app_client = pool
-        .get_or_connect_app_client("fixture1".to_string(), admin_call.clone())
+        .get_or_connect_app_client("fixture1".to_string())
         .await
         .unwrap();
     assert_eq!(
@@ -507,17 +503,17 @@ async fn close_old_connections_on_limit() {
 
     // Take out connections to all 3 apps
     let _app_client_2 = pool
-        .get_or_connect_app_client("app_2".to_string(), admin_call.clone())
+        .get_or_connect_app_client("app_2".to_string())
         .await
         .unwrap();
 
     let _app_client_1 = pool
-        .get_or_connect_app_client("app_1".to_string(), admin_call.clone())
+        .get_or_connect_app_client("app_1".to_string())
         .await
         .unwrap();
 
     let _app_client_3 = pool
-        .get_or_connect_app_client("app_3".to_string(), admin_call.clone())
+        .get_or_connect_app_client("app_3".to_string())
         .await
         .unwrap();
 

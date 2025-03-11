@@ -66,7 +66,7 @@ impl AppConnPool {
         // On the third attempt, we will reconnect permitting creating a new app interface
         for _ in 0..3 {
             let app_ws = match self
-                .get_or_connect_app_client(installed_app_id.clone(), self.admin_call.clone())
+                .get_or_connect_app_client(installed_app_id.clone())
                 .await
             {
                 Ok(app_ws) => app_ws,
@@ -111,7 +111,6 @@ impl AppConnPool {
     pub async fn get_or_connect_app_client(
         &self,
         installed_app_id: InstalledAppId,
-        admin_ws: Arc<dyn AdminCall>,
     ) -> HcHttpGatewayResult<AppWebsocket> {
         {
             let app_clients = self.app_clients.read().await;
@@ -129,9 +128,7 @@ impl AppConnPool {
                 client.get().app_ws.clone()
             }
             std::collections::hash_map::Entry::Vacant(entry) => {
-                let app_ws = self
-                    .attempt_connect_app_ws(installed_app_id, admin_ws)
-                    .await?;
+                let app_ws = self.attempt_connect_app_ws(installed_app_id).await?;
 
                 entry.insert(AppWebsocketWithState {
                     app_ws: app_ws.clone(),
@@ -169,7 +166,6 @@ impl AppConnPool {
     async fn attempt_connect_app_ws(
         &self,
         installed_app_id: InstalledAppId,
-        admin_call: Arc<dyn AdminCall>,
     ) -> HcHttpGatewayResult<AppWebsocket> {
         tracing::debug!(
             "Attempting to connect to app client for {}",
@@ -177,13 +173,12 @@ impl AppConnPool {
         );
 
         // Get the app port for a compatible app interface, which may be a cached value.
-        let app_port = self
-            .get_app_port(&installed_app_id, admin_call.clone())
-            .await?;
+        let app_port = self.get_app_port(&installed_app_id).await?;
         tracing::debug!("Using app port {}", app_port);
 
         // Issue an app authentication token to allow us to connect a new client.
-        let issued = admin_call
+        let issued = self
+            .admin_call
             .issue_app_auth_token(IssueAppAuthenticationTokenPayload::for_installed_app_id(
                 installed_app_id.clone(),
             ))
@@ -276,7 +271,8 @@ impl AppConnPool {
 
         // For each cell in the app, authorize signing credentials for the granted functions
         for cell_id in cells {
-            let credentials = admin_call
+            let credentials = self
+                .admin_call
                 .authorize_signing_credentials(AuthorizeSigningCredentialsPayload {
                     cell_id: cell_id.clone(),
                     functions: Some(granted_functions.clone()),
@@ -290,18 +286,14 @@ impl AppConnPool {
         Ok(app_ws)
     }
 
-    async fn get_app_port(
-        &self,
-        installed_app_id: &InstalledAppId,
-        admin_call: Arc<dyn AdminCall>,
-    ) -> HcHttpGatewayResult<u16> {
+    async fn get_app_port(&self, installed_app_id: &InstalledAppId) -> HcHttpGatewayResult<u16> {
         {
             if let Some(app_port) = self.cached_app_port.read().expect("Invalid lock").as_ref() {
                 return Ok(*app_port);
             }
         }
 
-        let app_interfaces = admin_call.list_app_interfaces().await?;
+        let app_interfaces = self.admin_call.list_app_interfaces().await?;
 
         let selected_app_interface = app_interfaces.into_iter().find(|app_interface| {
             if let Some(ref for_app_id) = app_interface.installed_app_id {
@@ -316,7 +308,7 @@ impl AppConnPool {
         let app_port = match selected_app_interface {
             Some(app_interface) => app_interface.port,
             None => {
-                admin_call
+                self.admin_call
                     .attach_app_interface(0, AllowedOrigins::from(HTTP_GW_ORIGIN.to_string()), None)
                     .await?
             }
