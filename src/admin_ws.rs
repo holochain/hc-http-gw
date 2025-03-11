@@ -1,9 +1,8 @@
+use holochain_client::{AdminWebsocket, ConductorApiError, ConductorApiResult};
 use std::{
     future::Future,
     sync::{Arc, Mutex},
 };
-
-use holochain_client::{AdminWebsocket, ConductorApiError, ConductorApiResult};
 
 use crate::{HcHttpGatewayError, HcHttpGatewayResult};
 

@@ -1,10 +1,9 @@
-use std::collections::HashMap;
-
 use holochain_http_gateway::{
     config::{AllowedFns, Configuration},
     HcHttpGatewayService,
 };
 use reqwest::{Client, Response};
+use std::collections::HashMap;
 use tokio::task::JoinHandle;
 
 /// Test application harness for the HTTP gateway service
