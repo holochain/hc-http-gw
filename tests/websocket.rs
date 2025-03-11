@@ -2,8 +2,8 @@ use crate::sweet::{init_zome, install_fixture1, install_fixture2, TestType};
 use futures::future::BoxFuture;
 use holochain::sweettest::SweetConductor;
 use holochain_client::{
-    AdminWebsocket, AuthorizeSigningCredentialsPayload, CellInfo, ConductorApiError, ExternIO,
-    SigningCredentials, ZomeCallTarget,
+    AdminWebsocket, AppInfo, AuthorizeSigningCredentialsPayload, CellInfo, ConductorApiError,
+    ExternIO, SigningCredentials, ZomeCallTarget,
 };
 use holochain_conductor_api::{
     AppAuthenticationTokenIssued, AppInterfaceInfo, IssueAppAuthenticationTokenPayload,
@@ -598,6 +598,11 @@ impl AdminCall for AdminWrapper {
                 .attach_app_interface(port, allowed_origins, installed_app_id)
                 .await?)
         })
+    }
+
+    fn list_apps(&self) -> BoxFuture<'static, HcHttpGatewayResult<Vec<AppInfo>>> {
+        let inner = self.inner.clone();
+        Box::pin(async move { Ok(inner.lock().await.list_apps(None).await?) })
     }
 
     #[cfg(feature = "test-utils")]

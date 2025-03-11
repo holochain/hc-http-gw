@@ -63,7 +63,7 @@ pub async fn try_get_valid_app(
     {
         app_info
     } else {
-        *installed_apps = admin_websocket.list_apps().await;
+        *installed_apps = admin_websocket.list_apps().await.unwrap();
         find_installed_app(&dna_hash, &coordinator_identifier, installed_apps)?
     };
 
@@ -118,7 +118,7 @@ mod tests {
         let mut admin_websocket = MockAdminCall::new();
         admin_websocket
             .expect_list_apps()
-            .returning(|| Box::pin(async { Vec::new() }))
+            .returning(|| Box::pin(async { Ok(Vec::new()) }))
             .once();
 
         let result = try_get_valid_app(
@@ -184,7 +184,7 @@ mod tests {
             .expect_list_apps()
             .returning(move || {
                 let app_info = app_info_cloned.clone();
-                Box::pin(async { vec![app_info] })
+                Box::pin(async { Ok(vec![app_info]) })
             })
             .once();
 
@@ -214,7 +214,7 @@ mod tests {
             .expect_list_apps()
             .returning(move || {
                 let installed_apps = installed_apps_cloned.clone();
-                Box::pin(async move { installed_apps.clone() })
+                Box::pin(async move { Ok(installed_apps.clone()) })
             })
             .once();
 
@@ -241,7 +241,7 @@ mod tests {
             .expect_list_apps()
             .returning(move || {
                 let installed_apps = installed_apps_cloned.clone();
-                Box::pin(async move { installed_apps.clone() })
+                Box::pin(async move { Ok(installed_apps.clone()) })
             })
             .once();
 
@@ -291,7 +291,7 @@ mod tests {
             .expect_list_apps()
             .returning(move || {
                 let new_installed_apps = new_installed_apps_cloned.clone();
-                Box::pin(async move { new_installed_apps.clone() })
+                Box::pin(async move { Ok(new_installed_apps.clone()) })
             })
             .once();
 
@@ -324,7 +324,7 @@ mod tests {
             .expect_list_apps()
             .returning(move || {
                 let new_installed_apps = new_installed_apps_cloned.clone();
-                Box::pin(async move { new_installed_apps.clone() })
+                Box::pin(async move { Ok(new_installed_apps.clone()) })
             })
             .once();
 

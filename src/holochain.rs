@@ -46,7 +46,7 @@ pub trait AdminCall: std::fmt::Debug + Send + Sync {
 
     /// Call [`AdminWebsocket::list_apps`](holochain_client::AdminWebsocket::list_apps) and return
     /// the result.
-    fn list_apps(&self) -> BoxFuture<'static, Vec<AppInfo>>;
+    fn list_apps(&self) -> BoxFuture<'static, HcHttpGatewayResult<Vec<AppInfo>>>;
 
     /// Set the admin websocket connection to use.
     #[cfg(feature = "test-utils")]
