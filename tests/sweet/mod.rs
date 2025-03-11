@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use holochain::conductor::api::error::ConductorApiResult;
 use holochain::conductor::error::ConductorResult;
 use holochain::conductor::Conductor;

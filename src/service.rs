@@ -1,9 +1,9 @@
 //! HTTP gateway service for Holochain
 
+use crate::app_selection::AppInfoCache;
 use crate::holochain::{AdminCall, AppCall};
 use crate::{config::Configuration, router::hc_http_gateway_router};
 use axum::Router;
-use holochain_client::AppInfo;
 use std::net::{IpAddr, SocketAddr};
 use std::sync::Arc;
 use tokio::net::TcpListener;
@@ -16,7 +16,7 @@ pub struct HcHttpGatewayService {
 }
 
 /// Shared application state
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct AppState {
     pub configuration: Configuration,
     #[allow(
@@ -29,7 +29,7 @@ pub struct AppState {
         reason = "This will be used when we start making zome calls"
     )]
     pub app_call: Arc<dyn AppCall>,
-    pub installed_apps: Vec<AppInfo>,
+    pub app_info_cache: AppInfoCache,
 }
 
 impl HcHttpGatewayService {
