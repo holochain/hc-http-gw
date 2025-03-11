@@ -63,7 +63,22 @@ impl HcHttpGwAdminWebsocket {
         self.current_retries = 0;
 
         while self.current_retries < ADMIN_WS_CONNECTION_MAX_RETRIES {
-            match AdminWebsocket::connect(&self.url.to_string()).await {
+            let admin_ws_url = format!(
+                "{}:{}",
+                self.url
+                    .host_str()
+                    .ok_or_else(|| HcHttpGatewayError::ConfigurationError(
+                        "Invalid admin ws host".to_string()
+                    ))?,
+                self.url
+                    .port()
+                    .ok_or_else(|| HcHttpGatewayError::ConfigurationError(
+                        "Port is absent from the admin ws url".to_string()
+                    ))?
+            );
+            let admin_ws = AdminWebsocket::connect(&admin_ws_url).await;
+
+            match admin_ws {
                 Ok(conn) => {
                     let mut connection = self.connection_handle.write().await;
                     *connection = Some(conn);

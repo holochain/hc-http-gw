@@ -1,3 +1,6 @@
+#![allow(unused)]
+
+use holochain::sweettest::SweetConductor;
 use holochain_http_gateway::{
     config::{AllowedFns, Configuration},
     HcHttpGatewayService,
@@ -22,10 +25,21 @@ impl TestApp {
         let mut allowed_fns = HashMap::new();
         allowed_fns.insert("forum".to_string(), AllowedFns::All);
 
+        let sweet_conductor = SweetConductor::from_standard_config().await;
+        let admin_port = sweet_conductor
+            .get_arbitrary_admin_websocket_port()
+            .unwrap();
+
         // Create configuration
-        let config =
-            Configuration::try_new("ws://localhost:50350", "1024", "forum", allowed_fns, "", "")
-                .unwrap();
+        let config = Configuration::try_new(
+            format!("ws://127.0.0.1:{admin_port}").as_str(),
+            "1024",
+            "forum",
+            allowed_fns,
+            "",
+            "",
+        )
+        .unwrap();
 
         TestApp::spawn_with_config(config).await
     }

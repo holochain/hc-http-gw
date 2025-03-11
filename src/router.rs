@@ -33,6 +33,7 @@ pub mod tests {
         router::hc_http_gateway_router,
     };
     use axum::{body::Body, http::Request, Router};
+    use holochain::sweettest::SweetConductor;
     use http_body_util::BodyExt;
     use reqwest::StatusCode;
     use std::collections::{HashMap, HashSet};
@@ -54,9 +55,21 @@ pub mod tests {
             allowed_zome_fns.insert(allowed_zome_fn);
             let restricted_fns = AllowedFns::Restricted(allowed_zome_fns);
             allowed_fns.insert("coordinator".to_string(), restricted_fns);
-            let config =
-                Configuration::try_new("ws://127.0.0.1:1", "1024", "", allowed_fns, "", "")
-                    .unwrap();
+
+            let sweet_conductor = SweetConductor::from_standard_config().await;
+            let admin_port = sweet_conductor
+                .get_arbitrary_admin_websocket_port()
+                .unwrap();
+
+            let config = Configuration::try_new(
+                format!("ws://127.0.0.1:{admin_port}").as_str(),
+                "1024",
+                "",
+                allowed_fns,
+                "",
+                "",
+            )
+            .unwrap();
             Self::new_with_config(config).await
         }
 
@@ -86,14 +99,14 @@ pub mod tests {
         }
     }
 
-    #[tokio::test]
+    #[tokio::test(flavor = "multi_thread")]
     async fn get_request_to_root_fails() {
         let router = TestRouter::new().await;
         let (status_code, _) = router.request("/").await;
         assert_eq!(status_code, StatusCode::NOT_FOUND);
     }
 
-    #[tokio::test]
+    #[tokio::test(flavor = "multi_thread")]
     async fn post_method_to_health_fails() {
         let router = TestRouter::new().await;
         let response = router
@@ -110,7 +123,7 @@ pub mod tests {
         assert_eq!(response.status(), StatusCode::METHOD_NOT_ALLOWED);
     }
 
-    #[tokio::test]
+    #[tokio::test(flavor = "multi_thread")]
     async fn post_method_to_zome_call_fails() {
         let router = TestRouter::new().await;
         let response = router

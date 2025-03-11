@@ -1,7 +1,7 @@
 pub mod setup;
 
 use base64::{prelude::BASE64_URL_SAFE, Engine};
-use holochain::core::DnaHash;
+use holochain::{core::DnaHash, sweettest::SweetConductor};
 use holochain_http_gateway::{
     config::{AllowedFns, Configuration},
     tracing::initialize_tracing_subscriber,
@@ -10,7 +10,7 @@ use reqwest::StatusCode;
 
 use setup::TestApp;
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn zome_call_with_valid_params() {
     initialize_tracing_subscriber();
 
@@ -32,7 +32,7 @@ async fn zome_call_with_valid_params() {
     assert_eq!(response.status(), StatusCode::OK);
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn zome_call_with_valid_params_but_no_payload() {
     initialize_tracing_subscriber();
 
@@ -47,16 +47,28 @@ async fn zome_call_with_valid_params_but_no_payload() {
     assert_eq!(response.status(), StatusCode::OK);
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn zome_call_with_payload_exceeding_limit_fails() {
     initialize_tracing_subscriber();
 
     let mut allowed_fns = std::collections::HashMap::new();
     allowed_fns.insert("forum".to_string(), AllowedFns::All);
 
+    let sweet_conductor = SweetConductor::from_standard_config().await;
+    let admin_port = sweet_conductor
+        .get_arbitrary_admin_websocket_port()
+        .unwrap();
+
     // Custom configuration with a very small payload limit
-    let config =
-        Configuration::try_new("ws://localhost:50350", "10", "forum", allowed_fns, "", "").unwrap();
+    let config = Configuration::try_new(
+        format!("ws://127.0.0.1:{admin_port}").as_str(),
+        "10",
+        "forum",
+        allowed_fns,
+        "",
+        "",
+    )
+    .unwrap();
 
     let app = TestApp::spawn_with_config(config).await;
 
@@ -77,7 +89,7 @@ async fn zome_call_with_payload_exceeding_limit_fails() {
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn zome_call_with_invalid_json_payload_fails() {
     initialize_tracing_subscriber();
 
@@ -101,7 +113,7 @@ async fn zome_call_with_invalid_json_payload_fails() {
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn zome_call_with_invalid_dna_hash_fails() {
     initialize_tracing_subscriber();
 
@@ -125,7 +137,7 @@ async fn zome_call_with_invalid_dna_hash_fails() {
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn zome_call_with_non_base64_encoded_payload_fails() {
     initialize_tracing_subscriber();
 

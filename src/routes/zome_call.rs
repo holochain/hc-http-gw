@@ -128,13 +128,14 @@ mod tests {
         routes::zome_call::MAX_IDENTIFIER_CHARS,
     };
     use base64::{prelude::BASE64_URL_SAFE, Engine};
+    use holochain::sweettest::SweetConductor;
     use reqwest::StatusCode;
     use std::collections::HashMap;
 
     // DnaHash::from_raw_32(vec![1; 32]).to_string()
     const DNA_HASH: &str = "uhC0kAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQF-z86-";
 
-    #[tokio::test]
+    #[tokio::test(flavor = "multi_thread")]
     async fn valid_dna_hash_is_accepted() {
         let router = TestRouter::new().await;
         let uri = format!("/{DNA_HASH}/coordinator/zome_name/fn_name");
@@ -142,7 +143,7 @@ mod tests {
         assert_eq!(status_code, StatusCode::OK);
     }
 
-    #[tokio::test]
+    #[tokio::test(flavor = "multi_thread")]
     async fn invalid_dna_hash_is_rejected() {
         let router = TestRouter::new().await;
         let invalid_dna_hash = "thisaintnodnahash";
@@ -152,7 +153,7 @@ mod tests {
         assert_eq!(body, r#"{"error":"Invalid base64 DNA hash"}"#);
     }
 
-    #[tokio::test]
+    #[tokio::test(flavor = "multi_thread")]
     async fn coordinator_identifier_with_excess_length_is_rejected() {
         let router = TestRouter::new().await;
         let coordinator = "12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901";
@@ -167,7 +168,7 @@ mod tests {
         );
     }
 
-    #[tokio::test]
+    #[tokio::test(flavor = "multi_thread")]
     async fn zome_name_with_excess_length_is_rejected() {
         let router = TestRouter::new().await;
         let zome_name = "12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901";
@@ -182,7 +183,7 @@ mod tests {
         );
     }
 
-    #[tokio::test]
+    #[tokio::test(flavor = "multi_thread")]
     async fn function_name_with_excess_length_is_rejected() {
         let router = TestRouter::new().await;
         let fn_name = "12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901";
@@ -197,7 +198,7 @@ mod tests {
         );
     }
 
-    #[tokio::test]
+    #[tokio::test(flavor = "multi_thread")]
     async fn unauthorized_function_name_is_rejected() {
         // Only one allowed function "fn_name" in test router.
         let router = TestRouter::new().await;
@@ -213,12 +214,25 @@ mod tests {
         );
     }
 
-    #[tokio::test]
+    #[tokio::test(flavor = "multi_thread")]
     async fn payload_with_excess_length_is_rejected() {
         let mut allowed_fns = HashMap::new();
         allowed_fns.insert("coordinator".to_string(), AllowedFns::All);
-        let config =
-            Configuration::try_new("ws://127.0.0.1:1", "10", "", allowed_fns, "", "").unwrap();
+
+        let sweet_conductor = SweetConductor::from_standard_config().await;
+        let admin_port = sweet_conductor
+            .get_arbitrary_admin_websocket_port()
+            .unwrap();
+
+        let config = Configuration::try_new(
+            format!("ws://127.0.0.1:{admin_port}").as_str(),
+            "10",
+            "",
+            allowed_fns,
+            "",
+            "",
+        )
+        .unwrap();
         let router = TestRouter::new_with_config(config).await;
         let payload = BASE64_URL_SAFE.encode(vec![1; 11]);
         let payload_length = payload.len();
@@ -233,7 +247,7 @@ mod tests {
         );
     }
 
-    #[tokio::test]
+    #[tokio::test(flavor = "multi_thread")]
     async fn payload_with_invalid_base64_encoding_is_rejected() {
         let router = TestRouter::new().await;
         let payload = "$%&#";
@@ -246,7 +260,7 @@ mod tests {
         );
     }
 
-    #[tokio::test]
+    #[tokio::test(flavor = "multi_thread")]
     async fn payload_with_invalid_json_is_rejected() {
         let router = TestRouter::new().await;
         let payload = BASE64_URL_SAFE.encode("{invalid}");
