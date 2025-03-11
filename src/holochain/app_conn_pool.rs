@@ -39,7 +39,7 @@ pub struct AppConnPool {
 }
 
 impl AppConnPool {
-    /// Create a new app connection pool with the given configuration.
+    /// Create a new app connection pool with the given configuration and admin call handle.
     pub fn new(configuration: Configuration, admin_call: Arc<dyn AdminCall>) -> Self {
         Self {
             configuration,

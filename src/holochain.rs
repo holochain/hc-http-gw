@@ -16,6 +16,7 @@ mod app_conn_pool;
 pub use app_conn_pool::{AppConnPool, AppWebsocketWithState, HTTP_GW_ORIGIN};
 
 /// A trait for making admin calls with an admin connection.
+#[cfg_attr(test, mockall::automock)]
 pub trait AdminCall: std::fmt::Debug + Send + Sync {
     /// Call [`AdminWebsocket::list_app_interfaces`](holochain_client::AdminWebsocket::list_app_interfaces).
     fn list_app_interfaces(&self)
@@ -51,6 +52,7 @@ pub trait AdminCall: std::fmt::Debug + Send + Sync {
 /// A trait for making zome calls with an app connection.
 ///
 /// Primarily used to allow the [`AppConnPool`] to be mocked in tests.
+#[cfg_attr(test, mockall::automock)]
 pub trait AppCall: std::fmt::Debug + Send + Sync {
     /// Make a zome call by executing the provided function with an app websocket connection.
     fn handle_zome_call(

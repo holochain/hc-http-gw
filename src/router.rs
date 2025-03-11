@@ -30,18 +30,16 @@ pub fn hc_http_gateway_router(
 
 #[cfg(test)]
 pub mod tests {
-    use crate::holochain::AppCall;
+    use crate::MockAppCall;
     use crate::{
         config::{AllowedFns, Configuration, ZomeFn},
         router::hc_http_gateway_router,
-        AdminConn, HcHttpGatewayResult,
+        AdminConn,
     };
     use axum::{body::Body, http::Request, Router};
-    use futures::future::BoxFuture;
     use holochain::prelude::ExternIO;
-    use holochain_client::{AppWebsocket, SerializedBytes};
+    use holochain_client::SerializedBytes;
     use holochain_serialized_bytes::prelude::*;
-    use holochain_types::app::InstalledAppId;
     use http_body_util::BodyExt;
     use reqwest::StatusCode;
     use serde::{Deserialize, Serialize};
@@ -52,24 +50,6 @@ pub mod tests {
     #[derive(Debug, Serialize, Deserialize, SerializedBytes)]
     pub struct TestZomeResponse {
         hello: String,
-    }
-
-    #[derive(Debug)]
-    struct TestAppPool;
-
-    impl AppCall for TestAppPool {
-        fn handle_zome_call(
-            &self,
-            _installed_app_id: InstalledAppId,
-            _execute: fn(AppWebsocket) -> BoxFuture<'static, HcHttpGatewayResult<ExternIO>>,
-        ) -> BoxFuture<'static, HcHttpGatewayResult<ExternIO>> {
-            Box::pin(async move {
-                let response = TestZomeResponse {
-                    hello: "world".to_string(),
-                };
-                Ok(ExternIO::encode(response)?)
-            })
-        }
     }
 
     pub struct TestRouter(Router);
@@ -95,10 +75,20 @@ pub mod tests {
         }
 
         pub fn new_with_config(config: Configuration) -> Self {
+            let mut app_call = MockAppCall::new();
+            app_call.expect_handle_zome_call().returning(|_, _| {
+                Box::pin(async {
+                    let response = TestZomeResponse {
+                        hello: "world".to_string(),
+                    };
+                    Ok(ExternIO::encode(response)?)
+                })
+            });
+
             Self(hc_http_gateway_router(
                 config,
                 Arc::new(AdminConn),
-                Arc::new(TestAppPool),
+                Arc::new(app_call),
             ))
         }
 
