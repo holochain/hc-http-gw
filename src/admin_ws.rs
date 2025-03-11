@@ -33,12 +33,7 @@ impl HcHttpGwAdminWebsocket {
 
     /// Checks if there is an active connection
     fn is_connected(&self) -> HcHttpGatewayResult<bool> {
-        let connection = self.connection_handle.lock().map_err(|e| {
-            HcHttpGatewayError::InternalError(format!(
-                "Mutex was poisoned during is_connected check: {}",
-                e
-            ))
-        })?;
+        let connection = self.connection_handle.lock().unwrap();
 
         Ok(connection.is_some())
     }
@@ -67,13 +62,7 @@ impl HcHttpGwAdminWebsocket {
         while self.current_retries < ADMIN_WS_CONNECTION_MAX_RETRIES {
             match AdminWebsocket::connect(&self.url).await {
                 Ok(conn) => {
-                    let mut connection = self.connection_handle.lock().map_err(|e| {
-                        HcHttpGatewayError::InternalError(format!(
-                            "Mutex was poisoned during is_connected check: {}",
-                            e
-                        ))
-                    })?;
-
+                    let mut connection = self.connection_handle.lock().unwrap();
                     *connection = Some(conn);
                     self.current_retries = 0;
 
@@ -129,10 +118,7 @@ impl HcHttpGwAdminWebsocket {
     {
         // block scope to limit MutexGuard lifetime
         let connection = {
-            let mut connection = self.connection_handle.lock().map_err(|e| {
-                HcHttpGatewayError::InternalError(format!("Connection mutex was poisoned: {e}"))
-            })?;
-
+            let mut connection = self.connection_handle.lock().unwrap();
             let connection = connection.take().ok_or_else(|| {
                 HcHttpGatewayError::InternalError(
                     "No connection available despite ensure_connected check".to_string(),
