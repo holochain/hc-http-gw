@@ -51,13 +51,12 @@ pub enum HcHttpGatewayError {
         /// Function name
         fn_name: String,
     },
-
-    /// Handles conductor api errors
-    #[error("Conductor API error: {0}")]
-    ConductorApiError(#[from] holochain_client::ConductorApiError),
     /// Handles miscellaneous internal errors
     #[error("Internal Error: {0}")]
     InternalError(String),
+    /// Handles Holochain errors
+    #[error("Holochain error: {0}")]
+    HolochainError(#[from] holochain_client::ConductorApiError),
     /// Error returned when a connection cannot be made to the upstream Holochain service
     #[error("The upstream Holochain service could not be reached")]
     UpstreamUnavailable,

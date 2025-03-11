@@ -159,7 +159,7 @@ impl HcHttpGatewayErrorExt for HcHttpGatewayError {
     fn is_disconnect_error(&self) -> bool {
         match self {
             // Specifically checking for WebsocketError (inside ConductorApiError) and IoError as mentioned
-            HcHttpGatewayError::ConductorApiError(api_error) => {
+            HcHttpGatewayError::HolochainError(api_error) => {
                 // Check for websocket errors inside the ConductorApiError
                 matches!(api_error, ConductorApiError::WebsocketError(_))
             }

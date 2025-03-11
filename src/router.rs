@@ -53,7 +53,8 @@ pub mod tests {
             let restricted_fns = AllowedFns::Restricted(allowed_zome_fns);
             allowed_fns.insert("coordinator".to_string(), restricted_fns);
             let config =
-                Configuration::try_new("ws://127.0.0.1:1", "1024", "", allowed_fns).unwrap();
+                Configuration::try_new("ws://127.0.0.1:1", "1024", "", allowed_fns, "", "")
+                    .unwrap();
             Self::new_with_config(config)
         }
 

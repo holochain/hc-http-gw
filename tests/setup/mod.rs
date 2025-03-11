@@ -25,7 +25,8 @@ impl TestApp {
 
         // Create configuration
         let config =
-            Configuration::try_new("ws://localhost:50350", "1024", "forum", allowed_fns).unwrap();
+            Configuration::try_new("ws://localhost:50350", "1024", "forum", allowed_fns, "", "")
+                .unwrap();
 
         TestApp::spawn_with_config(config).await
     }
@@ -52,14 +53,14 @@ impl TestApp {
     pub async fn call_zome(
         &self,
         dna_hash: &str,
-        coordiator_identifier: &str,
+        coordinator_identifier: &str,
         zome: &str,
         zome_fn: &str,
         payload: Option<&str>,
     ) -> Response {
         let url = {
             let mut url = format!(
-                "http://{}/{dna_hash}/{coordiator_identifier}/{zome}/{zome_fn}",
+                "http://{}/{dna_hash}/{coordinator_identifier}/{zome}/{zome_fn}",
                 self.address
             );
             if let Some(payload) = payload {
