@@ -17,23 +17,25 @@ pub use app_conn_pool::{AppConnPool, AppWebsocketWithState, HTTP_GW_ORIGIN};
 
 /// A trait for making admin calls with an admin connection.
 pub trait AdminCall: std::fmt::Debug + Send + Sync {
-    /// Call [AdminWebsocket::list_app_interfaces].
+    /// Call [`AdminWebsocket::list_app_interfaces`](holochain_client::AdminWebsocket::list_app_interfaces).
     fn list_app_interfaces(&self)
         -> BoxFuture<'static, HcHttpGatewayResult<Vec<AppInterfaceInfo>>>;
 
-    /// Call [AdminWebsocket::issue_app_auth_token] with the given payload.
+    /// Call [`AdminWebsocket::issue_app_auth_token`](holochain_client::AdminWebsocket::issue_app_auth_token)
+    /// with the given payload.
     fn issue_app_auth_token(
         &self,
         payload: IssueAppAuthenticationTokenPayload,
     ) -> BoxFuture<'static, HcHttpGatewayResult<AppAuthenticationTokenIssued>>;
 
-    /// Call [AdminWebsocket::authorize_signing_credentials] with the given payload.
+    /// Call [`AdminWebsocket::authorize_signing_credentials`](holochain_client::AdminWebsocket::authorize_signing_credentials)
+    /// with the given payload.
     fn authorize_signing_credentials(
         &self,
         payload: AuthorizeSigningCredentialsPayload,
     ) -> BoxFuture<'static, HcHttpGatewayResult<SigningCredentials>>;
 
-    /// Call [AdminWebsocket::attach_app_interface] with the given parameters.
+    /// Call [`AdminWebsocket::attach_app_interface`](holochain_client::AdminWebsocket::attach_app_interface) with the given parameters.
     fn attach_app_interface(
         &self,
         port: u16,
@@ -48,7 +50,7 @@ pub trait AdminCall: std::fmt::Debug + Send + Sync {
 
 /// A trait for making zome calls with an app connection.
 ///
-/// Primarily used to allow the [AppConnPool] to be mocked in tests.
+/// Primarily used to allow the [`AppConnPool`] to be mocked in tests.
 pub trait AppCall: std::fmt::Debug + Send + Sync {
     /// Make a zome call by executing the provided function with an app websocket connection.
     fn handle_zome_call(

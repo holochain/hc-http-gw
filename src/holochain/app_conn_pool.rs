@@ -106,7 +106,7 @@ impl AppConnPool {
     /// Get or connect an app client for the given installed app ID.
     ///
     /// If the returned connection is invalid, it is the caller's responsibility to call
-    /// [AppState::remove_app_client] to remove it from the connection list. The next call to this
+    /// [`AppConnPool::remove_app_client`] to remove it from the connection list. The next call to this
     /// function will attempt to reconnect.
     pub async fn get_or_connect_app_client(
         &self,

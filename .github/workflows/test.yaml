@@ -24,6 +24,10 @@ jobs:
         run: cargo fmt --all -- --check
       - name: Run clippy
         run: cargo clippy -- -D warnings
+      - name: Doc
+        env:
+          RUSTDOCFLAGS: -Dwarnings
+        run: cargo doc
       - name: Package fixture
         run: |
           nix develop -c ./fixture/package.sh
