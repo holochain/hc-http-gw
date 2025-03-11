@@ -53,8 +53,8 @@ impl HcHttpGwAdminWebsocket {
 
     /// Attempts to connect to the AdminWebsocket
     ///
-    /// This will make multiple attempts according to the `max_retries` and
-    /// `retry_delay_ms` settings, with exponential backoff between retries.
+    /// This will make multiple attempts according to the `max_retries`
+    /// setting, with exponential backoff between retries.
     pub async fn connect(&mut self) -> HcHttpGatewayResult<()> {
         self.current_retries = 0;
 
