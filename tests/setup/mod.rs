@@ -3,10 +3,11 @@
 use holochain::sweettest::SweetConductor;
 use holochain_http_gateway::{
     config::{AllowedFns, Configuration},
-    HcHttpGatewayService,
+    AdminConn, AppConnPool, HcHttpGatewayService,
 };
 use reqwest::{Client, Response};
 use std::collections::HashMap;
+use std::sync::Arc;
 use tokio::task::JoinHandle;
 
 /// Test application harness for the HTTP gateway service
@@ -46,9 +47,13 @@ impl TestApp {
 
     /// Create a test app with custom configuration
     pub async fn spawn_with_config(config: Configuration) -> Self {
-        let service = HcHttpGatewayService::new([127, 0, 0, 1], 0, config.clone())
-            .await
-            .unwrap();
+        let admin_call = Arc::new(AdminConn::connect(&config.admin_ws_url).await.unwrap());
+        let app_call = Arc::new(AppConnPool::new(config.clone(), admin_call.clone()));
+
+        let service =
+            HcHttpGatewayService::new([127, 0, 0, 1], 0, config.clone(), admin_call, app_call)
+                .await
+                .unwrap();
 
         let address = service.address().unwrap().to_string();
 

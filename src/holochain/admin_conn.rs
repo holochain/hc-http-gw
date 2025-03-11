@@ -1,16 +1,25 @@
-use holochain_client::{AdminWebsocket, ConductorApiError, ConductorApiResult};
+use crate::{AdminCall, HcHttpGatewayResult};
+use futures::future::BoxFuture;
+use holochain_client::{
+    AdminWebsocket, AuthorizeSigningCredentialsPayload, ConductorApiError, ConductorApiResult,
+    SigningCredentials,
+};
+use holochain_conductor_api::{
+    AppAuthenticationTokenIssued, AppInterfaceInfo, IssueAppAuthenticationTokenPayload,
+};
+use holochain_types::websocket::AllowedOrigins;
 use std::{future::Future, sync::Arc};
 use tokio::sync::RwLock;
 use url2::Url2;
 
-use crate::{HcHttpGatewayError, HcHttpGatewayResult};
+use crate::HcHttpGatewayError;
 
 const ADMIN_WS_CONNECTION_MAX_RETRIES: usize = 1;
 
 /// A wrapper around AdminWebsocket that automatically handles reconnection
 /// when the connection is lost due to network issues or other failures.
 #[derive(Debug, Clone)]
-pub struct HcHttpGwAdminWebsocket {
+pub struct AdminConn {
     /// The WebSocket URL to connect to
     url: Url2,
     /// The handle to the AdminWebsocket connection
@@ -19,7 +28,7 @@ pub struct HcHttpGwAdminWebsocket {
     current_retries: usize,
 }
 
-impl HcHttpGwAdminWebsocket {
+impl AdminConn {
     /// Creates a new HcHttpGwAdminWebsocket and attempts to connect immediately
     ///
     /// This will make multiple attempts according to the `max_retries`
@@ -180,6 +189,42 @@ impl HcHttpGwAdminWebsocket {
             }
             Err(connect_err) => Err(connect_err),
         }
+    }
+}
+
+impl AdminCall for AdminConn {
+    fn list_app_interfaces(
+        &self,
+    ) -> BoxFuture<'static, HcHttpGatewayResult<Vec<AppInterfaceInfo>>> {
+        todo!()
+    }
+
+    fn issue_app_auth_token(
+        &self,
+        _payload: IssueAppAuthenticationTokenPayload,
+    ) -> BoxFuture<'static, HcHttpGatewayResult<AppAuthenticationTokenIssued>> {
+        todo!()
+    }
+
+    fn authorize_signing_credentials(
+        &self,
+        _payload: AuthorizeSigningCredentialsPayload,
+    ) -> BoxFuture<'static, HcHttpGatewayResult<SigningCredentials>> {
+        todo!()
+    }
+
+    fn attach_app_interface(
+        &self,
+        _port: u16,
+        _allowed_origins: AllowedOrigins,
+        _installed_app_id: Option<String>,
+    ) -> BoxFuture<'static, HcHttpGatewayResult<u16>> {
+        todo!()
+    }
+
+    #[cfg(feature = "test-utils")]
+    fn set_admin_ws(&self, _admin_ws: holochain_client::AdminWebsocket) -> BoxFuture<'static, ()> {
+        todo!()
     }
 }
 

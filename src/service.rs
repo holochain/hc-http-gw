@@ -1,8 +1,10 @@
 //! HTTP gateway service for Holochain
 
-use crate::{config::Configuration, router::hc_http_gateway_router, HcHttpGwAdminWebsocket};
+use crate::holochain::{AdminCall, AppCall};
+use crate::{config::Configuration, router::hc_http_gateway_router};
 use axum::Router;
 use std::net::{IpAddr, SocketAddr};
+use std::sync::Arc;
 use tokio::net::TcpListener;
 
 /// Core Holochain HTTP gateway service
@@ -16,8 +18,16 @@ pub struct HcHttpGatewayService {
 #[derive(Debug, Clone)]
 pub struct AppState {
     pub configuration: Configuration,
-    #[allow(unused, reason = "Temporary")]
-    pub admin_ws: HcHttpGwAdminWebsocket,
+    #[allow(
+        dead_code,
+        reason = "This will be used when we start making zome calls"
+    )]
+    pub admin_call: Arc<dyn AdminCall>,
+    #[allow(
+        dead_code,
+        reason = "This will be used when we start making zome calls"
+    )]
+    pub app_call: Arc<dyn AppCall>,
 }
 
 impl HcHttpGatewayService {
@@ -26,15 +36,13 @@ impl HcHttpGatewayService {
         address: impl Into<IpAddr>,
         port: u16,
         configuration: Configuration,
+        admin_call: Arc<dyn AdminCall>,
+        app_call: Arc<dyn AppCall>,
     ) -> std::io::Result<Self> {
         tracing::info!("Configuration: {:?}", configuration);
 
-        let router = hc_http_gateway_router(configuration).await.map_err(|e| {
-            std::io::Error::new(
-                std::io::ErrorKind::Other,
-                format!("Failed to setup router: {e}"),
-            )
-        })?;
+        let router = hc_http_gateway_router(configuration, admin_call, app_call);
+
         let address = SocketAddr::new(address.into(), port);
         let listener = TcpListener::bind(address).await?;
 

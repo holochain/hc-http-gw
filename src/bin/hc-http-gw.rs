@@ -1,12 +1,12 @@
-use std::{collections::HashMap, env, str::FromStr};
-
 use anyhow::Context;
 use clap::Parser;
 use holochain_http_gateway::{
     config::{AllowedAppIds, AllowedFns, Configuration},
     tracing::initialize_tracing_subscriber,
-    HcHttpGatewayArgs, HcHttpGatewayService,
+    AdminConn, AppConnPool, HcHttpGatewayArgs, HcHttpGatewayService,
 };
+use std::sync::Arc;
+use std::{collections::HashMap, env, str::FromStr};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -15,7 +15,13 @@ async fn main() -> anyhow::Result<()> {
     let configuration = load_config_from_env()?;
 
     let args = HcHttpGatewayArgs::parse();
-    let service = HcHttpGatewayService::new(args.address, args.port, configuration).await?;
+
+    let admin_call = Arc::new(AdminConn::connect(&configuration.admin_ws_url).await?);
+    let app_call = Arc::new(AppConnPool::new(configuration.clone(), admin_call.clone()));
+
+    let service =
+        HcHttpGatewayService::new(args.address, args.port, configuration, admin_call, app_call)
+            .await?;
 
     service.run().await?;
 

@@ -1,29 +1,32 @@
+use crate::holochain::AppCall;
 use crate::{
     config::Configuration,
     routes::{health_check, zome_call},
     service::AppState,
-    HcHttpGatewayResult, HcHttpGwAdminWebsocket,
+    AdminCall,
 };
 use axum::{http::StatusCode, routing::get, Router};
+use std::sync::Arc;
 
-pub async fn hc_http_gateway_router(configuration: Configuration) -> HcHttpGatewayResult<Router> {
-    let admin_ws = HcHttpGwAdminWebsocket::connect(&configuration.admin_ws_url).await?;
-
+pub fn hc_http_gateway_router(
+    configuration: Configuration,
+    admin_call: Arc<dyn AdminCall>,
+    app_call: Arc<dyn AppCall>,
+) -> Router {
     let state = AppState {
         configuration,
-        admin_ws,
+        admin_call,
+        app_call,
     };
 
-    let router = Router::new()
+    Router::new()
         .route("/health", get(health_check))
         .route(
             "/{dna_hash}/{coordinator_identifier}/{zome_name}/{fn_name}",
             get(zome_call),
         )
         .method_not_allowed_fallback(|| async { (StatusCode::METHOD_NOT_ALLOWED, ()) })
-        .with_state(state);
-
-    Ok(router)
+        .with_state(state)
 }
 
 #[cfg(test)]
@@ -31,13 +34,25 @@ pub mod tests {
     use crate::{
         config::{AllowedFns, Configuration, ZomeFn},
         router::hc_http_gateway_router,
+        AdminConn,
     };
+    use crate::{HcHttpGatewayError, MockAppCall};
     use axum::{body::Body, http::Request, Router};
+    use holochain::prelude::ExternIO;
     use holochain::sweettest::SweetConductor;
+    use holochain_client::SerializedBytes;
+    use holochain_serialized_bytes::prelude::*;
     use http_body_util::BodyExt;
     use reqwest::StatusCode;
+    use serde::{Deserialize, Serialize};
     use std::collections::{HashMap, HashSet};
+    use std::sync::Arc;
     use tower::ServiceExt;
+
+    #[derive(Debug, Serialize, Deserialize, SerializedBytes)]
+    pub struct TestZomeResponse {
+        hello: String,
+    }
 
     pub struct TestRouter(Router);
 
@@ -74,7 +89,24 @@ pub mod tests {
         }
 
         pub async fn new_with_config(config: Configuration) -> Self {
-            Self(hc_http_gateway_router(config).await.unwrap())
+            let mut app_call = MockAppCall::new();
+            app_call.expect_handle_zome_call().returning(|_, _| {
+                Box::pin(async {
+                    let response = TestZomeResponse {
+                        hello: "world".to_string(),
+                    };
+                    Ok(ExternIO::encode(response)
+                        .map_err(|e| HcHttpGatewayError::RequestMalformed(e.to_string()))?)
+                })
+            });
+
+            let admin_call = AdminConn::connect(&config.admin_ws_url).await.unwrap();
+
+            Self(hc_http_gateway_router(
+                config,
+                Arc::new(admin_call),
+                Arc::new(app_call),
+            ))
         }
 
         // Send request and return status code and body of response.
