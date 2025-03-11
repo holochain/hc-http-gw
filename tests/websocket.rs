@@ -1,11 +1,23 @@
 use crate::sweet::{init_zome, install_fixture1, install_fixture2, TestType};
+use futures::future::BoxFuture;
 use holochain::sweettest::SweetConductor;
-use holochain_client::{AdminWebsocket, CellInfo, ConductorApiError, ExternIO, ZomeCallTarget};
+use holochain_client::{
+    AdminWebsocket, AuthorizeSigningCredentialsPayload, CellInfo, ConductorApiError, ExternIO,
+    SigningCredentials, ZomeCallTarget,
+};
+use holochain_conductor_api::{
+    AppAuthenticationTokenIssued, AppInterfaceInfo, IssueAppAuthenticationTokenPayload,
+};
 use holochain_http_gateway::config::{AllowedFns, Configuration, ZomeFn};
 use holochain_http_gateway::tracing::initialize_tracing_subscriber;
-use holochain_http_gateway::{AppConnPool, HcHttpGatewayError, HTTP_GW_ORIGIN};
+use holochain_http_gateway::{
+    AdminCall, AppConnPool, HcHttpGatewayError, HcHttpGatewayResult, HTTP_GW_ORIGIN,
+};
 use holochain_types::app::DisabledAppReason;
+use holochain_types::websocket::AllowedOrigins;
 use std::net::Ipv4Addr;
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
 mod sweet;
 
@@ -38,10 +50,11 @@ async fn connect_app_websocket() {
     let apps = admin_ws.list_apps(None).await.unwrap();
     assert_eq!(apps.len(), 2);
 
-    let pool = AppConnPool::new(create_test_configuration(admin_port));
+    let admin_call = Arc::new(AdminWrapper::new(admin_ws));
+    let pool = AppConnPool::new(create_test_configuration(admin_port), admin_call.clone());
 
     let app_client_1 = pool
-        .get_or_connect_app_client("fixture1".to_string(), admin_ws.clone())
+        .get_or_connect_app_client("fixture1".to_string())
         .await
         .unwrap();
     assert_eq!(
@@ -50,7 +63,7 @@ async fn connect_app_websocket() {
     );
 
     let app_client_2 = pool
-        .get_or_connect_app_client("fixture2".to_string(), admin_ws.clone())
+        .get_or_connect_app_client("fixture2".to_string())
         .await
         .unwrap();
     assert_eq!(
@@ -90,10 +103,11 @@ async fn reuse_connection() {
         .await
         .unwrap();
 
-    let pool = AppConnPool::new(create_test_configuration(admin_port));
+    let admin_call = Arc::new(AdminWrapper::new(admin_ws));
+    let pool = AppConnPool::new(create_test_configuration(admin_port), admin_call.clone());
 
     let app_client_1 = pool
-        .get_or_connect_app_client("fixture1".to_string(), admin_ws.clone())
+        .get_or_connect_app_client("fixture1".to_string())
         .await
         .unwrap();
     assert_eq!(
@@ -107,11 +121,7 @@ async fn reuse_connection() {
 
     let app_client_1_handle = tokio::time::timeout(std::time::Duration::from_millis(100), {
         let pool = pool.clone();
-        let admin_ws = admin_ws.clone();
-        async move {
-            pool.get_or_connect_app_client("fixture1".to_string(), admin_ws)
-                .await
-        }
+        async move { pool.get_or_connect_app_client("fixture1".to_string()).await }
     })
     .await
     .unwrap()
@@ -158,11 +168,12 @@ async fn does_not_reconnect_on_non_websocket_error() {
         .await
         .unwrap();
 
-    let pool = AppConnPool::new(create_test_configuration(admin_port));
+    let admin_call = Arc::new(AdminWrapper::new(admin_ws));
+    let pool = AppConnPool::new(create_test_configuration(admin_port), admin_call.clone());
 
     // Connect while the app is running
     let app_client = pool
-        .get_or_connect_app_client("fixture1".to_string(), admin_ws.clone())
+        .get_or_connect_app_client("fixture1".to_string())
         .await
         .unwrap();
     assert_eq!(
@@ -196,7 +207,7 @@ async fn does_not_reconnect_on_non_websocket_error() {
     let cell_id = cells[0].cell_id.clone();
 
     let err = tokio::time::timeout(std::time::Duration::from_secs(30), async move {
-        pool.call::<ExternIO>("fixture1".to_string(), admin_ws.clone(), |app_ws| {
+        pool.call::<ExternIO>("fixture1".to_string(), |app_ws| {
             Box::pin({
                 let cell_id = cell_id.clone();
                 async move {
@@ -245,11 +256,12 @@ async fn reconnect_on_failed_websocket() {
         .await
         .unwrap();
 
-    let pool = AppConnPool::new(create_test_configuration(admin_port));
+    let admin_call = Arc::new(AdminWrapper::new(admin_ws));
+    let mut pool = AppConnPool::new(create_test_configuration(admin_port), admin_call.clone());
 
     // Connect while the app is running
     let app_client = pool
-        .get_or_connect_app_client("fixture1".to_string(), admin_ws.clone())
+        .get_or_connect_app_client("fixture1".to_string())
         .await
         .unwrap();
     assert_eq!(
@@ -274,6 +286,8 @@ async fn reconnect_on_failed_websocket() {
         .await
         .unwrap();
 
+    pool.set_admin_ws(admin_ws).await;
+
     let cells = app_client
         .cached_app_info()
         .cell_info
@@ -291,7 +305,7 @@ async fn reconnect_on_failed_websocket() {
 
     // Now try to make a call, which should reconnect and succeed
     let response = pool
-        .call::<ExternIO>("fixture1".to_string(), admin_ws.clone(), |app_ws| {
+        .call::<ExternIO>("fixture1".to_string(), |app_ws| {
             Box::pin({
                 let cell_id = cell_id.clone();
                 async move {
@@ -334,11 +348,12 @@ async fn reconnect_gives_up() {
         .await
         .unwrap();
 
-    let pool = AppConnPool::new(create_test_configuration(admin_port));
+    let admin_call = Arc::new(AdminWrapper::new(admin_ws));
+    let pool = AppConnPool::new(create_test_configuration(admin_port), admin_call.clone());
 
     // Connect while the app is running
     let app_client = pool
-        .get_or_connect_app_client("fixture1".to_string(), admin_ws.clone())
+        .get_or_connect_app_client("fixture1".to_string())
         .await
         .unwrap();
     assert_eq!(
@@ -366,7 +381,7 @@ async fn reconnect_gives_up() {
 
     // Now try to make a call, which won't be able to reconnect
     let err = pool
-        .call::<ExternIO>("fixture1".to_string(), admin_ws.clone(), |app_ws| {
+        .call::<ExternIO>("fixture1".to_string(), |app_ws| {
             Box::pin({
                 let cell_id = cell_id.clone();
                 async move {
@@ -467,21 +482,23 @@ async fn close_old_connections_on_limit() {
         "",
     )
     .unwrap();
-    let pool = AppConnPool::new(configuration);
+
+    let admin_call = Arc::new(AdminWrapper::new(admin_ws));
+    let pool = AppConnPool::new(configuration, admin_call.clone());
 
     // Take out connections to all 3 apps
     let _app_client_2 = pool
-        .get_or_connect_app_client("app_2".to_string(), admin_ws.clone())
+        .get_or_connect_app_client("app_2".to_string())
         .await
         .unwrap();
 
     let _app_client_1 = pool
-        .get_or_connect_app_client("app_1".to_string(), admin_ws.clone())
+        .get_or_connect_app_client("app_1".to_string())
         .await
         .unwrap();
 
     let _app_client_3 = pool
-        .get_or_connect_app_client("app_3".to_string(), admin_ws.clone())
+        .get_or_connect_app_client("app_3".to_string())
         .await
         .unwrap();
 
@@ -535,4 +552,72 @@ fn create_test_configuration(admin_port: u16) -> Configuration {
         "",
     )
     .unwrap()
+}
+
+impl AdminCall for AdminWrapper {
+    fn list_app_interfaces(
+        &self,
+    ) -> BoxFuture<'static, HcHttpGatewayResult<Vec<AppInterfaceInfo>>> {
+        let inner = self.inner.clone();
+        Box::pin(async move { Ok(inner.lock().await.list_app_interfaces().await?) })
+    }
+
+    fn issue_app_auth_token(
+        &self,
+        payload: IssueAppAuthenticationTokenPayload,
+    ) -> BoxFuture<'static, HcHttpGatewayResult<AppAuthenticationTokenIssued>> {
+        let inner = self.inner.clone();
+        Box::pin(async move { Ok(inner.lock().await.issue_app_auth_token(payload).await?) })
+    }
+
+    fn authorize_signing_credentials(
+        &self,
+        payload: AuthorizeSigningCredentialsPayload,
+    ) -> BoxFuture<'static, HcHttpGatewayResult<SigningCredentials>> {
+        let inner = self.inner.clone();
+        Box::pin(async move {
+            Ok(inner
+                .lock()
+                .await
+                .authorize_signing_credentials(payload)
+                .await?)
+        })
+    }
+
+    fn attach_app_interface(
+        &self,
+        port: u16,
+        allowed_origins: AllowedOrigins,
+        installed_app_id: Option<String>,
+    ) -> BoxFuture<'static, HcHttpGatewayResult<u16>> {
+        let inner = self.inner.clone();
+        Box::pin(async move {
+            Ok(inner
+                .lock()
+                .await
+                .attach_app_interface(port, allowed_origins, installed_app_id)
+                .await?)
+        })
+    }
+
+    #[cfg(feature = "test-utils")]
+    fn set_admin_ws(&self, admin_ws: AdminWebsocket) -> BoxFuture<'static, ()> {
+        let inner = self.inner.clone();
+        Box::pin(async move {
+            *inner.lock().await = admin_ws;
+        })
+    }
+}
+
+#[derive(Debug)]
+pub struct AdminWrapper {
+    inner: Arc<Mutex<AdminWebsocket>>,
+}
+
+impl AdminWrapper {
+    pub fn new(admin_ws: AdminWebsocket) -> Self {
+        Self {
+            inner: Arc::new(Mutex::new(admin_ws)),
+        }
+    }
 }

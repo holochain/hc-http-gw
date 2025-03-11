@@ -1,12 +1,23 @@
+use crate::holochain::AppCall;
 use crate::{
     config::Configuration,
     routes::{health_check, zome_call},
     service::AppState,
+    AdminCall,
 };
 use axum::{http::StatusCode, routing::get, Router};
+use std::sync::Arc;
 
-pub fn hc_http_gateway_router(configuration: Configuration) -> Router {
-    let state = AppState { configuration };
+pub fn hc_http_gateway_router(
+    configuration: Configuration,
+    admin_call: Arc<dyn AdminCall>,
+    app_call: Arc<dyn AppCall>,
+) -> Router {
+    let state = AppState {
+        configuration,
+        admin_call,
+        app_call,
+    };
     Router::new()
         .route("/health", get(health_check))
         .route(
@@ -22,12 +33,24 @@ pub mod tests {
     use crate::{
         config::{AllowedFns, Configuration, ZomeFn},
         router::hc_http_gateway_router,
+        AdminConn,
     };
+    use crate::{HcHttpGatewayError, MockAppCall};
     use axum::{body::Body, http::Request, Router};
+    use holochain::prelude::ExternIO;
+    use holochain_client::SerializedBytes;
+    use holochain_serialized_bytes::prelude::*;
     use http_body_util::BodyExt;
     use reqwest::StatusCode;
+    use serde::{Deserialize, Serialize};
     use std::collections::{HashMap, HashSet};
+    use std::sync::Arc;
     use tower::ServiceExt;
+
+    #[derive(Debug, Serialize, Deserialize, SerializedBytes)]
+    pub struct TestZomeResponse {
+        hello: String,
+    }
 
     pub struct TestRouter(Router);
 
@@ -52,7 +75,22 @@ pub mod tests {
         }
 
         pub fn new_with_config(config: Configuration) -> Self {
-            Self(hc_http_gateway_router(config))
+            let mut app_call = MockAppCall::new();
+            app_call.expect_handle_zome_call().returning(|_, _| {
+                Box::pin(async {
+                    let response = TestZomeResponse {
+                        hello: "world".to_string(),
+                    };
+                    Ok(ExternIO::encode(response)
+                        .map_err(|e| HcHttpGatewayError::RequestMalformed(e.to_string()))?)
+                })
+            });
+
+            Self(hc_http_gateway_router(
+                config,
+                Arc::new(AdminConn),
+                Arc::new(app_call),
+            ))
         }
 
         // Send request and return status code and body of response.

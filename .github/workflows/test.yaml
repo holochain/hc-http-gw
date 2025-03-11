@@ -20,10 +20,21 @@ jobs:
       - uses: cachix/cachix-action@v15
         with:
           name: holochain-ci
+      - name: Maximize build space
+        uses: AdityaGarg8/remove-unwanted-software@v5
+        with:
+          remove-dotnet: 'true'
+          remove-android: 'true'
+          remove-codeql: 'true'
+          remove-docker-images: 'true'
       - name: Check formatting
         run: cargo fmt --all -- --check
       - name: Run clippy
         run: cargo clippy -- -D warnings
+      - name: Doc
+        env:
+          RUSTDOCFLAGS: -Dwarnings
+        run: cargo doc
       - name: Package fixture
         run: |
           nix develop -c ./fixture/package.sh
