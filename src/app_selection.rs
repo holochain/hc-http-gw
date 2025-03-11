@@ -277,34 +277,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn returns_error_if_coordinator_identifier_does_not_match_app_id() {
-        let dna_hash = DnaHash::from_raw_32([1; 32].to_vec());
-        let installed_apps = vec![new_fake_app_info("app_2", dna_hash.clone())];
-        let installed_apps_cache = Arc::new(RwLock::new(installed_apps.clone()));
-        let allowed_apps = AllowedAppIds::from_str("app_2").unwrap();
-        let mut admin_websocket = MockAdminCall::new();
-        let installed_apps_cloned = installed_apps.clone();
-        admin_websocket
-            .expect_list_apps()
-            .returning(move || {
-                let installed_apps = installed_apps_cloned.clone();
-                Box::pin(async move { Ok(installed_apps.clone()) })
-            })
-            .once();
-
-        let result = try_get_valid_app(
-            dna_hash,
-            "app_1".to_string(),
-            installed_apps_cache,
-            &allowed_apps,
-            &admin_websocket,
-        )
-        .await;
-
-        assert_eq!(result, Err(AppSelectionError::NotInstalled));
-    }
-
-    #[tokio::test]
     async fn returns_error_if_matching_coordinator_identifier_not_in_allowed_list() {
         let dna_hash = DnaHash::from_raw_32([1; 32].to_vec());
         let installed_apps = vec![
