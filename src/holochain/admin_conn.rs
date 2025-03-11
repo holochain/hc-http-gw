@@ -29,7 +29,7 @@ pub struct AdminConn {
 impl AdminConn {
     /// Creates a new AdminConn by establishing a connection to the given URL
     ///
-    /// This will make multiple attempts according to the `max_retries` setting.
+    /// This will make multiple attempts according to the max retries setting.
     pub async fn connect(url: &Url2) -> HcHttpGatewayResult<Self> {
         let admin_ws_url = Self::format_ws_url(url)?;
         let mut current_retries = 0;
@@ -117,8 +117,6 @@ impl AdminConn {
     }
 
     /// Allows calling a method on the AdminWebsocket, with automatic reconnection if needed
-    ///
-    /// Accepts a function `f` that takes an Arc<AdminWebsocket> and returns a Result
     pub async fn call<T, F, FnFactory>(&self, fn_factory: FnFactory) -> HcHttpGatewayResult<T>
     where
         F: FnOnce(Arc<AdminWebsocket>) -> BoxFuture<'static, ConductorApiResult<T>> + Send,
