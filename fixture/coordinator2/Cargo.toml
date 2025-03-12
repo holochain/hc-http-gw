@@ -9,4 +9,6 @@ name = "coordinator2"
 
 [dependencies]
 hdk = { workspace = true }
+serde = { workspace = true }
+
 integrity = { workspace = true }
