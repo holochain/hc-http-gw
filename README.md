@@ -117,3 +117,26 @@ date: Wed, 12 Mar 2025 17:54:50 GMT
 
 [{"value":"create_1_2025-03-12T17:54:06.337428Z"}]⏎
 ```
+
+## Testing HTTP Gateway
+
+Enter the Nix `devShell` with `nix develop` or make sure that you have
+`rustup`, `perl`, `go`, and `holochain-cli` installed.
+
+Then, build and package the test fixtures as hApps with the `package` script:
+
+```bash
+./fixture/package.sh
+```
+
+Then, simply run
+
+```bash
+cargo test
+```
+
+Or to run without the slower integration tests:
+
+```bash
+cargo test --lib --bins
+```
