@@ -50,7 +50,6 @@ pub async fn try_get_valid_app(
     let app_info = match app_info {
         Some(app_info) => app_info,
         None => {
-            let mut installed_apps = installed_apps.write().await;
             let new_installed_apps = admin_call
                 .list_apps(Some(AppStatusFilter::Running))
                 .await
@@ -63,6 +62,7 @@ pub async fn try_get_valid_app(
                 // If we got a response from Holochain, then we have a chance of finding the app.
                 // Update the app info cache and search again.
 
+                let mut installed_apps = installed_apps.write().await;
                 *installed_apps = new_installed_apps.clone();
                 choose_unique_app(&dna_hash, &coordinator_identifier, &installed_apps)?.clone()
             } else {
