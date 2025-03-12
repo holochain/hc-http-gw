@@ -27,10 +27,11 @@
           packages = (with inputs'.holonix.packages; [
             holochain
             lair-keystore
-          ]) ++ ([
+          ]) ++ [
             pkgs.perl
+            pkgs.go
             rustFromFile
-          ]);
+          ];
 
           RUST_SRC_PATH = pkgs.rustPlatform.rustLibSrc;
 
