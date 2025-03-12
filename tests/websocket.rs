@@ -3,7 +3,7 @@ use holochain::sweettest::SweetConductor;
 use holochain_client::{AdminWebsocket, CellInfo, ConductorApiError, ExternIO, ZomeCallTarget};
 use holochain_conductor_api::{AdminInterfaceConfig, InterfaceDriver};
 use holochain_http_gateway::config::{AllowedFns, Configuration, ZomeFn};
-use holochain_http_gateway::tracing::initialize_tracing_subscriber;
+use holochain_http_gateway::test_tracing::initialize_testing_tracing_subscriber;
 use holochain_http_gateway::{AdminConn, AppConnPool, HcHttpGatewayError, HTTP_GW_ORIGIN};
 use holochain_types::app::DisabledAppReason;
 use holochain_types::websocket::AllowedOrigins;
@@ -14,7 +14,7 @@ mod sweet;
 
 #[tokio::test(flavor = "multi_thread")]
 async fn connect_app_websocket() {
-    initialize_tracing_subscriber();
+    initialize_testing_tracing_subscriber();
 
     let sweet_conductor = SweetConductor::from_standard_config().await;
 
@@ -79,7 +79,7 @@ async fn connect_app_websocket() {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn reuse_connection() {
-    initialize_tracing_subscriber();
+    initialize_testing_tracing_subscriber();
 
     let sweet_conductor = SweetConductor::from_standard_config().await;
 
@@ -144,7 +144,7 @@ async fn reuse_connection() {
 /// If the code did try to reconnect, this test will fail with a timeout instead.
 #[tokio::test(flavor = "multi_thread")]
 async fn does_not_reconnect_on_non_websocket_error() {
-    initialize_tracing_subscriber();
+    initialize_testing_tracing_subscriber();
 
     let sweet_conductor = SweetConductor::from_standard_config().await;
 
@@ -232,7 +232,7 @@ async fn does_not_reconnect_on_non_websocket_error() {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn reconnect_on_failed_websocket() {
-    initialize_tracing_subscriber();
+    initialize_testing_tracing_subscriber();
 
     let mut sweet_conductor = SweetConductor::from_standard_config().await;
 
@@ -328,7 +328,7 @@ async fn reconnect_on_failed_websocket() {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn reconnect_gives_up() {
-    initialize_tracing_subscriber();
+    initialize_testing_tracing_subscriber();
 
     let mut sweet_conductor = SweetConductor::from_standard_config().await;
 
@@ -408,7 +408,7 @@ async fn reconnect_gives_up() {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn close_old_connections_on_limit() {
-    initialize_tracing_subscriber();
+    initialize_testing_tracing_subscriber();
 
     let sweet_conductor = SweetConductor::from_standard_config().await;
 
