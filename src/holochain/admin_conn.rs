@@ -110,6 +110,7 @@ impl AdminCall for AdminConn {
         let this = self.clone();
         Box::pin(async move {
             this.call(|admin_ws| {
+                // TODO Make this Clone in Holochain
                 let payload = IssueAppAuthenticationTokenPayload {
                     installed_app_id: payload.installed_app_id.clone(),
                     expiry_seconds: payload.expiry_seconds,
