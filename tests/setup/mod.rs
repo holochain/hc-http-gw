@@ -3,7 +3,7 @@
 use holochain::conductor::Conductor;
 use holochain::prelude::DnaHash;
 use holochain_http_gateway::{
-    AdminConn, AllowedFns, AppConnPool, Configuration, HcHttpGatewayService,
+    AdminConn, AllowedFns, AppConnPool, Configuration, HcHttpGatewayService, ZomeFn,
 };
 use reqwest::{Client, Response};
 use std::collections::HashMap;
@@ -12,21 +12,51 @@ use std::sync::Arc;
 use tokio::task::JoinHandle;
 
 /// Test application harness for the HTTP gateway service
-pub struct TestApp {
+pub struct TestGateway {
     pub address: String,
     pub client: Client,
     pub task_handle: JoinHandle<()>,
 }
 
-impl TestApp {
+impl TestGateway {
     /// Create a new test application with default configuration.
     /// Allowed app ids contains "forum".
     /// Allowed functions contains all functions of "forum".
     pub async fn spawn(conductor: Arc<Conductor>) -> Self {
         // Create default allowed functions
         let mut allowed_fns = HashMap::new();
-        allowed_fns.insert("fixture1".to_string(), AllowedFns::All);
-        allowed_fns.insert("fixture2".to_string(), AllowedFns::All);
+        allowed_fns.insert(
+            "fixture1".to_string(),
+            AllowedFns::Restricted(
+                [
+                    ZomeFn {
+                        zome_name: "coordinator1".to_string(),
+                        fn_name: "get_all_1".to_string(),
+                    },
+                    ZomeFn {
+                        zome_name: "coordinator1".to_string(),
+                        fn_name: "get_mine".to_string(),
+                    },
+                    ZomeFn {
+                        zome_name: "coordinator1".to_string(),
+                        fn_name: "get_limited".to_string(),
+                    },
+                ]
+                .into_iter()
+                .collect(),
+            ),
+        );
+        allowed_fns.insert(
+            "fixture2".to_string(),
+            AllowedFns::Restricted(
+                [ZomeFn {
+                    zome_name: "coordinator2".to_string(),
+                    fn_name: "get_all_2".to_string(),
+                }]
+                .into_iter()
+                .collect(),
+            ),
+        );
 
         let admin_port = conductor.get_arbitrary_admin_websocket_port().unwrap();
 
@@ -41,7 +71,7 @@ impl TestApp {
         )
         .unwrap();
 
-        TestApp::spawn_with_config(config).await
+        TestGateway::spawn_with_config(config).await
     }
 
     /// Create a test app with custom configuration
@@ -59,7 +89,7 @@ impl TestApp {
         // Run service in the background
         let task_handle = tokio::task::spawn(async move { service.run().await.unwrap() });
 
-        TestApp {
+        TestGateway {
             address,
             client: Client::new(),
             task_handle,
@@ -94,7 +124,7 @@ impl TestApp {
     }
 }
 
-impl Drop for TestApp {
+impl Drop for TestGateway {
     fn drop(&mut self) {
         self.task_handle.abort();
     }

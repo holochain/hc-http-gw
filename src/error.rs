@@ -3,7 +3,7 @@
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Json;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::app_selection::AppSelectionError;
 
@@ -40,8 +40,9 @@ pub enum HcHttpGatewayError {
 pub type HcHttpGatewayResult<T> = Result<T, HcHttpGatewayError>;
 
 /// Error format returned to the caller.
-#[derive(Debug, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct ErrorResponse {
+    /// The error message
     pub error: String,
 }
 

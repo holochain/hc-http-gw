@@ -23,14 +23,24 @@ pub fn base64_json_to_hsb(
                 .map_err(|_| {
                     HcHttpGatewayError::RequestMalformed("Invalid base64 encoding".to_string())
                 })?;
+
+        println!(
+            "Decoded JSON: {:?}",
+            String::from_utf8_lossy(&base64_decoded_payload)
+        );
+
         serde_json::from_slice::<serde_json::Value>(&base64_decoded_payload)
             .map_err(|_| HcHttpGatewayError::RequestMalformed("Invalid JSON value".to_string()))?
     } else {
         serde_json::Value::Null
     };
+
+    println!("JSON Payload: {:?}", json_payload);
+
     let msgpack_encoded_payload = ExternIO::encode(json_payload).map_err(|err| {
         HcHttpGatewayError::RequestMalformed(format!("Failure to serialize payload - {err}"))
     })?;
+    println!("Encoded Message: {:?}", msgpack_encoded_payload);
     Ok(msgpack_encoded_payload)
 }
 

@@ -16,6 +16,11 @@ pub struct TestType {
     pub value: String,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GetWithLimitRequest {
+    pub limit: usize,
+}
+
 pub async fn install_fixture1(
     conductor: Arc<Conductor>,
     installed_app_id: Option<InstalledAppId>,

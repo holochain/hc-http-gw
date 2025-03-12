@@ -47,9 +47,10 @@ async fn reconnect_admin_websocket() {
 
     sweet_conductor.shutdown().await;
 
-    let list_apps_result = tokio::time::timeout(std::time::Duration::from_secs(5), conn.list_apps(None))
-        .await
-        .expect("Timed out");
+    let list_apps_result =
+        tokio::time::timeout(std::time::Duration::from_secs(5), conn.list_apps(None))
+            .await
+            .expect("Timed out");
     assert!(list_apps_result.is_err());
 
     sweet_conductor.startup().await;
