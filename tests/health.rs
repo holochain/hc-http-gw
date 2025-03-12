@@ -1,5 +1,5 @@
 use holochain::sweettest::SweetConductor;
-use holochain_http_gateway::tracing::initialize_tracing_subscriber;
+use holochain_http_gateway::test_tracing::initialize_testing_tracing_subscriber;
 use reqwest::StatusCode;
 use setup::TestApp;
 
@@ -7,7 +7,7 @@ mod setup;
 
 #[tokio::test(flavor = "multi_thread")]
 async fn health_check_works() {
-    initialize_tracing_subscriber();
+    initialize_testing_tracing_subscriber();
 
     let sweet_conductor = SweetConductor::from_standard_config().await;
 

@@ -2,16 +2,21 @@ use anyhow::Context;
 use clap::Parser;
 use holochain_http_gateway::{
     config::{AllowedAppIds, AllowedFns, Configuration},
-    resolve_address_from_url,
-    tracing::initialize_tracing_subscriber,
-    AdminConn, AppConnPool, HcHttpGatewayArgs, HcHttpGatewayService,
+    resolve_address_from_url, AdminConn, AppConnPool, HcHttpGatewayArgs, HcHttpGatewayService,
 };
 use std::sync::Arc;
 use std::{collections::HashMap, env, str::FromStr};
+use tracing_subscriber::{
+    fmt::{self, format::FmtSpan, time::UtcTime},
+    layer::SubscriberExt,
+    EnvFilter, Registry,
+};
+
+const DEFAULT_LOG_LEVEL: &str = "info";
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    initialize_tracing_subscriber();
+    initialize_tracing_subscriber()?;
 
     let configuration = load_config_from_env().await?;
 
@@ -64,4 +69,19 @@ async fn load_config_from_env() -> anyhow::Result<Configuration> {
     )?;
 
     Ok(config)
+}
+
+/// Initialize a global tracing subscriber
+pub fn initialize_tracing_subscriber() -> Result<(), tracing::subscriber::SetGlobalDefaultError> {
+    let env_filter =
+        EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new(DEFAULT_LOG_LEVEL));
+    let formatting_layer = fmt::layer()
+        .with_timer(UtcTime::rfc_3339())
+        .with_span_events(FmtSpan::NEW | FmtSpan::CLOSE)
+        .with_file(true)
+        .with_line_number(true);
+
+    let subscriber = Registry::default().with(env_filter).with(formatting_layer);
+
+    tracing::subscriber::set_global_default(subscriber)
 }

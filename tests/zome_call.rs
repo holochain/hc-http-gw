@@ -2,7 +2,7 @@ use crate::sweet::install_fixture1;
 use base64::{prelude::BASE64_URL_SAFE, Engine};
 use holochain::sweettest::SweetConductor;
 use holochain_conductor_api::CellInfo;
-use holochain_http_gateway::tracing::initialize_tracing_subscriber;
+use holochain_http_gateway::test_tracing::initialize_testing_tracing_subscriber;
 use reqwest::StatusCode;
 use setup::TestApp;
 
@@ -11,7 +11,7 @@ mod sweet;
 
 #[tokio::test(flavor = "multi_thread")]
 async fn zome_call_with_valid_params() {
-    initialize_tracing_subscriber();
+    initialize_testing_tracing_subscriber();
 
     let sweet_conductor = SweetConductor::from_standard_config().await;
 

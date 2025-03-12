@@ -136,7 +136,7 @@ pub async fn zome_call(
 
 #[cfg(test)]
 mod tests {
-    use crate::tracing::initialize_tracing_subscriber;
+    use crate::test_tracing::initialize_testing_tracing_subscriber;
     use crate::{
         config::{AllowedFns, Configuration},
         router::tests::TestRouter,
@@ -152,7 +152,7 @@ mod tests {
 
     #[tokio::test]
     async fn valid_dna_hash_is_accepted() {
-        initialize_tracing_subscriber();
+        initialize_testing_tracing_subscriber();
 
         let router = TestRouter::new();
         let uri = format!("/{DNA_HASH}/coordinator/zome_name/fn_name");
@@ -162,7 +162,7 @@ mod tests {
 
     #[tokio::test]
     async fn invalid_dna_hash_is_rejected() {
-        initialize_tracing_subscriber();
+        initialize_testing_tracing_subscriber();
 
         let router = TestRouter::new();
         let invalid_dna_hash = "thisaintnodnahash";
@@ -177,7 +177,7 @@ mod tests {
 
     #[tokio::test]
     async fn coordinator_identifier_with_excess_length_is_rejected() {
-        initialize_tracing_subscriber();
+        initialize_testing_tracing_subscriber();
 
         let router = TestRouter::new();
         let coordinator = "12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901";
@@ -194,7 +194,7 @@ mod tests {
 
     #[tokio::test]
     async fn zome_name_with_excess_length_is_rejected() {
-        initialize_tracing_subscriber();
+        initialize_testing_tracing_subscriber();
 
         let router = TestRouter::new();
         let zome_name = "12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901";
@@ -211,7 +211,7 @@ mod tests {
 
     #[tokio::test]
     async fn function_name_with_excess_length_is_rejected() {
-        initialize_tracing_subscriber();
+        initialize_testing_tracing_subscriber();
 
         let router = TestRouter::new();
         let fn_name = "12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901";
@@ -228,7 +228,7 @@ mod tests {
 
     #[tokio::test]
     async fn unauthorized_function_name_is_rejected() {
-        initialize_tracing_subscriber();
+        initialize_testing_tracing_subscriber();
 
         // Only one allowed function "fn_name" in test router.
         let router = TestRouter::new();
@@ -246,7 +246,7 @@ mod tests {
 
     #[tokio::test]
     async fn payload_with_excess_length_is_rejected() {
-        initialize_tracing_subscriber();
+        initialize_testing_tracing_subscriber();
 
         let mut allowed_fns = HashMap::new();
         allowed_fns.insert("coordinator".to_string(), AllowedFns::All);
@@ -273,7 +273,7 @@ mod tests {
 
     #[tokio::test]
     async fn payload_with_invalid_base64_encoding_is_rejected() {
-        initialize_tracing_subscriber();
+        initialize_testing_tracing_subscriber();
 
         let router = TestRouter::new();
         let payload = "$%&#";
@@ -288,7 +288,7 @@ mod tests {
 
     #[tokio::test]
     async fn payload_with_invalid_json_is_rejected() {
-        initialize_tracing_subscriber();
+        initialize_testing_tracing_subscriber();
 
         let router = TestRouter::new();
         let payload = BASE64_URL_SAFE.encode("{invalid}");
