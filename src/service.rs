@@ -1,5 +1,6 @@
 //! HTTP gateway service for Holochain
 
+use crate::app_selection::AppInfoCache;
 use crate::holochain::{AdminCall, AppCall};
 use crate::{config::Configuration, router::hc_http_gateway_router};
 use axum::Router;
@@ -28,6 +29,7 @@ pub struct AppState {
         reason = "This will be used when we start making zome calls"
     )]
     pub app_call: Arc<dyn AppCall>,
+    pub app_info_cache: AppInfoCache,
 }
 
 impl HcHttpGatewayService {

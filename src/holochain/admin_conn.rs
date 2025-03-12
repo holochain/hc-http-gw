@@ -2,10 +2,12 @@ use crate::HcHttpGatewayError;
 use crate::{AdminCall, HcHttpGatewayResult};
 use futures::future::BoxFuture;
 use holochain_client::{
-    AdminWebsocket, AuthorizeSigningCredentialsPayload, ConductorApiError, SigningCredentials,
+    AdminWebsocket, AppInfo, AuthorizeSigningCredentialsPayload, ConductorApiError,
+    SigningCredentials,
 };
 use holochain_conductor_api::{
-    AppAuthenticationTokenIssued, AppInterfaceInfo, IssueAppAuthenticationTokenPayload,
+    AppAuthenticationTokenIssued, AppInterfaceInfo, AppStatusFilter,
+    IssueAppAuthenticationTokenPayload,
 };
 use holochain_types::websocket::AllowedOrigins;
 use std::net::SocketAddr;
@@ -147,6 +149,21 @@ impl AdminCall for AdminConn {
                         .attach_app_interface(port, allowed_origins, installed_app_id)
                         .await?)
                 })
+            })
+            .await
+        })
+    }
+
+    fn list_apps(
+        &self,
+        status_filter: Option<AppStatusFilter>,
+    ) -> BoxFuture<'static, HcHttpGatewayResult<Vec<AppInfo>>> {
+        let this = self.clone();
+        Box::pin(async move {
+            this.call(|admin_ws| {
+                let status_filter = status_filter.clone();
+
+                Box::pin(async move { Ok(admin_ws.list_apps(status_filter).await?) })
             })
             .await
         })

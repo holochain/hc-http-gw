@@ -1,12 +1,17 @@
-pub mod setup;
-
+use holochain::sweettest::SweetConductor;
+use holochain_http_gateway::tracing::initialize_tracing_subscriber;
 use reqwest::StatusCode;
-
 use setup::TestApp;
+
+mod setup;
 
 #[tokio::test(flavor = "multi_thread")]
 async fn health_check_works() {
-    let app = TestApp::spawn().await;
+    initialize_tracing_subscriber();
+
+    let sweet_conductor = SweetConductor::from_standard_config().await;
+
+    let app = TestApp::spawn(sweet_conductor.clone()).await;
 
     let response = app
         .client

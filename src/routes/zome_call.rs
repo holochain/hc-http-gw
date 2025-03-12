@@ -1,3 +1,4 @@
+use crate::app_selection::try_get_valid_app;
 use crate::{
     service::AppState, transcode::base64_json_to_hsb, HcHttpGatewayError, HcHttpGatewayResult,
 };
@@ -84,10 +85,10 @@ pub async fn zome_call(
     Query(query): Query<PayloadQuery>,
 ) -> HcHttpGatewayResult<()> {
     let ZomeCallParams {
+        dna_hash,
         coordinator_identifier,
         zome_name,
         fn_name,
-        ..
     } = params;
     // Check payload byte length does not exceed configured maximum.
     if let Some(payload) = &query.payload {
@@ -99,13 +100,23 @@ pub async fn zome_call(
             )));
         }
     }
+
+    let app_info = try_get_valid_app(
+        dna_hash,
+        coordinator_identifier,
+        state.app_info_cache.clone(),
+        &state.configuration.allowed_app_ids,
+        state.admin_call.clone(),
+    )
+    .await?;
+
     // Check if function name is allowed.
     if !state
         .configuration
-        .is_function_allowed(&coordinator_identifier, &zome_name, &fn_name)
+        .is_function_allowed(&app_info.installed_app_id, &zome_name, &fn_name)
     {
         return Err(HcHttpGatewayError::UnauthorizedFunction {
-            app_id: coordinator_identifier,
+            app_id: app_info.installed_app_id,
             zome_name,
             fn_name,
         });
@@ -125,6 +136,7 @@ pub async fn zome_call(
 
 #[cfg(test)]
 mod tests {
+    use crate::tracing::initialize_tracing_subscriber;
     use crate::{
         config::{AllowedFns, Configuration},
         router::tests::TestRouter,
@@ -140,6 +152,8 @@ mod tests {
 
     #[tokio::test]
     async fn valid_dna_hash_is_accepted() {
+        initialize_tracing_subscriber();
+
         let router = TestRouter::new();
         let uri = format!("/{DNA_HASH}/coordinator/zome_name/fn_name");
         let (status_code, _) = router.request(&uri).await;
@@ -148,6 +162,8 @@ mod tests {
 
     #[tokio::test]
     async fn invalid_dna_hash_is_rejected() {
+        initialize_tracing_subscriber();
+
         let router = TestRouter::new();
         let invalid_dna_hash = "thisaintnodnahash";
         let uri = format!("/{invalid_dna_hash}/coordinator/zome_name/fn_name");
@@ -161,6 +177,8 @@ mod tests {
 
     #[tokio::test]
     async fn coordinator_identifier_with_excess_length_is_rejected() {
+        initialize_tracing_subscriber();
+
         let router = TestRouter::new();
         let coordinator = "12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901";
         let uri = format!("/{DNA_HASH}/{coordinator}/zome_name/fn_name");
@@ -176,6 +194,8 @@ mod tests {
 
     #[tokio::test]
     async fn zome_name_with_excess_length_is_rejected() {
+        initialize_tracing_subscriber();
+
         let router = TestRouter::new();
         let zome_name = "12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901";
         let uri = format!("/{DNA_HASH}/coordinator/{zome_name}/fn_name");
@@ -191,6 +211,8 @@ mod tests {
 
     #[tokio::test]
     async fn function_name_with_excess_length_is_rejected() {
+        initialize_tracing_subscriber();
+
         let router = TestRouter::new();
         let fn_name = "12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901";
         let uri = format!("/{DNA_HASH}/coordinator/zome_name/{fn_name}");
@@ -206,6 +228,8 @@ mod tests {
 
     #[tokio::test]
     async fn unauthorized_function_name_is_rejected() {
+        initialize_tracing_subscriber();
+
         // Only one allowed function "fn_name" in test router.
         let router = TestRouter::new();
         let fn_name = "unauthorized_fn";
@@ -222,6 +246,8 @@ mod tests {
 
     #[tokio::test]
     async fn payload_with_excess_length_is_rejected() {
+        initialize_tracing_subscriber();
+
         let mut allowed_fns = HashMap::new();
         allowed_fns.insert("coordinator".to_string(), AllowedFns::All);
 
@@ -247,6 +273,8 @@ mod tests {
 
     #[tokio::test]
     async fn payload_with_invalid_base64_encoding_is_rejected() {
+        initialize_tracing_subscriber();
+
         let router = TestRouter::new();
         let payload = "$%&#";
         let uri = format!("/{DNA_HASH}/coordinator/zome_name/fn_name?payload={payload}");
@@ -260,6 +288,8 @@ mod tests {
 
     #[tokio::test]
     async fn payload_with_invalid_json_is_rejected() {
+        initialize_tracing_subscriber();
+
         let router = TestRouter::new();
         let payload = BASE64_URL_SAFE.encode("{invalid}");
         let uri = format!("/{DNA_HASH}/coordinator/zome_name/fn_name?payload={payload}");

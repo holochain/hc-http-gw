@@ -5,6 +5,8 @@ use axum::response::IntoResponse;
 use axum::Json;
 use serde::Serialize;
 
+use crate::app_selection::AppSelectionError;
+
 /// Core HTTP Gateway error type
 #[derive(thiserror::Error, Debug)]
 pub enum HcHttpGatewayError {
@@ -29,6 +31,9 @@ pub enum HcHttpGatewayError {
     /// Error returned when a connection cannot be made to the upstream Holochain service
     #[error("The upstream Holochain service could not be reached")]
     UpstreamUnavailable,
+    /// Handle errors specific to app selection
+    #[error("Error selecting a valid app: {0}")]
+    AppSelectionError(#[from] AppSelectionError),
 }
 
 /// Type aliased Result
@@ -74,6 +79,18 @@ impl IntoResponse for HcHttpGatewayError {
             HcHttpGatewayError::UpstreamUnavailable => (
                 StatusCode::BAD_GATEWAY,
                 Json(ErrorResponse::from("Could not connect to Holochain")),
+            ),
+            HcHttpGatewayError::AppSelectionError(AppSelectionError::NotInstalled) => (
+                StatusCode::NOT_FOUND,
+                Json(ErrorResponse::from(self.to_string())),
+            ),
+            HcHttpGatewayError::AppSelectionError(AppSelectionError::NotAllowed) => (
+                StatusCode::FORBIDDEN,
+                Json(ErrorResponse::from(self.to_string())),
+            ),
+            HcHttpGatewayError::AppSelectionError(AppSelectionError::MultipleMatching) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ErrorResponse::from(self.to_string())),
             ),
             _ => (
                 StatusCode::INTERNAL_SERVER_ERROR,

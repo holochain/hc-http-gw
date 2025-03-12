@@ -1,10 +1,9 @@
-#![allow(unused)]
+#![allow(dead_code)]
 
-use holochain::sweettest::SweetConductor;
-use holochain_http_gateway::{
-    config::{AllowedFns, Configuration},
-    AdminConn, AppConnPool, HcHttpGatewayService,
-};
+use holochain::conductor::Conductor;
+use holochain::prelude::DnaHash;
+use holochain_http_gateway::config::{AllowedFns, Configuration};
+use holochain_http_gateway::{AdminConn, AppConnPool, HcHttpGatewayService};
 use reqwest::{Client, Response};
 use std::collections::HashMap;
 use std::net::{Ipv4Addr, SocketAddr};
@@ -22,24 +21,19 @@ impl TestApp {
     /// Create a new test application with default configuration.
     /// Allowed app ids contains "forum".
     /// Allowed functions contains all functions of "forum".
-    pub async fn spawn() -> Self {
+    pub async fn spawn(conductor: Arc<Conductor>) -> Self {
         // Create default allowed functions
         let mut allowed_fns = HashMap::new();
-        allowed_fns.insert("forum".to_string(), AllowedFns::All);
+        allowed_fns.insert("fixture1".to_string(), AllowedFns::All);
+        allowed_fns.insert("fixture2".to_string(), AllowedFns::All);
 
-        // TODO This is no good. The conductor will shut down as soon as this handle is dropped.
-        //      Again, this is already updated on another PR so as long as the tests pass, I'm
-        //      Not going to change it for now and it will disappear on a rebase.
-        let sweet_conductor = SweetConductor::from_standard_config().await;
-        let admin_port = sweet_conductor
-            .get_arbitrary_admin_websocket_port()
-            .unwrap();
+        let admin_port = conductor.get_arbitrary_admin_websocket_port().unwrap();
 
         // Create configuration
         let config = Configuration::try_new(
             SocketAddr::new(Ipv4Addr::LOCALHOST.into(), admin_port),
             "1024",
-            "forum",
+            "fixture1,fixture2",
             allowed_fns,
             "",
             "",
@@ -74,7 +68,7 @@ impl TestApp {
     /// Util to make a request to the zome call GET endpoint
     pub async fn call_zome(
         &self,
-        dna_hash: &str,
+        dna_hash: &DnaHash,
         coordinator_identifier: &str,
         zome: &str,
         zome_fn: &str,
