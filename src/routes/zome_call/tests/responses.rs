@@ -39,9 +39,11 @@ async fn happy_zome_call() {
     });
     let admin_call = Arc::new(admin_call);
     let mut app_call = MockAppCall::new();
-    app_call.expect_handle_zome_call().returning(|_, _, _, _| {
-        Box::pin(async move { Ok(ExternIO::encode("return_value").unwrap()) })
-    });
+    app_call
+        .expect_handle_zome_call()
+        .returning(|_, _, _, _, _| {
+            Box::pin(async move { Ok(ExternIO::encode("return_value").unwrap()) })
+        });
     let app_call = Arc::new(app_call);
     let router = TestRouter::new_with_config_and_interfaces(config, admin_call, app_call);
     let (status_code, body) = router

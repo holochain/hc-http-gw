@@ -5,6 +5,7 @@ use crate::{
     HcHttpGatewayError, HcHttpGatewayResult,
 };
 use axum::extract::{FromRequestParts, Path, Query, State};
+use holochain_client::CellInfo;
 use holochain_types::dna::DnaHash;
 use serde::Deserialize;
 
@@ -104,7 +105,7 @@ pub async fn zome_call(
     }
 
     let app_info = try_get_valid_app(
-        dna_hash,
+        dna_hash.clone(),
         coordinator_identifier.clone(),
         state.app_info_cache.clone(),
         &state.configuration.allowed_app_ids,
@@ -127,10 +128,30 @@ pub async fn zome_call(
     // Transcode payload from base64 encoded JSON to ExternIO.
     let zome_call_payload = base64_json_to_hsb(query.payload)?;
 
+    // Get cell id to call from app info.
+    let cell_id = app_info
+        .cell_info
+        .values()
+        .flatten()
+        .find_map(|cell_info| match cell_info {
+            CellInfo::Provisioned(provisioned_cell) => {
+                if *provisioned_cell.cell_id.dna_hash() == dna_hash {
+                    Some(provisioned_cell.cell_id.clone())
+                } else {
+                    None
+                }
+            }
+            _ => None,
+        })
+        // The app info has been found based on the DNA hash, so the cell must exist
+        // and be unique.
+        .unwrap();
+
     let serialized_response = state
         .app_call
         .handle_zome_call(
-            coordinator_identifier.into(),
+            app_info.installed_app_id,
+            cell_id,
             zome_name,
             fn_name,
             zome_call_payload,
