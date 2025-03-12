@@ -29,7 +29,6 @@ tokio = { version = "1.43.0", features = ["rt-multi-thread", "macros", "net"] }
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = [
   "env-filter",
-  "json",
   "registry",
 ] }
 url = "2.5"
@@ -46,9 +45,7 @@ holochain = { version = "0.4.1", default-features = false, features = [
 ] }
 http-body-util = "0.1.2"
 mockall = "0.13"
-reqwest = { version = "0.12", default-features = false, features = [
-  "rustls-tls",
-] }
+reqwest = { version = "0.12", default-features = false }
 tower = "0.5.2"
 holochain_serialized_bytes = "0.0.55"
 
