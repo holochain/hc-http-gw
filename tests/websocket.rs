@@ -1,23 +1,14 @@
 use crate::sweet::{init_zome, install_fixture1, install_fixture2, TestType};
-use futures::future::BoxFuture;
 use holochain::sweettest::SweetConductor;
-use holochain_client::{
-    AdminWebsocket, AppInfo, AuthorizeSigningCredentialsPayload, CellInfo, ConductorApiError,
-    ExternIO, SigningCredentials, ZomeCallTarget,
-};
-use holochain_conductor_api::{
-    AppAuthenticationTokenIssued, AppInterfaceInfo, IssueAppAuthenticationTokenPayload,
-};
+use holochain_client::{AdminWebsocket, CellInfo, ConductorApiError, ExternIO, ZomeCallTarget};
+use holochain_conductor_api::{AdminInterfaceConfig, InterfaceDriver};
 use holochain_http_gateway::config::{AllowedFns, Configuration, ZomeFn};
 use holochain_http_gateway::tracing::initialize_tracing_subscriber;
-use holochain_http_gateway::{
-    AdminCall, AppConnPool, HcHttpGatewayError, HcHttpGatewayResult, HTTP_GW_ORIGIN,
-};
+use holochain_http_gateway::{AdminConn, AppConnPool, HcHttpGatewayError, HTTP_GW_ORIGIN};
 use holochain_types::app::DisabledAppReason;
 use holochain_types::websocket::AllowedOrigins;
-use std::net::Ipv4Addr;
+use std::net::{Ipv4Addr, SocketAddr};
 use std::sync::Arc;
-use tokio::sync::Mutex;
 
 mod sweet;
 
@@ -50,7 +41,10 @@ async fn connect_app_websocket() {
     let apps = admin_ws.list_apps(None).await.unwrap();
     assert_eq!(apps.len(), 2);
 
-    let admin_call = Arc::new(AdminWrapper::new(admin_ws));
+    let admin_call = Arc::new(AdminConn::new(SocketAddr::new(
+        Ipv4Addr::LOCALHOST.into(),
+        admin_port,
+    )));
     let pool = AppConnPool::new(create_test_configuration(admin_port), admin_call.clone());
 
     let app_client_1 = pool
@@ -99,11 +93,11 @@ async fn reuse_connection() {
     let admin_port = sweet_conductor
         .get_arbitrary_admin_websocket_port()
         .unwrap();
-    let admin_ws = AdminWebsocket::connect((Ipv4Addr::LOCALHOST, admin_port))
-        .await
-        .unwrap();
 
-    let admin_call = Arc::new(AdminWrapper::new(admin_ws));
+    let admin_call = Arc::new(AdminConn::new(SocketAddr::new(
+        Ipv4Addr::LOCALHOST.into(),
+        admin_port,
+    )));
     let pool = AppConnPool::new(create_test_configuration(admin_port), admin_call.clone());
 
     let app_client_1 = pool
@@ -164,11 +158,11 @@ async fn does_not_reconnect_on_non_websocket_error() {
     let admin_port = sweet_conductor
         .get_arbitrary_admin_websocket_port()
         .unwrap();
-    let admin_ws = AdminWebsocket::connect((Ipv4Addr::LOCALHOST, admin_port))
-        .await
-        .unwrap();
 
-    let admin_call = Arc::new(AdminWrapper::new(admin_ws));
+    let admin_call = Arc::new(AdminConn::new(SocketAddr::new(
+        Ipv4Addr::LOCALHOST.into(),
+        admin_port,
+    )));
     let pool = AppConnPool::new(create_test_configuration(admin_port), admin_call.clone());
 
     // Connect while the app is running
@@ -252,12 +246,12 @@ async fn reconnect_on_failed_websocket() {
     let admin_port = sweet_conductor
         .get_arbitrary_admin_websocket_port()
         .unwrap();
-    let admin_ws = AdminWebsocket::connect((Ipv4Addr::LOCALHOST, admin_port))
-        .await
-        .unwrap();
 
-    let admin_call = Arc::new(AdminWrapper::new(admin_ws));
-    let mut pool = AppConnPool::new(create_test_configuration(admin_port), admin_call.clone());
+    let admin_call = Arc::new(AdminConn::new(SocketAddr::new(
+        Ipv4Addr::LOCALHOST.into(),
+        admin_port,
+    )));
+    let pool = AppConnPool::new(create_test_configuration(admin_port), admin_call.clone());
 
     // Connect while the app is running
     let app_client = pool
@@ -278,15 +272,19 @@ async fn reconnect_on_failed_websocket() {
     // Restart the conductor
     sweet_conductor.startup().await;
 
-    // Reconnect the admin client
-    let admin_port = sweet_conductor
-        .get_arbitrary_admin_websocket_port()
-        .unwrap();
-    let admin_ws = AdminWebsocket::connect((Ipv4Addr::LOCALHOST, admin_port))
+    // Make sure we are still serving the admin interface on the same port.
+    // This is needed because sweetest configures Holochain to bind to port 0 and
+    // a restart is likely to cause a port change.
+    sweet_conductor
+        .clone()
+        .add_admin_interfaces(vec![AdminInterfaceConfig {
+            driver: InterfaceDriver::Websocket {
+                port: admin_port,
+                allowed_origins: AllowedOrigins::Any,
+            },
+        }])
         .await
-        .unwrap();
-
-    pool.set_admin_ws(admin_ws).await;
+        .ok();
 
     let cells = app_client
         .cached_app_info()
@@ -344,11 +342,11 @@ async fn reconnect_gives_up() {
     let admin_port = sweet_conductor
         .get_arbitrary_admin_websocket_port()
         .unwrap();
-    let admin_ws = AdminWebsocket::connect((Ipv4Addr::LOCALHOST, admin_port))
-        .await
-        .unwrap();
 
-    let admin_call = Arc::new(AdminWrapper::new(admin_ws));
+    let admin_call = Arc::new(AdminConn::new(SocketAddr::new(
+        Ipv4Addr::LOCALHOST.into(),
+        admin_port,
+    )));
     let pool = AppConnPool::new(create_test_configuration(admin_port), admin_call.clone());
 
     // Connect while the app is running
@@ -402,11 +400,8 @@ async fn reconnect_gives_up() {
         .unwrap_err();
 
     assert!(
-        matches!(
-            err,
-            HcHttpGatewayError::HolochainError(ConductorApiError::WebsocketError(_))
-        ),
-        "Expected Holochain websocket error, got {:?}",
+        matches!(err, HcHttpGatewayError::UpstreamUnavailable),
+        "Expected upstream unavailable, got {:?}",
         err
     );
 }
@@ -433,12 +428,9 @@ async fn close_old_connections_on_limit() {
     let admin_port = sweet_conductor
         .get_arbitrary_admin_websocket_port()
         .unwrap();
-    let admin_ws = AdminWebsocket::connect((Ipv4Addr::LOCALHOST, admin_port))
-        .await
-        .unwrap();
 
     let configuration = Configuration::try_new(
-        &format!("ws://127.0.0.1:{}", admin_port),
+        SocketAddr::new(Ipv4Addr::LOCALHOST.into(), admin_port),
         "",
         "app_1,app_2,app_3",
         [
@@ -483,7 +475,7 @@ async fn close_old_connections_on_limit() {
     )
     .unwrap();
 
-    let admin_call = Arc::new(AdminWrapper::new(admin_ws));
+    let admin_call = Arc::new(AdminConn::new(configuration.admin_socket_addr));
     let pool = AppConnPool::new(configuration, admin_call.clone());
 
     // Take out connections to all 3 apps
@@ -519,7 +511,7 @@ async fn close_old_connections_on_limit() {
 
 fn create_test_configuration(admin_port: u16) -> Configuration {
     Configuration::try_new(
-        &format!("ws://127.0.0.1:{}", admin_port),
+        SocketAddr::new(Ipv4Addr::LOCALHOST.into(), admin_port),
         "",
         "fixture1,fixture2",
         [
@@ -552,77 +544,4 @@ fn create_test_configuration(admin_port: u16) -> Configuration {
         "",
     )
     .unwrap()
-}
-
-impl AdminCall for AdminWrapper {
-    fn list_app_interfaces(
-        &self,
-    ) -> BoxFuture<'static, HcHttpGatewayResult<Vec<AppInterfaceInfo>>> {
-        let inner = self.inner.clone();
-        Box::pin(async move { Ok(inner.lock().await.list_app_interfaces().await?) })
-    }
-
-    fn issue_app_auth_token(
-        &self,
-        payload: IssueAppAuthenticationTokenPayload,
-    ) -> BoxFuture<'static, HcHttpGatewayResult<AppAuthenticationTokenIssued>> {
-        let inner = self.inner.clone();
-        Box::pin(async move { Ok(inner.lock().await.issue_app_auth_token(payload).await?) })
-    }
-
-    fn authorize_signing_credentials(
-        &self,
-        payload: AuthorizeSigningCredentialsPayload,
-    ) -> BoxFuture<'static, HcHttpGatewayResult<SigningCredentials>> {
-        let inner = self.inner.clone();
-        Box::pin(async move {
-            Ok(inner
-                .lock()
-                .await
-                .authorize_signing_credentials(payload)
-                .await?)
-        })
-    }
-
-    fn attach_app_interface(
-        &self,
-        port: u16,
-        allowed_origins: AllowedOrigins,
-        installed_app_id: Option<String>,
-    ) -> BoxFuture<'static, HcHttpGatewayResult<u16>> {
-        let inner = self.inner.clone();
-        Box::pin(async move {
-            Ok(inner
-                .lock()
-                .await
-                .attach_app_interface(port, allowed_origins, installed_app_id)
-                .await?)
-        })
-    }
-
-    fn list_apps(&self) -> BoxFuture<'static, HcHttpGatewayResult<Vec<AppInfo>>> {
-        let inner = self.inner.clone();
-        Box::pin(async move { Ok(inner.lock().await.list_apps(None).await?) })
-    }
-
-    #[cfg(feature = "test-utils")]
-    fn set_admin_ws(&self, admin_ws: AdminWebsocket) -> BoxFuture<'static, ()> {
-        let inner = self.inner.clone();
-        Box::pin(async move {
-            *inner.lock().await = admin_ws;
-        })
-    }
-}
-
-#[derive(Debug)]
-pub struct AdminWrapper {
-    inner: Arc<Mutex<AdminWebsocket>>,
-}
-
-impl AdminWrapper {
-    pub fn new(admin_ws: AdminWebsocket) -> Self {
-        Self {
-            inner: Arc::new(Mutex::new(admin_ws)),
-        }
-    }
 }

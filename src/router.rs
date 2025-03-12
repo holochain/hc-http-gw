@@ -19,6 +19,7 @@ pub fn hc_http_gateway_router(
         app_call,
         app_info_cache: Default::default(),
     };
+
     Router::new()
         .route("/health", get(health_check))
         .route(
@@ -48,6 +49,7 @@ pub mod tests {
     use reqwest::StatusCode;
     use serde::{Deserialize, Serialize};
     use std::collections::{HashMap, HashSet};
+    use std::net::{Ipv4Addr, SocketAddr};
     use std::sync::Arc;
     use tower::ServiceExt;
 
@@ -72,8 +74,9 @@ pub mod tests {
             allowed_zome_fns.insert(allowed_zome_fn);
             let restricted_fns = AllowedFns::Restricted(allowed_zome_fns);
             allowed_fns.insert("coordinator".to_string(), restricted_fns);
+
             let config = Configuration::try_new(
-                "ws://127.0.0.1:1",
+                SocketAddr::new(Ipv4Addr::LOCALHOST.into(), 8888),
                 "1024",
                 "coordinator",
                 allowed_fns,
@@ -86,7 +89,7 @@ pub mod tests {
 
         pub fn new_with_config(config: Configuration) -> Self {
             let mut admin_call = MockAdminCall::new();
-            admin_call.expect_list_apps().returning(|| {
+            admin_call.expect_list_apps().returning(|_| {
                 Box::pin(async {
                     let agent_pub_key = AgentPubKey::from_raw_32(vec![17; 32]);
                     Ok(vec![AppInfo {

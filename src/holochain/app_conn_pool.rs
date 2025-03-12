@@ -84,9 +84,9 @@ impl AppConnPool {
                     return Ok(response);
                 }
                 Err(HcHttpGatewayError::HolochainError(ConductorApiError::WebsocketError(e))) => {
-                    tracing::error!(
-                        "Websocket error while executing call, attempting to reconnect: {}",
-                        e
+                    tracing::warn!(
+                        ?e,
+                        "Websocket error while executing call, attempting to reconnect",
                     );
                     self.remove_app_client(&installed_app_id).await;
 
@@ -121,6 +121,13 @@ impl AppConnPool {
         }
 
         let mut app_client_lock = self.app_clients.write().await;
+
+        // We might have been queued up behind another task that was holding the write lock, so we
+        // need to check again after obtaining the write lock. Reconnecting if another task has
+        // already reconnected risks closing the connection the other task just established.
+        if let Some(client) = app_client_lock.get(&installed_app_id) {
+            return Ok(client.app_ws.clone());
+        }
 
         let app_ws = match app_client_lock.entry(installed_app_id.clone()) {
             std::collections::hash_map::Entry::Occupied(client) => {
@@ -184,21 +191,11 @@ impl AppConnPool {
             ))
             .await?;
 
-        // Presence of host must have been checked to get an admin connection
-        let host = self
-            .configuration
-            .admin_ws_url
-            .host_str()
-            .expect("Must have a host");
-
-        tracing::info!("Connecting to app websocket at {}:{}", host, app_port);
-
         // Build a connection request
-        let request = ConnectRequest::from(
-            format!("{host}:{app_port}")
-                .parse::<SocketAddr>()
-                .expect("Host and app port must be valid"),
-        )
+        let request = ConnectRequest::from(SocketAddr::new(
+            self.configuration.admin_socket_addr.ip(),
+            app_port,
+        ))
         .try_set_header("Origin", HTTP_GW_ORIGIN)
         .expect("Origin headers have gone out of fashion");
 
@@ -324,14 +321,6 @@ impl AppConnPool {
         &self,
     ) -> Arc<tokio::sync::RwLock<HashMap<InstalledAppId, AppWebsocketWithState>>> {
         self.app_clients.clone()
-    }
-
-    /// Set the admin websocket for testing purposes.
-    ///
-    /// This is temporary, we should be using the admin websocket that can reconnect.
-    #[cfg(feature = "test-utils")]
-    pub async fn set_admin_ws(&mut self, admin_ws: holochain_client::AdminWebsocket) {
-        self.admin_call.set_admin_ws(admin_ws).await;
     }
 }
 

@@ -30,14 +30,13 @@ tracing-subscriber = { version = "0.3.19", features = [
   "json",
   "registry",
 ] }
-url2 = "0.0.6"
+url = "2.5"
 futures = "0.3"
 
 [dev-dependencies]
 holochain_http_gateway = { path = ".", features = ["test-utils"] }
 
 assert2 = "0.3.15"
-fixt = "0.4.1"
 holochain = { version = "0.4.1", features = ["sweettest"] }
 http-body-util = "0.1.2"
 reqwest = { version = "0.12", features = ["rustls-tls"] }

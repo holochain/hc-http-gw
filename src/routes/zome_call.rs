@@ -145,6 +145,7 @@ mod tests {
     use base64::{prelude::BASE64_URL_SAFE, Engine};
     use reqwest::StatusCode;
     use std::collections::HashMap;
+    use std::net::{Ipv4Addr, SocketAddr};
 
     // DnaHash::from_raw_32(vec![1; 32]).to_string()
     const DNA_HASH: &str = "uhC0kAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQF-z86-";
@@ -249,8 +250,16 @@ mod tests {
 
         let mut allowed_fns = HashMap::new();
         allowed_fns.insert("coordinator".to_string(), AllowedFns::All);
-        let config =
-            Configuration::try_new("ws://127.0.0.1:1", "10", "", allowed_fns, "", "").unwrap();
+
+        let config = Configuration::try_new(
+            SocketAddr::new(Ipv4Addr::LOCALHOST.into(), 8888),
+            "10",
+            "",
+            allowed_fns,
+            "",
+            "",
+        )
+        .unwrap();
         let router = TestRouter::new_with_config(config);
         let payload = BASE64_URL_SAFE.encode(vec![1; 11]);
         let uri = format!("/{DNA_HASH}/coordinator/zome_name/fn_name?payload={payload}");
