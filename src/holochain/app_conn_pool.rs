@@ -122,6 +122,13 @@ impl AppConnPool {
 
         let mut app_client_lock = self.app_clients.write().await;
 
+        // We might have been queued up behind another task that was holding the write lock, so we
+        // need to check again after obtaining the write lock. Reconnecting if another task has
+        // already reconnected risks closing the connection the other task just established.
+        if let Some(client) = app_client_lock.get(&installed_app_id) {
+            return Ok(client.app_ws.clone());
+        }
+
         let app_ws = match app_client_lock.entry(installed_app_id.clone()) {
             std::collections::hash_map::Entry::Occupied(client) => {
                 // Created by another thread while we were waiting for the lock

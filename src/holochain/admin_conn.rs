@@ -73,6 +73,13 @@ impl AdminConn {
 
         let mut lock = self.handle.write().await;
 
+        // We might have been queued up behind another task that was holding the write lock, so we
+        // need to check again after obtaining the write lock. Reconnecting if another task has
+        // already reconnected risks closing the connection the other task just established.
+        if let Some(admin_ws) = lock.as_ref() {
+            return Ok(admin_ws.clone());
+        }
+
         match AdminWebsocket::connect(self.socket_addr).await {
             Ok(admin_ws) => {
                 tracing::info!("Connected a new Holochain admin websocket");
