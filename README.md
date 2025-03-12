@@ -77,8 +77,25 @@ date: Wed, 12 Mar 2025 15:25:13 GMT
 Ok⏎
 ```
 
-Calling the `get_all_1` functions on the fixture should now return an empty
-JSON array:
+For the next steps, we'll need the DNA hash that the app was installed with.
+
+```bash
+hc sandbox call list-dnas
+```
+
+```console
+machine:hc-http-gw$ hc sandbox call list-dnas
+hc-sandbox: DNAs: [DnaHash(uhC0kwgZaQK05lgFwcYb_LrtAXTAckaS41nxNVO_zRMdpsuAeA0uN)]
+```
+
+The value you need is `uhC0kwgZaQK05lgFwcYb_LrtAXTAckaS41nxNVO_zRMdpsuAeA0uN`.
+
+Calling the `get_all_1` function on the fixture using the DNA hash found above should 
+now return an empty JSON array:
+
+```bash
+curl -i localhost:8090/uhC0kwgZaQK05lgFwcYb_LrtAXTAckaS41nxNVO_zRMdpsuAeA0uN/fixture1/coordinator1/get_all_1
+```
 
 ```console
 machine:hc-http-gw$ curl -i localhost:8090/uhC0kwgZaQK05lgFwcYb_LrtAXTAckaS41nxNVO_zRMdpsuAeA0uN/fixture1/coordinator1/get_all_1
