@@ -3,7 +3,7 @@
 The gateway responds to HTTP GET requests with the following URL format
 
 ```
-http://<host>/<dna-hash>/<coordinator-identifier>/<zome-name>/<function-name>?payload=<payload>
+http://{host}/{dna-hash}/{coordinator-identifier}/{zome-name}/{function-name}?payload=<payload>
 ```
 
 Where the `dna-hash` is the base64url encoded DNA hash of the DHT to retrieve data from, the `coordinator-identifier`, `zome-name` and `function-name` identify the zome function to invoke, and the `payload` query parameter is base64url encoded JSON to be used as the zome call payload.
