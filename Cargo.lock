@@ -2776,6 +2776,7 @@ dependencies = [
  "holochain_http_gateway",
  "holochain_serialized_bytes",
  "holochain_types",
+ "holochain_websocket",
  "http-body-util",
  "mockall 0.13.1",
  "reqwest 0.12.13",
