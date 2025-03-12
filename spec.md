@@ -6,7 +6,7 @@ The gateway responds to HTTP GET requests with the following URL format
 http://{host}/{dna-hash}/{coordinator-identifier}/{zome-name}/{function-name}?payload={payload}
 ```
 
-Where the `dna-hash` is the base64 url encoded DNA hash of the DHT to retrieve data from, the `coordinator-identifier`, `zome-name` and `function-name` identify the zome function to invoke, and the `payload` query parameter is base64url encoded JSON to be used as the zome call payload.
+Where the `dna-hash` is the base64 url encoded DNA hash of the DHT to retrieve data from, the `coordinator-identifier`, `zome-name` and `function-name` identify the zome function to invoke, and the `payload` query parameter is base64 url encoded JSON to be used as the zome call payload.
 
 The `coordinator-identifier` is a way to ensure that the request is routed to a coordinator zome that has the expected interface. In the first iteration of the gateway, it is recommended that hApps are installed with a UUID or any UTF-8 encoded string with at most 100 characters long and this is used to identify the app to call. In the future, when Holochain properly supports app updates, this could be a coordinator hash. That would require Holochain exposing some concept of lineage so that newer coordinators that fulfill the interface of older ones, can be targeted.
 
@@ -46,7 +46,7 @@ On receiving a request, the request should be checked:
 - The function name must be a valid function identifier (valid UTF-8 is good enough for now) and at most 100 characters long.
 - The function name must be included in the list of allowed functions for the app.
 - The payload length must be within the configured limit.
-- The payload must be valid base64url and decode to valid JSON.
+- The payload must be valid base64 url and decode to valid JSON.
 
 ### Identify the app to call
 
