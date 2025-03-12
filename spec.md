@@ -50,45 +50,39 @@ On receiving a request, the request should be checked:
 
 ### Identify the app to call
 
-The gateway should use a single admin websocket to make requests to Holochain. At this point, either use the existing connection or open a new one if the websocket is closed.
+The gateway uses a single admin websocket to make requests to Holochain. At this point, either use the existing connection or open a new one if the websocket is closed.
 
-On receiving a valid request, call the `ListApps` operation on Holochain. The response to this call may be cached for use with future requests.
+When receiving a valid request, the gateway first checks its cached list of installed apps. If the cache is empty or the app isn't found in the cache, it calls the ListApps operation on Holochain with the filter set to only return running apps. The response is stored in the cache for future requests.
 
-Identify the cells within this `AppInfo` list response that contain the DNA hash specified in the request. Filter this list by apps which have a coordinator zome that matches the `coordinator-identifier`. There should be exactly one remaining cell where the owning app id is listed in `HC_GW_ALLOWED_APP_IDS`. This becomes the target `AppInfo` for the request.
+The gateway identifies apps that match both the DNA hash specified in the request and have an installed app ID matching the coordinator-identifier. It then checks if the app ID is in the list of allowed apps configured in AllowedAppIds. If multiple matching apps are found, an error is returned since a unique app cannot be determined.
 
-If a unique `AppInfo` cannot be idenfied then use the `installed_at` as a tie-breaker. The earliest installed app should be selected. This should prevent new app installs from preventing the gateway responding to existing URLs.
-
-If we used a cached `ListApps` response and failed to find a target app then one call should be made to `ListApps` to update the cached value. Retry looking for an app in that response, and if it still isn't found then return an HTTP 404 error.
+If no app is found in the initial check but the cache was populated, a fresh request to ListApps is made to update the cache, and the search is performed again. If the app still isn't found, or if it's found but not in the allowed list, an appropriate error is returned.
 
 ### Prepare zome call signing
 
 At this point, we appear to have received a valid request that identifies an app running on Holochain. We should now try to issue signing credentials for ourselves.
 
-The app should use `sodoken`, as a convenient way to access libsodium, to generate a signing keypair for the target app.
-
-The gateway should then use its admin API connection to authorize the keypair to make zome calls to the target cell. This will require calling `GrantZomeCallCapability`. The `ZomeCallCapGrant` tag should identify the gateway, the access should be assigned to the keypair, and the functions should be either All or Listed depending on the value of `HC_GW_ALLOWED_FNS_<app-id>`.
-
-The gateway should then cache this keypair in memory. The keypair may be re-used against other cells within the same app by authorizing its use. Keypairs should not be re-used for calls to cells in different apps.
+The HTTP gateway uses ClientAgentSigner to manage signing credentials for zome calls, instead of using `sodoken` directly. The gateway then uses its admin API connection to authorize these credentials for each cell via authorize*signing_credentials. The granted functions are set according to the value of HC_GW_ALLOWED_FNS*<app-id>, either as All or a specific list of functions.
 
 ### Connect to Holochain to make app calls
 
-The gateway should use its admin API connection to list app interfaces with the `ListAppInterfaces` request. Look for an app interface that will permit calls from the gateway or any location, and from our target app or any.
+The gateway uses its admin API connection to list app interfaces with the ListAppInterfaces request.
 
-If a matching interface cannot be found, a new interface should be provisioned using the admin API request `AttachAppInterface` using port 0, the `hc_gw` as an origin and with no app id specified.
+It looks for an app interface that permits calls from the gateway or any location, and from the target app or any.
 
-Using either the discovered or created app interface a connection must be established. This is done by issusing a connection token from the admin API with `IssueAppAuthenticationToken`. This token should then be used to open an app connection for the selected app.
+If a matching interface cannot be found, a new interface is provisioned using the admin API request AttachAppInterface using port 0, the hc-http-gw as an origin and with no app id specified.
 
-This app connection should be cached but the gateway is free to close connections to protect resources.
+Using either the discovered or created app interface, a connection is established. This is done by issuing a connection token from the admin API with IssueAppAuthenticationToken. This token is then used to open an app connection for the selected app. After establishing the connection, the gateway authorizes signing credentials for each cell in the app and stores them in the client signer.
+
+This app connection is cached but the gateway closes older connections when needed to protect resources. If errors occur, the gateway attempts to reconnect.
 
 ### Make the zome call
 
-The request payload should already be in a JSON representation because this was checked when receiving the request. Transcode the request to `SerializedBytes`.
+The request payload is already in the appropriate format as ExternIO.
 
-Construct a zome call using the provided payload, the provided zome and function names, and the chosen `AppInfo`. This zome call must be signed using the keypair described above.
+The gateway dispatches the zome call to Holochain using the app API connection opened above, using a `CallZome` request targeting the specified cell ID, zome name, and function name with the provided payload.
 
-Dispatch the zome call to Holochain using the app API connection opened above, using a `CallZome` request.
-
-On completion of the request, any errors should be handled and converted to an HTTP 500 response. If the request succeeded then the `ExternIO` that is returned must be transcoded from `SerializedBytes` to JSON and returned with an HTTP 200 status.
+On completion of the request, any errors are handled and converted to an HTTP 500 response. If the request succeeds then the `ExternIO` (serialized bytes) that is returned is passed back with an HTTP 200 status.
 
 ### Limitations and future extension
 
