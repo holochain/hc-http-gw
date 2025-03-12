@@ -88,7 +88,7 @@ impl AppConnPool {
                     e @ ConductorApiError::WebsocketError(
                         // A websocket closed by the other side we definitely want to re-open
                         WebsocketError::Close(_)
-                        // A tungstenite error or an I/O error probably means we want to re-open.
+                        // An error from the tungstenite crate or an I/O error probably means we want to re-open.
                         // Choose to be cautious and re-open even if the error might be temporary.
                         | WebsocketError::Websocket(_)
                         | WebsocketError::Io(_)
