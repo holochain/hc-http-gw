@@ -178,7 +178,7 @@ impl AppConnPool {
     }
 
     /// Remove an app client from the pool.
-    async fn remove_app_client(&self, installed_app_id: &InstalledAppId) {
+    pub async fn remove_app_client(&self, installed_app_id: &InstalledAppId) {
         self.app_clients.write().await.remove(installed_app_id);
     }
 
