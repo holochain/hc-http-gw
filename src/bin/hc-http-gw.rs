@@ -2,8 +2,7 @@ use anyhow::Context;
 use clap::Parser;
 use holochain_http_gateway::{
     config::{AllowedAppIds, AllowedFns, Configuration},
-    resolve_address_from_url,
-    AdminConn, AppConnPool, HcHttpGatewayArgs, HcHttpGatewayService,
+    resolve_address_from_url, AdminConn, AppConnPool, HcHttpGatewayArgs, HcHttpGatewayService,
 };
 use std::sync::Arc;
 use std::{collections::HashMap, env, str::FromStr};
