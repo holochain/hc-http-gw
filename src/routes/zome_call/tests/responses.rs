@@ -1,8 +1,6 @@
-use crate::{
-    app_selection::tests::new_fake_app_info,
-    config::{AllowedFns, Configuration},
-    router::tests::TestRouter,
-};
+use crate::config::{AllowedFns, Configuration};
+use crate::test::data::new_test_app_info;
+use crate::test::router::TestRouter;
 use crate::{MockAdminCall, MockAppCall};
 use holochain_client::ExternIO;
 use holochain_types::prelude::DnaHash;
@@ -33,7 +31,7 @@ async fn happy_zome_call() {
     admin_call.expect_list_apps().returning(move |_| {
         let dna_hash = dna_hash2.clone();
         Box::pin(async move {
-            let app_info = new_fake_app_info(app_id, dna_hash);
+            let app_info = new_test_app_info(app_id, dna_hash);
             Ok(vec![app_info])
         })
     });

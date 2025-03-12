@@ -1,7 +1,7 @@
-use crate::test_tracing::initialize_testing_tracing_subscriber;
+use crate::test::router::TestRouter;
+use crate::test::test_tracing::initialize_testing_tracing_subscriber;
 use crate::{
     config::{AllowedFns, Configuration},
-    router::tests::TestRouter,
     routes::zome_call::MAX_IDENTIFIER_CHARS,
 };
 use base64::{prelude::BASE64_URL_SAFE, Engine};

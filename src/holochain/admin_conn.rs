@@ -14,8 +14,6 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
-const ADMIN_WS_CONNECTION_MAX_RETRIES: usize = 1;
-
 /// A wrapper around AdminWebsocket that automatically handles reconnection
 /// when the connection is lost due to network issues or other failures.
 #[derive(Debug, Clone)]
@@ -42,7 +40,7 @@ impl AdminConn {
         &self,
         execute: impl Fn(AdminWebsocket) -> BoxFuture<'static, HcHttpGatewayResult<T>>,
     ) -> HcHttpGatewayResult<T> {
-        for _ in 0..=ADMIN_WS_CONNECTION_MAX_RETRIES {
+        for _ in 0..2 {
             let admin_ws = self.get_admin_ws().await?;
 
             match execute(admin_ws).await {
@@ -112,6 +110,7 @@ impl AdminCall for AdminConn {
         let this = self.clone();
         Box::pin(async move {
             this.call(|admin_ws| {
+                // TODO Make this Clone in Holochain
                 let payload = IssueAppAuthenticationTokenPayload {
                     installed_app_id: payload.installed_app_id.clone(),
                     expiry_seconds: payload.expiry_seconds,
