@@ -3,6 +3,7 @@ use crate::config::{AllowedFns, Configuration};
 use crate::test::data::new_test_app_info;
 use crate::test::router::TestRouter;
 use crate::{MockAdminCall, MockAppCall};
+use holochain::holochain_wasmer_host::prelude::WasmErrorInner;
 use holochain_client::{ConductorApiError, ExternIO};
 use holochain_conductor_api::ExternalApiWireError;
 use holochain_types::prelude::DnaHash;
@@ -55,6 +56,32 @@ async fn happy_zome_call() {
 }
 
 #[tokio::test]
+async fn ribosome_errors_are_returned() {
+    let mut app_call = MockAppCall::new();
+    app_call
+        .expect_handle_zome_call()
+        .returning(|_, _, _, _, _| {
+            Box::pin(async move {
+                // A bit contrived this error, but close enough to reality.
+                Err(crate::HcHttpGatewayError::HolochainError(
+                    ConductorApiError::ExternalApiWireError(ExternalApiWireError::RibosomeError(
+                        format!(
+                            "{:?}",
+                            WasmErrorInner::Guest("could not find record xyz".to_string())
+                        ),
+                    )),
+                ))
+            })
+        });
+    let router = create_test_router(app_call);
+    let (status_code, body) = router
+        .request(&format!("/{DNA_HASH}/{APP_ID}/coordinator/fn_name"))
+        .await;
+    assert_eq!(status_code, StatusCode::INTERNAL_SERVER_ERROR);
+    assert_eq!(body, r#"{"error":"Guest(\"could not find record xyz\")"}"#);
+}
+
+#[tokio::test]
 async fn app_not_found() {
     let mut app_call = MockAppCall::new();
     app_call
@@ -97,7 +124,7 @@ async fn cell_not_found() {
 }
 
 #[tokio::test]
-async fn external_api_wire_error() {
+async fn other_external_api_wire_error() {
     let mut app_call = MockAppCall::new();
     app_call
         .expect_handle_zome_call()
