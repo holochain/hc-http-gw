@@ -38,7 +38,7 @@ impl AdminConn {
     }
 
     /// Allows calling a method on the [`AdminWebsocket`], with automatic reconnection if needed
-    pub async fn call<T>(
+    async fn call<T>(
         &self,
         execute: impl Fn(AdminWebsocket) -> BoxFuture<'static, HcHttpGatewayResult<T>>,
     ) -> HcHttpGatewayResult<T> {
