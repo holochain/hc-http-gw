@@ -53,6 +53,7 @@ mod tests {
     };
     use assert2::let_assert;
     use base64::{prelude::BASE64_URL_SAFE, Engine};
+    use holochain_types::dna::ActionHash;
     use holochain_types::prelude::ExternIO;
     use serde::{Deserialize, Serialize};
 
@@ -124,5 +125,15 @@ mod tests {
 
         let expected_json_response = serde_json::to_string(&response).unwrap();
         assert_eq!(json_response, expected_json_response);
+    }
+
+    // TODO requires https://github.com/serde-rs/json/pull/1247
+    #[test]
+    fn deserialize_binary() {
+        let output = ExternIO::encode(ActionHash::from_raw_32(vec![2; 32])).unwrap();
+
+        let json = hsb_to_json(&output).unwrap();
+
+        assert_eq!(json, "[132,41,36,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,32,73,61,253]");
     }
 }
