@@ -3,7 +3,7 @@
 The gateway responds to HTTP GET requests with the following URL format
 
 ```
-http://{host}/{dna-hash}/{coordinator-identifier}/{zome-name}/{function-name}?payload=<payload>
+http://{host}/{dna-hash}/{coordinator-identifier}/{zome-name}/{function-name}?payload={payload}
 ```
 
 Where the `dna-hash` is the base64 url encoded DNA hash of the DHT to retrieve data from, the `coordinator-identifier`, `zome-name` and `function-name` identify the zome function to invoke, and the `payload` query parameter is base64url encoded JSON to be used as the zome call payload.
@@ -28,12 +28,12 @@ The HTTP gateway accepts configuration from environment variables.
 | HC_GW_ADMIN_WS_URL         | The websocket URL for Holochain's admin interface                                                                                                                                   | `ws://localhost:8888`             |
 | HC_GW_PAYLOAD_LIMIT_BYTES  | The maximum size for payloads, in bytes. This provides a limit on length of the URL that the gateway must process. If this var is not set, `10240 (10kb)` will be the default value | `10240`                           |
 | HC_GW_ALLOWED_APP_IDS      | Comma separated list of installed app ids that the gateway is allowed to access. If this var is not set, we assume that no apps are exposed.                                        | `mewsfeed,zipzap`                 |
-| HC*GW_ALLOWED_FNS*<app-id> | Comma separated list of zome-scoped functions that the gateway is allowed to invoke for a given app.                                                                                | `main/list_mews,main/count_likes` |
+| HC_GW_ALLOWED_FNS_{app-id} | Comma separated list of zome-scoped functions that the gateway is allowed to invoke for a given app.                                                                                | `main/list_mews,main/count_likes` |
 | HC_GW_ZOME_CALL_TIMEOUT_MS | Timeout in milliseconds for zome calls (Default: 10000)                                                                                                                             | 30000                             |
 
-One `HC_GW_ALLOWED_FNS_<app-id>` variable must be set per allowed app id. For example `HC_GW_ALLOWED_FNS_mewsfeed=<zome function list>`.
+One `HC_GW_ALLOWED_FNS_{app-id}` variable must be set per allowed app id. For example `HC_GW_ALLOWED_FNS_mewsfeed=<zome function list>`.
 
-The variable `HC_GW_ALLOWED_FNS_<app-id>` should permit `*` for users who don't wish to restrict access to the apps on the target Holochain conductor. Note that the gateway is doing nothing else to restrict access to functions that do write data, so opting out of this mechanism is not recommended.
+The variable `HC_GW_ALLOWED_FNS_{app-id}` should permit `*` for users who don't wish to restrict access to the apps on the target Holochain conductor. Note that the gateway is doing nothing else to restrict access to functions that do write data, so opting out of this mechanism is not recommended.
 
 ## Request processing
 
@@ -62,7 +62,7 @@ If no app is found in the initial check but the cache was populated, a fresh req
 
 At this point, we appear to have received a valid request that identifies an app running on Holochain. We should now try to issue signing credentials for ourselves.
 
-The HTTP gateway uses ClientAgentSigner to manage signing credentials for zome calls, instead of using `sodoken` directly. The gateway then uses its admin API connection to authorize these credentials for each cell via authorize*signing_credentials. The granted functions are set according to the value of HC_GW_ALLOWED_FNS*<app-id>, either as All or a specific list of functions.
+The HTTP gateway uses ClientAgentSigner to manage signing credentials for zome calls, instead of using `sodoken` directly. The gateway then uses its admin API connection to authorize these credentials for each cell via authorize_signing_credentials. The granted functions are set according to the value of HC_GW_ALLOWED_FNS_{app-id}, either as All or a specific list of functions.
 
 ### Connect to Holochain to make app calls
 
