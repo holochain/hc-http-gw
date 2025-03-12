@@ -14,7 +14,7 @@ use std::{
 pub const DEFAULT_PAYLOAD_LIMIT_BYTES: u32 = 10 * 1024;
 
 /// Default maximum number of app connections that the gateway will maintain concurrently.
-pub const DEFAULT_MAX_APP_CONNECTIONS: u32 = 500;
+pub const DEFAULT_MAX_APP_CONNECTIONS: u32 = 50;
 
 /// Default timeout for zome calls
 pub const DEFAULT_ZOME_CALL_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(10);
