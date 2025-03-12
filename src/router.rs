@@ -17,6 +17,7 @@ pub fn hc_http_gateway_router(
         configuration,
         admin_call,
         app_call,
+        app_info_cache: Default::default(),
     };
     Router::new()
         .route("/health", get(health_check))
@@ -33,13 +34,16 @@ pub mod tests {
     use crate::{
         config::{AllowedFns, Configuration, ZomeFn},
         router::hc_http_gateway_router,
-        AdminConn,
     };
-    use crate::{HcHttpGatewayError, MockAppCall};
+    use crate::{HcHttpGatewayError, MockAdminCall, MockAppCall};
     use axum::{body::Body, http::Request, Router};
+    use holochain::core::{AgentPubKey, DnaHash};
     use holochain::prelude::ExternIO;
+    use holochain::prelude::{CellId, DnaModifiersBuilder};
     use holochain_client::SerializedBytes;
+    use holochain_conductor_api::{AppInfo, AppInfoStatus, CellInfo};
     use holochain_serialized_bytes::prelude::*;
+    use holochain_types::prelude::{AppManifest, AppManifestV1};
     use http_body_util::BodyExt;
     use reqwest::StatusCode;
     use serde::{Deserialize, Serialize};
@@ -68,27 +72,67 @@ pub mod tests {
             allowed_zome_fns.insert(allowed_zome_fn);
             let restricted_fns = AllowedFns::Restricted(allowed_zome_fns);
             allowed_fns.insert("coordinator".to_string(), restricted_fns);
-            let config =
-                Configuration::try_new("ws://127.0.0.1:1", "1024", "", allowed_fns, "", "")
-                    .unwrap();
+            let config = Configuration::try_new(
+                "ws://127.0.0.1:1",
+                "1024",
+                "coordinator",
+                allowed_fns,
+                "",
+                "",
+            )
+            .unwrap();
             Self::new_with_config(config)
         }
 
         pub fn new_with_config(config: Configuration) -> Self {
+            let mut admin_call = MockAdminCall::new();
+            admin_call.expect_list_apps().returning(|| {
+                Box::pin(async {
+                    let agent_pub_key = AgentPubKey::from_raw_32(vec![17; 32]);
+                    Ok(vec![AppInfo {
+                        installed_app_id: "coordinator".to_string(),
+                        cell_info: [(
+                            "test-role".to_string(),
+                            vec![CellInfo::new_provisioned(
+                                CellId::new(
+                                    DnaHash::from_raw_32(vec![1; 32]),
+                                    agent_pub_key.clone(),
+                                ),
+                                DnaModifiersBuilder::default()
+                                    .network_seed("".to_string())
+                                    .build()
+                                    .unwrap(),
+                                "test-dna".to_string(),
+                            )],
+                        )]
+                        .into_iter()
+                        .collect(),
+                        status: AppInfoStatus::Running,
+                        agent_pub_key,
+                        manifest: AppManifest::V1(AppManifestV1 {
+                            name: "coordinator".to_string(),
+                            roles: Vec::with_capacity(0),
+                            description: None,
+                            allow_deferred_memproofs: false,
+                        }),
+                    }])
+                })
+            });
+
             let mut app_call = MockAppCall::new();
             app_call.expect_handle_zome_call().returning(|_, _| {
                 Box::pin(async {
                     let response = TestZomeResponse {
                         hello: "world".to_string(),
                     };
-                    Ok(ExternIO::encode(response)
-                        .map_err(|e| HcHttpGatewayError::RequestMalformed(e.to_string()))?)
+                    ExternIO::encode(response)
+                        .map_err(|e| HcHttpGatewayError::RequestMalformed(e.to_string()))
                 })
             });
 
             Self(hc_http_gateway_router(
                 config,
-                Arc::new(AdminConn),
+                Arc::new(admin_call),
                 Arc::new(app_call),
             ))
         }

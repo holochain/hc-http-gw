@@ -1,6 +1,7 @@
 #![deny(missing_docs)]
 //! # Holochain HTTP gateway
 
+mod app_selection;
 mod cli;
 pub mod config;
 mod error;

@@ -1,6 +1,6 @@
 use crate::{AdminCall, HcHttpGatewayResult};
 use futures::future::BoxFuture;
-use holochain_client::{AuthorizeSigningCredentialsPayload, SigningCredentials};
+use holochain_client::{AppInfo, AuthorizeSigningCredentialsPayload, SigningCredentials};
 use holochain_conductor_api::{
     AppAuthenticationTokenIssued, AppInterfaceInfo, IssueAppAuthenticationTokenPayload,
 };
@@ -37,6 +37,10 @@ impl AdminCall for AdminConn {
         _allowed_origins: AllowedOrigins,
         _installed_app_id: Option<String>,
     ) -> BoxFuture<'static, HcHttpGatewayResult<u16>> {
+        todo!()
+    }
+
+    fn list_apps(&self) -> BoxFuture<'static, HcHttpGatewayResult<Vec<AppInfo>>> {
         todo!()
     }
 
