@@ -9,5 +9,6 @@ name = "coordinator1"
 
 [dependencies]
 hdk = { workspace = true }
+serde = { workspace = true }
+
 integrity = { workspace = true }
-serde = { version = "1.0.203", features = ["derive"] }

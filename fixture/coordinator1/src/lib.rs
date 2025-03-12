@@ -99,7 +99,6 @@ pub fn get_limited(request: GetWithLimitRequest) -> ExternResult<Vec<TestType>> 
     Ok(out)
 }
 
-
 fn base() -> AnyLinkableHash {
     EntryHash::from_raw_36(vec![1; 36]).into()
 }
