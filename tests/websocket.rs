@@ -4,14 +4,71 @@ use holochain_client::{AdminWebsocket, CellInfo, ConductorApiError, ExternIO, Zo
 use holochain_conductor_api::{AdminInterfaceConfig, InterfaceDriver};
 use holochain_http_gateway::test::test_tracing::initialize_testing_tracing_subscriber;
 use holochain_http_gateway::{
-    AdminConn, AllowedFns, AppConnPool, Configuration, HcHttpGatewayError, ZomeFn, HTTP_GW_ORIGIN,
+    AdminCall, AdminConn, AllowedFns, AppConnPool, Configuration, HcHttpGatewayError, ZomeFn,
+    HTTP_GW_ORIGIN,
 };
 use holochain_types::app::DisabledAppReason;
 use holochain_types::websocket::AllowedOrigins;
-use std::net::{Ipv4Addr, SocketAddr};
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::sync::Arc;
 
 mod sweet;
+
+#[tokio::test(flavor = "multi_thread")]
+async fn connect_admin_websocket() {
+    initialize_testing_tracing_subscriber();
+
+    let sweet_conductor = SweetConductor::from_standard_config().await;
+
+    let admin_port = sweet_conductor
+        .get_arbitrary_admin_websocket_port()
+        .unwrap();
+
+    let conn = AdminConn::new(SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), admin_port));
+
+    let app_list = conn.list_apps(None).await.unwrap();
+    assert!(app_list.is_empty());
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn reconnect_admin_websocket() {
+    initialize_testing_tracing_subscriber();
+
+    let mut sweet_conductor = SweetConductor::from_standard_config().await;
+
+    let admin_port = sweet_conductor
+        .get_arbitrary_admin_websocket_port()
+        .unwrap();
+
+    let conn = AdminConn::new(SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), admin_port));
+
+    let app_list = conn.list_apps(None).await.unwrap();
+    assert!(app_list.is_empty());
+
+    sweet_conductor.shutdown().await;
+
+    let list_apps_result =
+        tokio::time::timeout(std::time::Duration::from_secs(5), conn.list_apps(None))
+            .await
+            .expect("Timed out");
+    assert!(list_apps_result.is_err());
+
+    sweet_conductor.startup().await;
+
+    sweet_conductor
+        .clone()
+        .add_admin_interfaces(vec![AdminInterfaceConfig {
+            driver: InterfaceDriver::Websocket {
+                port: admin_port,
+                allowed_origins: AllowedOrigins::Any,
+            },
+        }])
+        .await
+        .unwrap();
+
+    let app_list = conn.list_apps(None).await.unwrap();
+    assert!(app_list.is_empty());
+}
 
 #[tokio::test(flavor = "multi_thread")]
 async fn connect_app_websocket() {
