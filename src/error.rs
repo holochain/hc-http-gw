@@ -15,7 +15,7 @@ pub enum HcHttpGatewayError {
     #[error("Request is malformed: {0}")]
     RequestMalformed(String),
     /// Calling an unauthorized function
-    #[error("Function {fn_name} in zome {zome_name} in app {app_id} is not authorized")]
+    #[error("Function {fn_name} in zome {zome_name} in app {app_id} is not allowed")]
     UnauthorizedFunction {
         /// App id
         app_id: String,
