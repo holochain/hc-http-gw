@@ -44,6 +44,7 @@ impl HcHttpGatewayService {
         tracing::info!("Configuration: {:?}", configuration);
 
         let router = hc_http_gateway_router(configuration, admin_call, app_call);
+
         let address = SocketAddr::new(address.into(), port);
         let listener = TcpListener::bind(address).await?;
 

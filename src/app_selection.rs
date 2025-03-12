@@ -1,5 +1,5 @@
 use holochain_client::AppInfo;
-use holochain_conductor_api::CellInfo;
+use holochain_conductor_api::{AppStatusFilter, CellInfo};
 use holochain_types::dna::DnaHash;
 use std::ops::Deref;
 use std::sync::Arc;
@@ -51,10 +51,13 @@ pub async fn try_get_valid_app(
         Some(app_info) => app_info,
         None => {
             let mut installed_apps = installed_apps.write().await;
-            let new_installed_apps = admin_call.list_apps().await.unwrap_or_else(|e| {
-                tracing::error!("Failed to get a list of apps from Holochain: {}", e);
-                vec![]
-            });
+            let new_installed_apps = admin_call
+                .list_apps(Some(AppStatusFilter::Running))
+                .await
+                .unwrap_or_else(|e| {
+                    tracing::error!("Failed to get a list of apps from Holochain: {}", e);
+                    vec![]
+                });
 
             if !new_installed_apps.is_empty() {
                 // If we got a response from Holochain, then we have a chance of finding the app.
@@ -160,7 +163,7 @@ mod tests {
         let mut admin_websocket = MockAdminCall::new();
         admin_websocket
             .expect_list_apps()
-            .returning(|| Box::pin(async { Ok(Vec::new()) }))
+            .returning(|_| Box::pin(async { Ok(Vec::new()) }))
             .once();
 
         let result = try_get_valid_app(
@@ -227,7 +230,7 @@ mod tests {
         let app_info_cloned = app_info.clone();
         admin_websocket
             .expect_list_apps()
-            .returning(move || {
+            .returning(move |_| {
                 let app_info = app_info_cloned.clone();
                 Box::pin(async { Ok(vec![app_info]) })
             })
@@ -258,7 +261,7 @@ mod tests {
         let installed_apps_cloned = installed_apps.clone();
         admin_websocket
             .expect_list_apps()
-            .returning(move || {
+            .returning(move |_| {
                 let installed_apps = installed_apps_cloned.clone();
                 Box::pin(async move { Ok(installed_apps.clone()) })
             })
@@ -286,7 +289,7 @@ mod tests {
         let new_installed_apps_cloned = new_installed_apps.clone();
         admin_websocket
             .expect_list_apps()
-            .returning(move || {
+            .returning(move |_| {
                 let new_installed_apps = new_installed_apps_cloned.clone();
                 Box::pin(async move { Ok(new_installed_apps.clone()) })
             })
@@ -319,7 +322,7 @@ mod tests {
         let new_installed_apps_cloned = new_installed_apps.clone();
         admin_websocket
             .expect_list_apps()
-            .returning(move || {
+            .returning(move |_| {
                 let new_installed_apps = new_installed_apps_cloned.clone();
                 Box::pin(async move { Ok(new_installed_apps.clone()) })
             })

@@ -2,6 +2,7 @@ use anyhow::Context;
 use clap::Parser;
 use holochain_http_gateway::{
     config::{AllowedAppIds, AllowedFns, Configuration},
+    resolve_address_from_url,
     AdminConn, AppConnPool, HcHttpGatewayArgs, HcHttpGatewayService,
 };
 use std::sync::Arc;
@@ -18,11 +19,11 @@ const DEFAULT_LOG_LEVEL: &str = "info";
 async fn main() -> anyhow::Result<()> {
     initialize_tracing_subscriber()?;
 
-    let configuration = load_config_from_env()?;
+    let configuration = load_config_from_env().await?;
 
     let args = HcHttpGatewayArgs::parse();
 
-    let admin_call = Arc::new(AdminConn);
+    let admin_call = Arc::new(AdminConn::new(configuration.admin_socket_addr));
     let app_call = Arc::new(AppConnPool::new(configuration.clone(), admin_call.clone()));
 
     let service =
@@ -34,8 +35,12 @@ async fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-fn load_config_from_env() -> anyhow::Result<Configuration> {
+async fn load_config_from_env() -> anyhow::Result<Configuration> {
     let admin_ws_url = env::var("HC_GW_ADMIN_WS_URL").context("HC_GW_ADMIN_WS_URL is not set")?;
+    let admin_socket_addr = resolve_address_from_url(&admin_ws_url)
+        .await
+        .context("Failed to extract socket address from the admin websocket URL")?;
+    tracing::info!("Resolved admin socket address: {}", admin_socket_addr);
 
     let payload_limit_bytes = env::var("HC_GW_PAYLOAD_LIMIT_BYTES").unwrap_or_default();
 
@@ -56,7 +61,7 @@ fn load_config_from_env() -> anyhow::Result<Configuration> {
     let zome_call_timeout = env::var("HC_GW_ZOME_CALL_TIMEOUT_MS").unwrap_or_default();
 
     let config = Configuration::try_new(
-        &admin_ws_url,
+        admin_socket_addr,
         &payload_limit_bytes,
         &allowed_app_ids,
         allowed_fns,
