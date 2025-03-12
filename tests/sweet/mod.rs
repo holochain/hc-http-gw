@@ -9,11 +9,17 @@ use std::path::PathBuf;
 use std::sync::Arc;
 // TODO `SerializedBytes` has an unclean macro reference to `holochain_serial!`
 use holochain_serialized_bytes::prelude::*;
+use holochain_types::prelude::ActionHashB64;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, SerializedBytes)]
 pub struct TestType {
     pub value: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CreateResponse {
+    pub created: ActionHashB64,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
