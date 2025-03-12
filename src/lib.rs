@@ -9,8 +9,10 @@ mod holochain;
 mod router;
 mod routes;
 mod service;
-pub mod tracing;
 pub mod transcode;
+
+#[cfg(any(test, feature = "test-utils"))]
+pub mod tracing;
 
 pub use cli::HcHttpGatewayArgs;
 pub use error::{HcHttpGatewayError, HcHttpGatewayResult};
