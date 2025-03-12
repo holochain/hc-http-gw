@@ -51,14 +51,15 @@ pub struct Configuration {
 }
 
 impl Configuration {
-    /// Creates a new `Configuration` by parsing and validating the provided string inputs.
+    /// Creates a new [`Configuration`] by parsing and validating the provided string inputs.
     ///
     /// This constructor ensures that all components of the configuration are properly
     /// parsed and validated, including:
-    /// * The admin WebSocket URL is a valid URL
     /// * The payload limit bytes can be parsed as a number
-    /// * The app IDs are correctly parsed from a comma-separated string
+    /// * The allowed app IDs are correctly parsed from a comma-separated string
     /// * Every app ID listed has a corresponding entry in the allowed_fns map
+    /// * The max app connections can be parsed as a number
+    /// * The zome call timeout can be parsed as a number
     pub fn try_new(
         admin_socket_addr: SocketAddr,
         payload_limit_bytes: &str,
