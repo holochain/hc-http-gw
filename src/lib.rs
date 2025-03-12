@@ -1,5 +1,6 @@
 #![deny(missing_docs)]
 //! # Holochain HTTP gateway
+#![doc = include_str!("../spec.md")]
 
 mod app_selection;
 mod cli;
