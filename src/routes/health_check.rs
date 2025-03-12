@@ -5,7 +5,7 @@ pub async fn health_check() -> &'static str {
 
 #[cfg(test)]
 mod tests {
-    use crate::router::tests::TestRouter;
+    use crate::test::router::TestRouter;
     use reqwest::StatusCode;
 
     #[tokio::test]

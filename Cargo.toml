@@ -21,6 +21,7 @@ futures = "0.3"
 holochain_client = "0.6.2"
 holochain_conductor_api = "0.4.1"
 holochain_types = "0.4.1"
+holochain_websocket = "0.4.1"
 serde = { version = "=1.0.203", features = ["derive"] }
 serde_json = "1.0.140"
 thiserror = "2.0.11"
@@ -28,7 +29,6 @@ tokio = { version = "1.43.0", features = ["rt-multi-thread", "macros", "net"] }
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = [
   "env-filter",
-  "json",
   "registry",
 ] }
 url = "2.5"
@@ -37,10 +37,15 @@ url = "2.5"
 holochain_http_gateway = { path = ".", features = ["test-utils"] }
 
 assert2 = "0.3.15"
-holochain = { version = "0.4.1", features = ["sweettest"] }
+holochain = { version = "0.4.1", default-features = false, features = [
+  "sqlite-encrypted",
+  "tx5",
+  "wasmer_sys",
+  "sweettest",
+] }
 http-body-util = "0.1.2"
 mockall = "0.13"
-reqwest = { version = "0.12", features = ["rustls-tls"] }
+reqwest = { version = "0.12", default-features = false }
 tower = "0.5.2"
 holochain_serialized_bytes = "0.0.55"
 

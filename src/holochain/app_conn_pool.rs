@@ -9,6 +9,7 @@ use holochain_client::{
 };
 use holochain_types::app::InstalledAppId;
 use holochain_types::websocket::AllowedOrigins;
+use holochain_websocket::WebsocketError;
 use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::sync::{Arc, RwLock};
@@ -83,7 +84,18 @@ impl AppConnPool {
                 Ok(response) => {
                     return Ok(response);
                 }
-                Err(HcHttpGatewayError::HolochainError(ConductorApiError::WebsocketError(e))) => {
+                Err(HcHttpGatewayError::HolochainError(
+                    e @ ConductorApiError::WebsocketError(
+                        // A websocket closed by the other side we definitely want to re-open
+                        WebsocketError::Close(_)
+                        // An error from the tungstenite crate or an I/O error probably means we want to re-open.
+                        // Choose to be cautious and re-open even if the error might be temporary.
+                        | WebsocketError::Websocket(_)
+                        | WebsocketError::Io(_)
+                        // Everything under "Other" is expected to be unrecoverable
+                        | WebsocketError::Other(_),
+                    ),
+                )) => {
                     tracing::warn!(
                         ?e,
                         "Websocket error while executing call, attempting to reconnect",
