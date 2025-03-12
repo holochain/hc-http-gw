@@ -26,7 +26,6 @@
         pkgs.mkShell {
           packages = (with inputs'.holonix.packages; [
             holochain
-            lair-keystore
           ]) ++ [
             pkgs.perl
             pkgs.go
