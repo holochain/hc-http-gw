@@ -1,7 +1,7 @@
 use crate::HcHttpGatewayResult;
 use futures::future::BoxFuture;
 use holochain_client::{
-    AppInfo, AppWebsocket, AuthorizeSigningCredentialsPayload, ExternIO, SigningCredentials,
+    AppInfo, AuthorizeSigningCredentialsPayload, CellId, ExternIO, SigningCredentials,
 };
 use holochain_conductor_api::{
     AppAuthenticationTokenIssued, AppInterfaceInfo, AppStatusFilter,
@@ -62,6 +62,9 @@ pub trait AppCall: std::fmt::Debug + Send + Sync {
     fn handle_zome_call(
         &self,
         installed_app_id: InstalledAppId,
-        execute: fn(AppWebsocket) -> BoxFuture<'static, HcHttpGatewayResult<ExternIO>>,
+        cell_id: CellId,
+        zome_name: String,
+        fn_name: String,
+        payload: ExternIO,
     ) -> BoxFuture<'static, HcHttpGatewayResult<ExternIO>>;
 }

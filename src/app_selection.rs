@@ -119,7 +119,7 @@ fn choose_unique_app<'a>(
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use super::*;
     use crate::MockAdminCall;
     use holochain::prelude::DnaModifiersBuilder;
@@ -128,7 +128,7 @@ mod tests {
     use std::str::FromStr;
     use tokio::sync::RwLock;
 
-    fn new_fake_app_info(app_id: impl ToString, dna_hash: DnaHash) -> AppInfo {
+    pub fn new_fake_app_info(app_id: impl ToString, dna_hash: DnaHash) -> AppInfo {
         AppInfo {
             installed_app_id: app_id.to_string(),
             cell_info: [(

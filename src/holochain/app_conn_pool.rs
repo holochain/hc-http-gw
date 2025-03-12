@@ -3,9 +3,9 @@ use crate::holochain::{AdminCall, AppCall};
 use crate::{HcHttpGatewayError, HcHttpGatewayResult};
 use futures::future::BoxFuture;
 use holochain_client::{
-    AppWebsocket, AuthorizeSigningCredentialsPayload, CellInfo, ClientAgentSigner,
+    AppWebsocket, AuthorizeSigningCredentialsPayload, CellId, CellInfo, ClientAgentSigner,
     ConductorApiError, ConnectRequest, ExternIO, GrantedFunctions,
-    IssueAppAuthenticationTokenPayload, Timestamp, WebsocketConfig,
+    IssueAppAuthenticationTokenPayload, Timestamp, WebsocketConfig, ZomeCallTarget,
 };
 use holochain_types::app::InstalledAppId;
 use holochain_types::websocket::AllowedOrigins;
@@ -328,9 +328,35 @@ impl AppCall for AppConnPool {
     fn handle_zome_call(
         &self,
         installed_app_id: InstalledAppId,
-        execute: fn(AppWebsocket) -> BoxFuture<'static, HcHttpGatewayResult<ExternIO>>,
+        cell_id: CellId,
+        zome_name: String,
+        fn_name: String,
+        payload: ExternIO,
     ) -> BoxFuture<'static, HcHttpGatewayResult<ExternIO>> {
         let this = self.clone();
-        Box::pin(async move { this.call(installed_app_id, execute).await })
+        Box::pin(async move {
+            this.call(installed_app_id, |app_ws| {
+                let cell_id = cell_id.clone();
+                let zome_name = zome_name.clone();
+                let fn_name = fn_name.clone();
+                let payload = payload.clone();
+                Box::pin(async move {
+                    let result = app_ws
+                        .call_zome(
+                            ZomeCallTarget::CellId(cell_id),
+                            zome_name.into(),
+                            fn_name.into(),
+                            payload,
+                        )
+                        .await;
+                    if let Err(err) = &result {
+                        tracing::debug!(?err);
+                    }
+                    let result = result?;
+                    Ok(result)
+                })
+            })
+            .await
+        })
     }
 }

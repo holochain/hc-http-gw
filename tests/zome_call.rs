@@ -1,5 +1,4 @@
-use crate::sweet::install_fixture1;
-use base64::{prelude::BASE64_URL_SAFE, Engine};
+use crate::sweet::{init_zome, install_fixture1};
 use holochain::sweettest::SweetConductor;
 use holochain_conductor_api::CellInfo;
 use holochain_http_gateway::test_tracing::initialize_testing_tracing_subscriber;
@@ -16,6 +15,9 @@ async fn zome_call_with_valid_params() {
     let sweet_conductor = SweetConductor::from_standard_config().await;
 
     let app = install_fixture1(sweet_conductor.clone(), None)
+        .await
+        .unwrap();
+    init_zome(sweet_conductor.clone(), &app, "coordinator1".to_string())
         .await
         .unwrap();
 
@@ -42,16 +44,13 @@ async fn zome_call_with_valid_params() {
 
     let app = TestApp::spawn(sweet_conductor.clone()).await;
 
-    let payload = r#"null"#;
-    let payload = BASE64_URL_SAFE.encode(payload);
-
     let response = app
         .call_zome(
             cell_id.dna_hash(),
             "fixture1",
             "coordinator1",
             "get_all_1",
-            Some(&payload),
+            None,
         )
         .await;
     assert_eq!(response.status(), StatusCode::OK);
