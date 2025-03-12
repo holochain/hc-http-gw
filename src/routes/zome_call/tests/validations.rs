@@ -99,7 +99,7 @@ async fn unauthorized_function_name_is_rejected() {
     assert_eq!(
         body,
         format!(
-            r#"{{"error":"Function {fn_name} in zome zome_name in app coordinator is not authorized"}}"#
+            r#"{{"error":"Function {fn_name} in zome zome_name in app coordinator is not allowed"}}"#
         )
     );
 }
