@@ -64,7 +64,7 @@ HC_GW_ADMIN_WS_URL="ws://localhost:41191" HC_GW_ALLOWED_APP_IDS="fixture1" HC_GW
 In another new terminal, also in the Nix `devShell`, check that we get a response to the health-check:
 
 ```bash
-curl localhost:8090/health
+curl -i localhost:8090/health
 ```
 
 ```console
