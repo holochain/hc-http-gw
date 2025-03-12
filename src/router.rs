@@ -32,31 +32,19 @@ pub fn hc_http_gateway_router(
 
 #[cfg(test)]
 pub mod tests {
+    use crate::MockAppCall;
     use crate::{
         config::{AllowedFns, Configuration, ZomeFn},
         router::hc_http_gateway_router,
+        AdminCall, AppCall, MockAdminCall,
     };
-    use crate::{HcHttpGatewayError, MockAdminCall, MockAppCall};
     use axum::{body::Body, http::Request, Router};
-    use holochain::core::{AgentPubKey, DnaHash};
-    use holochain::prelude::ExternIO;
-    use holochain::prelude::{CellId, DnaModifiersBuilder};
-    use holochain_client::SerializedBytes;
-    use holochain_conductor_api::{AppInfo, AppInfoStatus, CellInfo};
-    use holochain_serialized_bytes::prelude::*;
-    use holochain_types::prelude::{AppManifest, AppManifestV1};
     use http_body_util::BodyExt;
     use reqwest::StatusCode;
-    use serde::{Deserialize, Serialize};
     use std::collections::{HashMap, HashSet};
     use std::net::{Ipv4Addr, SocketAddr};
     use std::sync::Arc;
     use tower::ServiceExt;
-
-    #[derive(Debug, Serialize, Deserialize, SerializedBytes)]
-    pub struct TestZomeResponse {
-        hello: String,
-    }
 
     pub struct TestRouter(Router);
 
@@ -88,56 +76,17 @@ pub mod tests {
         }
 
         pub fn new_with_config(config: Configuration) -> Self {
-            let mut admin_call = MockAdminCall::new();
-            admin_call.expect_list_apps().returning(|_| {
-                Box::pin(async {
-                    let agent_pub_key = AgentPubKey::from_raw_32(vec![17; 32]);
-                    Ok(vec![AppInfo {
-                        installed_app_id: "coordinator".to_string(),
-                        cell_info: [(
-                            "test-role".to_string(),
-                            vec![CellInfo::new_provisioned(
-                                CellId::new(
-                                    DnaHash::from_raw_32(vec![1; 32]),
-                                    agent_pub_key.clone(),
-                                ),
-                                DnaModifiersBuilder::default()
-                                    .network_seed("".to_string())
-                                    .build()
-                                    .unwrap(),
-                                "test-dna".to_string(),
-                            )],
-                        )]
-                        .into_iter()
-                        .collect(),
-                        status: AppInfoStatus::Running,
-                        agent_pub_key,
-                        manifest: AppManifest::V1(AppManifestV1 {
-                            name: "coordinator".to_string(),
-                            roles: Vec::with_capacity(0),
-                            description: None,
-                            allow_deferred_memproofs: false,
-                        }),
-                    }])
-                })
-            });
+            let app_call = Arc::new(MockAppCall::new());
+            let admin_call = Arc::new(MockAdminCall::new());
+            Self(hc_http_gateway_router(config, admin_call, app_call))
+        }
 
-            let mut app_call = MockAppCall::new();
-            app_call.expect_handle_zome_call().returning(|_, _| {
-                Box::pin(async {
-                    let response = TestZomeResponse {
-                        hello: "world".to_string(),
-                    };
-                    ExternIO::encode(response)
-                        .map_err(|e| HcHttpGatewayError::RequestMalformed(e.to_string()))
-                })
-            });
-
-            Self(hc_http_gateway_router(
-                config,
-                Arc::new(admin_call),
-                Arc::new(app_call),
-            ))
+        pub fn new_with_config_and_interfaces(
+            config: Configuration,
+            admin_call: Arc<dyn AdminCall>,
+            app_call: Arc<dyn AppCall>,
+        ) -> Self {
+            Self(hc_http_gateway_router(config, admin_call, app_call))
         }
 
         // Send request and return status code and body of response.
