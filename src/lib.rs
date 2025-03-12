@@ -12,7 +12,7 @@ mod service;
 mod transcode;
 
 #[cfg(any(test, feature = "test-utils"))]
-pub mod test_tracing;
+pub mod test;
 
 pub use config::*;
 pub use error::{HcHttpGatewayError, HcHttpGatewayResult};

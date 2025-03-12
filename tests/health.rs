@@ -1,5 +1,5 @@
 use holochain::sweettest::SweetConductor;
-use holochain_http_gateway::test_tracing::initialize_testing_tracing_subscriber;
+use holochain_http_gateway::test::test_tracing::initialize_testing_tracing_subscriber;
 use reqwest::StatusCode;
 use setup::TestApp;
 

@@ -119,41 +119,12 @@ fn choose_unique_app<'a>(
 }
 
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use super::*;
+    use crate::test::data;
     use crate::MockAdminCall;
-    use holochain::prelude::DnaModifiersBuilder;
-    use holochain_client::{AgentPubKey, CellId};
-    use holochain_types::app::{AppManifest, AppStatus};
     use std::str::FromStr;
     use tokio::sync::RwLock;
-
-    pub fn new_fake_app_info(app_id: impl ToString, dna_hash: DnaHash) -> AppInfo {
-        AppInfo {
-            installed_app_id: app_id.to_string(),
-            cell_info: [(
-                "test-role".to_string(),
-                vec![CellInfo::new_provisioned(
-                    CellId::new(dna_hash, AgentPubKey::from_raw_32(vec![1; 32])),
-                    DnaModifiersBuilder::default()
-                        .network_seed("".to_string())
-                        .build()
-                        .unwrap(),
-                    "test-dna".to_string(),
-                )],
-            )]
-            .into_iter()
-            .collect(),
-            status: AppStatus::Running.into(),
-            agent_pub_key: AgentPubKey::from_raw_32([1; 32].to_vec()),
-            manifest: AppManifest::V1(holochain_types::app::AppManifestV1 {
-                name: Default::default(),
-                description: Default::default(),
-                roles: Vec::with_capacity(0),
-                allow_deferred_memproofs: Default::default(),
-            }),
-        }
-    }
 
     #[tokio::test]
     async fn returns_error_if_app_not_installed() {
@@ -181,7 +152,7 @@ pub mod tests {
     #[tokio::test]
     async fn returns_error_if_app_installed_but_not_allowed() {
         let dna_hash = DnaHash::from_raw_32([1; 32].to_vec());
-        let installed_apps = vec![new_fake_app_info("some_app_id", dna_hash.clone())];
+        let installed_apps = vec![data::new_test_app_info("some_app_id", dna_hash.clone())];
         let installed_apps = Arc::new(RwLock::new(installed_apps));
         let allowed_apps = AllowedAppIds::from_str("other_app_id").unwrap();
         let admin_websocket = MockAdminCall::new();
@@ -201,7 +172,7 @@ pub mod tests {
     #[tokio::test]
     async fn returns_ok_if_app_is_installed_and_allowed() {
         let dna_hash = DnaHash::from_raw_32([1; 32].to_vec());
-        let app_info = new_fake_app_info("some_app_id", dna_hash.clone());
+        let app_info = data::new_test_app_info("some_app_id", dna_hash.clone());
         let installed_apps = vec![app_info.clone()];
         let installed_apps = Arc::new(RwLock::new(installed_apps));
         let allowed_apps = AllowedAppIds::from_str("some_app_id").unwrap();
@@ -226,7 +197,7 @@ pub mod tests {
         let installed_apps = Arc::new(RwLock::new(installed_apps));
         let allowed_apps = AllowedAppIds::from_str("some_app_id").unwrap();
         let mut admin_websocket = MockAdminCall::new();
-        let app_info = new_fake_app_info("some_app_id", dna_hash.clone());
+        let app_info = data::new_test_app_info("some_app_id", dna_hash.clone());
         let app_info_cloned = app_info.clone();
         admin_websocket
             .expect_list_apps()
@@ -252,8 +223,8 @@ pub mod tests {
     async fn returns_error_if_multiple_apps_match() {
         let dna_hash = DnaHash::from_raw_32([1; 32].to_vec());
         let installed_apps = vec![
-            new_fake_app_info("app_1", dna_hash.clone()),
-            new_fake_app_info("app_1", dna_hash.clone()),
+            data::new_test_app_info("app_1", dna_hash.clone()),
+            data::new_test_app_info("app_1", dna_hash.clone()),
         ];
         let installed_apps_cache = Arc::new(RwLock::new(installed_apps.clone()));
         let allowed_apps = AllowedAppIds::from_str("app_1,app_2").unwrap();
@@ -282,7 +253,7 @@ pub mod tests {
     #[tokio::test]
     async fn returns_error_if_coordinator_identifier_does_not_match_app_id() {
         let dna_hash = DnaHash::from_raw_32([1; 32].to_vec());
-        let installed_apps = vec![new_fake_app_info("app_2", dna_hash.clone())];
+        let installed_apps = vec![data::new_test_app_info("app_2", dna_hash.clone())];
         let installed_apps_cache = Arc::new(RwLock::new(installed_apps.clone()));
         let allowed_apps = AllowedAppIds::from_str("app_2").unwrap();
         let mut admin_websocket = MockAdminCall::new();
@@ -311,8 +282,8 @@ pub mod tests {
     async fn returns_error_if_matching_coordinator_identifier_not_in_allowed_list() {
         let dna_hash = DnaHash::from_raw_32([1; 32].to_vec());
         let installed_apps_cache = Arc::new(RwLock::new(vec![
-            new_fake_app_info("app_1", dna_hash.clone()),
-            new_fake_app_info("app_2", dna_hash.clone()),
+            data::new_test_app_info("app_1", dna_hash.clone()),
+            data::new_test_app_info("app_2", dna_hash.clone()),
         ]));
         let allowed_apps = AllowedAppIds::from_str("app_2").unwrap();
         let admin_websocket = MockAdminCall::new();
@@ -335,7 +306,7 @@ pub mod tests {
         let installed_apps: AppInfoCache = Default::default();
         let allowed_apps = AllowedAppIds::from_str("app_1").unwrap();
         let mut admin_websocket = MockAdminCall::new();
-        let new_installed_apps = vec![new_fake_app_info("app_1", dna_hash.clone())];
+        let new_installed_apps = vec![data::new_test_app_info("app_1", dna_hash.clone())];
         let new_installed_apps_cloned = new_installed_apps.clone();
         admin_websocket
             .expect_list_apps()
@@ -363,7 +334,7 @@ pub mod tests {
         let dna_hash = DnaHash::from_raw_32([1; 32].to_vec());
         let allowed_apps = AllowedAppIds::from_str("app_1").unwrap();
         let mut admin_websocket = MockAdminCall::new();
-        let new_installed_apps = vec![new_fake_app_info("app_1", dna_hash.clone())];
+        let new_installed_apps = vec![data::new_test_app_info("app_1", dna_hash.clone())];
 
         // Cache is empty so...
         let installed_apps_cache: AppInfoCache = Default::default();

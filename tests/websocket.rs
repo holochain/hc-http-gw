@@ -2,7 +2,7 @@ use crate::sweet::{init_zome, install_fixture1, install_fixture2, TestType};
 use holochain::sweettest::SweetConductor;
 use holochain_client::{AdminWebsocket, CellInfo, ConductorApiError, ExternIO, ZomeCallTarget};
 use holochain_conductor_api::{AdminInterfaceConfig, InterfaceDriver};
-use holochain_http_gateway::test_tracing::initialize_testing_tracing_subscriber;
+use holochain_http_gateway::test::test_tracing::initialize_testing_tracing_subscriber;
 use holochain_http_gateway::{
     AdminConn, AllowedFns, AppConnPool, Configuration, HcHttpGatewayError, ZomeFn, HTTP_GW_ORIGIN,
 };
