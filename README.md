@@ -1,5 +1,9 @@
 # Holochain HTTP Gateway
 
+[![Crate](https://img.shields.io/crates/v/holochain_http_gateway.svg)](https://crates.io/crates/holochain_http_gateway)
+[![API Docs](https://docs.rs/holochain_http_gateway/badge.svg)](https://docs.rs/holochain_http_gateway)
+[![Discord](https://img.shields.io/badge/Discord-blue.svg?style=flat-square)](https://discord.gg/k55DS5dmPH)
+
 The Holochain HTTP Gateway for providing a way to bridge from the web2 world into Holochain
 
 ## Running HTTP Gateway locally
@@ -53,7 +57,7 @@ hc sandbox call install-app fixture/package/happ1/fixture1.happ
 ```
 
 Now run the gateway, setting the address of the admin websocket to `localhost`,
-the port to the `"admin_port"` that was printed when running the sandboxed
+the port to the `admin_port` that was printed when running the sandboxed
 conductor, the allowed apps to the installed fixture and the allowed
 functions to the functions from the test fixture.
 
