@@ -1,6 +1,7 @@
-use crate::sweet::{init_zome, install_fixture1, install_fixture2, GetWithLimitRequest, TestType};
+use crate::sweet::{
+    init_zome, install_fixture1, install_fixture2, CreateResponse, GetWithLimitRequest, TestType,
+};
 use base64::Engine;
-use holochain::core::ActionHash;
 use holochain::prelude::{CellId, DnaHash};
 use holochain::sweettest::SweetConductor;
 use holochain_conductor_api::CellInfo;
@@ -57,7 +58,7 @@ async fn respond_with_data() {
     // Create some data
     for _ in 0..3 {
         sweet_conductor
-            .easy_call_zome::<_, ActionHash, _>(
+            .easy_call_zome::<_, CreateResponse, _>(
                 &app.agent_key,
                 None,
                 cell_id.clone(),
@@ -100,7 +101,7 @@ async fn get_data_with_agent_key_payload() {
     // Create some data
     for _ in 0..3 {
         sweet_conductor
-            .easy_call_zome::<_, ActionHash, _>(
+            .easy_call_zome::<_, CreateResponse, _>(
                 &app.agent_key,
                 None,
                 cell_id.clone(),
@@ -143,7 +144,7 @@ async fn get_data_with_object_payload() {
     // Create some data
     for _ in 0..3 {
         sweet_conductor
-            .easy_call_zome::<_, ActionHash, _>(
+            .easy_call_zome::<_, CreateResponse, _>(
                 &app.agent_key,
                 None,
                 cell_id.clone(),
@@ -186,7 +187,7 @@ async fn get_data_from_multiple_apps() {
     // Create some data
     for _ in 0..2 {
         sweet_conductor
-            .easy_call_zome::<_, ActionHash, _>(
+            .easy_call_zome::<_, CreateResponse, _>(
                 &app_1.agent_key,
                 None,
                 cell_id_1.clone(),
@@ -206,7 +207,7 @@ async fn get_data_from_multiple_apps() {
     // Create some data
     for _ in 0..3 {
         sweet_conductor
-            .easy_call_zome::<_, ActionHash, _>(
+            .easy_call_zome::<_, CreateResponse, _>(
                 &app_2.agent_key,
                 None,
                 cell_id_2.clone(),
