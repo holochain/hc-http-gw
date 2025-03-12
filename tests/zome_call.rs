@@ -1,4 +1,4 @@
-use crate::sweet::install_fixture1;
+use crate::sweet::{init_zome, install_fixture1};
 use holochain::sweettest::SweetConductor;
 use holochain_conductor_api::CellInfo;
 use holochain_http_gateway::test_tracing::initialize_testing_tracing_subscriber;
@@ -15,6 +15,9 @@ async fn zome_call_with_valid_params() {
     let sweet_conductor = SweetConductor::from_standard_config().await;
 
     let app = install_fixture1(sweet_conductor.clone(), None)
+        .await
+        .unwrap();
+    init_zome(sweet_conductor.clone(), &app, "coordinator1".to_string())
         .await
         .unwrap();
 
