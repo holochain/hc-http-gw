@@ -64,8 +64,12 @@ pub async fn try_get_valid_app(
 
                 let mut installed_apps = installed_apps.write().await;
                 *installed_apps = new_installed_apps.clone();
-                let installed_apps = installed_apps.downgrade();
-                choose_unique_app(&dna_hash, &coordinator_identifier, &installed_apps)?.clone()
+                choose_unique_app(
+                    &dna_hash,
+                    &coordinator_identifier,
+                    &installed_apps.downgrade(),
+                )?
+                .clone()
             } else {
                 // We either couldn't get a response from Holochain or the response was empty.
                 // In either case, we can't find the app.
