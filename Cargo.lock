@@ -2701,7 +2701,7 @@ checksum = "be0aa773b74c40ef5e4e02f414d8cbfc4e92520a93511055a3fbccc12d2dd045"
 
 [[package]]
 name = "holochain_http_gateway"
-version = "0.1.0-alpha.0"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "assert2",
