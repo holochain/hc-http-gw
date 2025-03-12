@@ -12,7 +12,6 @@ use serde::Deserialize;
 const MAX_IDENTIFIER_CHARS: u8 = 100;
 
 #[derive(Debug, Deserialize)]
-#[allow(unused, reason = "Temporarily unused fields")]
 pub struct ZomeCallParams {
     dna_hash: DnaHash,
     coordinator_identifier: String,

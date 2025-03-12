@@ -19,15 +19,7 @@ pub struct HcHttpGatewayService {
 #[derive(Debug, Clone)]
 pub struct AppState {
     pub configuration: Configuration,
-    #[allow(
-        dead_code,
-        reason = "This will be used when we start making zome calls"
-    )]
     pub admin_call: Arc<dyn AdminCall>,
-    #[allow(
-        dead_code,
-        reason = "This will be used when we start making zome calls"
-    )]
     pub app_call: Arc<dyn AppCall>,
     pub app_info_cache: AppInfoCache,
 }
