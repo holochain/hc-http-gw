@@ -38,10 +38,17 @@ url = "2.5"
 holochain_http_gateway = { path = ".", features = ["test-utils"] }
 
 assert2 = "0.3.15"
-holochain = { version = "0.4.1", features = ["sweettest"] }
+holochain = { version = "0.4.1", default-features = false, features = [
+  "sqlite-encrypted",
+  "tx5",
+  "wasmer_sys",
+  "sweettest",
+] }
 http-body-util = "0.1.2"
 mockall = "0.13"
-reqwest = { version = "0.12", features = ["rustls-tls"] }
+reqwest = { version = "0.12", default-features = false, features = [
+  "rustls-tls",
+] }
 tower = "0.5.2"
 holochain_serialized_bytes = "0.0.55"
 
