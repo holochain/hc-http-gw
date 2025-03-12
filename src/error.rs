@@ -4,6 +4,8 @@ use crate::app_selection::AppSelectionError;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Json;
+use holochain_client::ConductorApiError;
+use holochain_conductor_api::ExternalApiWireError;
 use serde::{Deserialize, Serialize};
 
 /// Core HTTP Gateway error type
@@ -72,6 +74,9 @@ impl HcHttpGatewayError {
             HcHttpGatewayError::AppSelectionError(AppSelectionError::MultipleMatching) => {
                 (StatusCode::INTERNAL_SERVER_ERROR, self.to_string())
             }
+            HcHttpGatewayError::HolochainError(ConductorApiError::ExternalApiWireError(
+                ExternalApiWireError::RibosomeError(e),
+            )) => (StatusCode::INTERNAL_SERVER_ERROR, e),
             _ => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "Something went wrong".to_string(),
