@@ -25,7 +25,7 @@ Create a new sandboxed conductor with the lair keystore running in the
 Holochain process, entering a passphrase when prompted:
 
 ```bash
-hc sandbox create --in-process-lair
+hc sandbox create
 ```
 
 Run the sandboxed conductor and enter the same passphrase as entered when
@@ -57,7 +57,7 @@ hc sandbox call install-app fixture/package/happ1/fixture1.happ
 ```
 
 Now run the gateway, setting the address of the admin websocket to `localhost`,
-the port to the `"admin_port"` that was printed when running the sandboxed
+the port to the `admin_port` that was printed when running the sandboxed
 conductor, the allowed apps to the installed fixture and the allowed
 functions to the functions from the test fixture.
 
