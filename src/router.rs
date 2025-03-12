@@ -95,7 +95,7 @@ pub mod tests {
                     Box::pin(async move { Ok(ExternIO::encode(()).unwrap()) })
                 });
             let app_call = Arc::new(app_call);
-            Self(hc_http_gateway_router(config, admin_call, app_call))
+            Self::new_with_config_and_interfaces(config, admin_call, app_call)
         }
 
         pub fn new_with_config_and_interfaces(
