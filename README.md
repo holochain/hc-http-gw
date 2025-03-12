@@ -25,7 +25,7 @@ Create a new sandboxed conductor with the lair keystore running in the
 Holochain process, entering a passphrase when prompted:
 
 ```bash
-hc sandbox create
+hc sandbox create --in-process-lair
 ```
 
 Run the sandboxed conductor and enter the same passphrase as entered when
