@@ -62,8 +62,7 @@ mod tests {
         let hsb_encoded_payload = base64_json_to_hsb(None).unwrap();
 
         // Deserializing the serialized bytes to the original struct should succeed.
-        let decoded_payload = hsb_encoded_payload.decode::<()>().unwrap();
-        assert_eq!(decoded_payload, ());
+        hsb_encoded_payload.decode::<()>().unwrap();
     }
 
     #[test]
