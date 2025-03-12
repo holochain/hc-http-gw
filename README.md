@@ -38,7 +38,7 @@ machine:hc-http-gw$ hc sandbox run
 hc-sandbox: Conductor launched #!0 {"admin_port":41191,"app_ports":[]}
 ```
 
-In a separate terminal we need to install the hApps that you want to use.
+In a separate terminal, also in the Nix `devShell`, we need to install the hApps that you want to use.
 For example, we can use the test fixture (`fixture1`) but it needs to be built
 first with the `package` script:
 
