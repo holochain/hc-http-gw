@@ -32,6 +32,7 @@ pub fn hc_http_gateway_router(
 
 #[cfg(test)]
 pub mod tests {
+    use crate::app_selection::tests::new_fake_app_info;
     use crate::MockAppCall;
     use crate::{
         config::{AllowedFns, Configuration, ZomeFn},
@@ -39,6 +40,8 @@ pub mod tests {
         AdminCall, AppCall, MockAdminCall,
     };
     use axum::{body::Body, http::Request, Router};
+    use holochain::core::DnaHash;
+    use holochain_client::ExternIO;
     use http_body_util::BodyExt;
     use reqwest::StatusCode;
     use std::collections::{HashMap, HashSet};
@@ -76,8 +79,22 @@ pub mod tests {
         }
 
         pub fn new_with_config(config: Configuration) -> Self {
-            let app_call = Arc::new(MockAppCall::new());
-            let admin_call = Arc::new(MockAdminCall::new());
+            let mut admin_call = MockAdminCall::new();
+            admin_call.expect_list_apps().returning(|_| {
+                Box::pin(async {
+                    let app_info =
+                        new_fake_app_info("coordinator", DnaHash::from_raw_32(vec![1; 32]));
+                    Ok(vec![app_info])
+                })
+            });
+            let admin_call = Arc::new(admin_call);
+            let mut app_call = MockAppCall::new();
+            app_call
+                .expect_handle_zome_call()
+                .returning(|_, _, _, _, _| {
+                    Box::pin(async move { Ok(ExternIO::encode(()).unwrap()) })
+                });
+            let app_call = Arc::new(app_call);
             Self(hc_http_gateway_router(config, admin_call, app_call))
         }
 
