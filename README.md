@@ -61,7 +61,7 @@ functions to the functions from the test fixture.
 HC_GW_ADMIN_WS_URL="ws://localhost:41191" HC_GW_ALLOWED_APP_IDS="fixture1" HC_GW_ALLOWED_FNS_fixture1="coordinator1/get_all_1" cargo run
 ```
 
-In another new terminal, check that we get a response to the health-check:
+In another new terminal, also in the Nix `devShell`, check that we get a response to the health-check:
 
 ```bash
 curl localhost:8090/health
