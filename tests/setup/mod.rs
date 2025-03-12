@@ -2,8 +2,9 @@
 
 use holochain::conductor::Conductor;
 use holochain::prelude::DnaHash;
-use holochain_http_gateway::config::{AllowedFns, Configuration};
-use holochain_http_gateway::{AdminConn, AppConnPool, HcHttpGatewayService};
+use holochain_http_gateway::{
+    AdminConn, AllowedFns, AppConnPool, Configuration, HcHttpGatewayService,
+};
 use reqwest::{Client, Response};
 use std::collections::HashMap;
 use std::net::{Ipv4Addr, SocketAddr};
