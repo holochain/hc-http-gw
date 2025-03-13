@@ -1,3 +1,4 @@
+use super::DNA_HASH;
 use crate::test::router::TestRouter;
 use crate::test::test_tracing::initialize_testing_tracing_subscriber;
 use crate::{
@@ -8,9 +9,6 @@ use base64::{prelude::BASE64_URL_SAFE, Engine};
 use reqwest::StatusCode;
 use std::collections::HashMap;
 use std::net::{Ipv4Addr, SocketAddr};
-
-// DnaHash::from_raw_32(vec![1; 32]).to_string()
-const DNA_HASH: &str = "uhC0kAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQF-z86-";
 
 #[tokio::test]
 async fn valid_dna_hash_is_accepted() {

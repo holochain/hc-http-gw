@@ -346,8 +346,10 @@ impl AppCall for AppConnPool {
         payload: ExternIO,
     ) -> BoxFuture<'static, HcHttpGatewayResult<ExternIO>> {
         let this = self.clone();
+        let app_id = installed_app_id.clone();
         Box::pin(async move {
             this.call(installed_app_id, |app_ws| {
+                let app_id = app_id.clone();
                 let cell_id = cell_id.clone();
                 let zome_name = zome_name.clone();
                 let fn_name = fn_name.clone();
@@ -355,14 +357,21 @@ impl AppCall for AppConnPool {
                 Box::pin(async move {
                     let result = app_ws
                         .call_zome(
-                            ZomeCallTarget::CellId(cell_id),
-                            zome_name.into(),
-                            fn_name.into(),
+                            ZomeCallTarget::CellId(cell_id.clone()),
+                            zome_name.clone().into(),
+                            fn_name.clone().into(),
                             payload,
                         )
                         .await;
                     if let Err(err) = &result {
-                        tracing::debug!(?err);
+                        tracing::debug!(
+                            ?err,
+                            ?app_id,
+                            ?cell_id,
+                            ?zome_name,
+                            ?fn_name,
+                            "Zome call error"
+                        );
                     }
                     let result = result?;
                     Ok(result)

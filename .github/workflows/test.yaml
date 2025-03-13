@@ -15,11 +15,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: Swatinem/rust-cache@v2
-      - uses: cachix/install-nix-action@v30
-      - uses: cachix/cachix-action@v15
-        with:
-          name: holochain-ci
       - name: Maximize build space
         uses: AdityaGarg8/remove-unwanted-software@v5
         with:
@@ -27,6 +22,11 @@ jobs:
           remove-android: 'true'
           remove-codeql: 'true'
           remove-docker-images: 'true'
+      - uses: Swatinem/rust-cache@v2
+      - uses: cachix/install-nix-action@v30
+      - uses: cachix/cachix-action@v15
+        with:
+          name: holochain-ci
       - name: Check formatting
         run: cargo fmt --all -- --check
       - name: Run clippy

@@ -1,6 +1,6 @@
 [package]
 name = "holochain_http_gateway"
-version = "0.1.0-alpha.0"
+version = "0.1.0"
 description = "The Holochain HTTP Gateway for providing a way to bridge from the web2 world into Holochain"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 homepage = "https://github.com/holochain/hc-http-gw"
@@ -23,7 +23,7 @@ holochain_conductor_api = "0.4.1"
 holochain_types = "0.4.1"
 holochain_websocket = "0.4.1"
 serde = { version = "=1.0.203", features = ["derive"] }
-serde_json = "1.0.140"
+serde_json = { version = "1.0.140", git = "https://github.com/ThetaSinner/json.git", branch = "master" }
 thiserror = "2.0.11"
 tokio = { version = "1.43.0", features = ["rt-multi-thread", "macros", "net"] }
 tracing = "0.1.41"

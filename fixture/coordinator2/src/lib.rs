@@ -1,8 +1,14 @@
 use hdk::prelude::*;
 use integrity::*;
+use serde::{Serialize, Deserialize};
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CreateResponse {
+    pub created: ActionHashB64,
+}
 
 #[hdk_extern]
-pub fn create_2() -> ExternResult<ActionHash> {
+pub fn create_2() -> ExternResult<CreateResponse> {
     let time = sys_time()?;
     let created = create_entry(EntryTypes::TestType(TestType {
         value: format!("create_2_{time}"),
@@ -10,7 +16,7 @@ pub fn create_2() -> ExternResult<ActionHash> {
 
     create_link(base(), created.clone(), LinkTypes::Link, ())?;
 
-    Ok(created)
+    Ok(CreateResponse { created: created.into() })
 }
 
 #[hdk_extern]

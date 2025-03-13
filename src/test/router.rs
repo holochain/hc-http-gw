@@ -14,12 +14,14 @@ use std::net::{Ipv4Addr, SocketAddr};
 use std::sync::Arc;
 use tower::ServiceExt;
 
+/// Test router.
 pub struct TestRouter(Router);
 
 impl TestRouter {
     /// Construct a test router with 1024 bytes payload limit.
     /// Allowed functions are restricted to coordinator "coordinator", zome name "zome_name",
     /// function name "fn_name".
+    /// Zome call returns `Ok(())`.`
     pub fn new() -> Self {
         let mut allowed_fns = HashMap::new();
         let allowed_zome_fn = ZomeFn {
@@ -43,6 +45,8 @@ impl TestRouter {
         Self::new_with_config(config)
     }
 
+    /// Construct a test router with a given configuration.
+    /// Zome call returns `Ok(())`.`
     pub fn new_with_config(config: Configuration) -> Self {
         let mut admin_call = MockAdminCall::new();
         admin_call.expect_list_apps().returning(|_| {
@@ -60,6 +64,7 @@ impl TestRouter {
         Self::new_with_config_and_interfaces(config, admin_call, app_call)
     }
 
+    /// Construct a test router with given configuration and admin and app interfaces.
     pub fn new_with_config_and_interfaces(
         config: Configuration,
         admin_call: Arc<dyn AdminCall>,
@@ -68,7 +73,7 @@ impl TestRouter {
         Self(hc_http_gateway_router(config, admin_call, app_call))
     }
 
-    // Send request and return status code and body of response.
+    /// Send request and return status code and body of response.
     pub async fn request(self, uri: &str) -> (StatusCode, String) {
         let response = self
             .0

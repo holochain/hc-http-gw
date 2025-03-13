@@ -16,7 +16,7 @@ mod transcode;
 pub mod test;
 
 pub use config::*;
-pub use error::{HcHttpGatewayError, HcHttpGatewayResult};
+pub use error::{ErrorResponse, HcHttpGatewayError, HcHttpGatewayResult};
 pub use holochain::*;
 pub use resolve::resolve_address_from_url;
 pub use service::HcHttpGatewayService;
