@@ -2,7 +2,7 @@
 
 The gateway responds to HTTP GET requests with the following URL format
 
-```
+```text
 http://{host}/{dna-hash}/{coordinator-identifier}/{zome-name}/{function-name}?payload={payload}
 ```
 
