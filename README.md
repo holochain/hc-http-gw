@@ -4,7 +4,7 @@
 [![API Docs](https://docs.rs/holochain_http_gateway/badge.svg)](https://docs.rs/holochain_http_gateway)
 [![Discord](https://img.shields.io/badge/Discord-blue.svg?style=flat-square)](https://discord.gg/k55DS5dmPH)
 
-The Holochain HTTP Gateway for providing a way to bridge from the web2 world into Holochain
+The Holochain HTTP Gateway for providing a way to bridge from the web2 world into Holochain. Read the [spec](./spec.md) for more details.
 
 ## Running HTTP Gateway locally
 
