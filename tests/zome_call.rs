@@ -369,7 +369,6 @@ async fn zome_call_load_test() {
         // set up http client with timeout
         let client = reqwest::Client::builder()
             .timeout(std::time::Duration::from_secs(HTTP_TIMEOUT_SEC))
-            .pool_max_idle_per_host(1)
             .build()
             .unwrap();
 
