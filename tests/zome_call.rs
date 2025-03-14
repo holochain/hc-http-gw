@@ -354,12 +354,13 @@ async fn zome_call_load_test() {
     let address = gateway.address.clone();
 
     //  test parameters
-    const NUM_CLIENTS: usize = 1;
+    const NUM_CLIENTS: usize = 5;
     const REQUEST_INTERVAL_MS: u64 = 500;
     const TEST_DURATION_SEC: u64 = 10;
     const HTTP_TIMEOUT_SEC: u64 = 5;
 
     let start_time = std::time::Instant::now();
+    let mut handles = Vec::new();
 
     // spawn client tasks
     for _ in 0..NUM_CLIENTS {
@@ -369,10 +370,11 @@ async fn zome_call_load_test() {
         // set up http client with timeout
         let client = reqwest::Client::builder()
             .timeout(std::time::Duration::from_secs(HTTP_TIMEOUT_SEC))
+            .pool_max_idle_per_host(1)
             .build()
             .unwrap();
 
-        tokio::spawn(async move {
+        let handle = tokio::spawn(async move {
             // keep sending requests until test duration is reached
             while start_time.elapsed().as_secs() < TEST_DURATION_SEC {
                 let url = format!(
@@ -387,6 +389,12 @@ async fn zome_call_load_test() {
                 tokio::time::sleep(tokio::time::Duration::from_millis(REQUEST_INTERVAL_MS)).await;
             }
         });
+
+        handles.push(handle);
+    }
+
+    for handle in handles {
+        handle.await.expect("Task failed");
     }
 
     // ensure test ran for at least 10 seconds
