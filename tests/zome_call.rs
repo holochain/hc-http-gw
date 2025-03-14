@@ -2,6 +2,7 @@ use crate::sweet::{
     init_zome, install_fixture1, install_fixture2, CreateResponse, GetWithLimitRequest, TestType,
 };
 use base64::Engine;
+use futures::future::join_all;
 use holochain::prelude::{CellId, DnaHash};
 use holochain::sweettest::SweetConductor;
 use holochain_conductor_api::CellInfo;
@@ -389,9 +390,7 @@ async fn zome_call_load_test() {
         handles.push(handle);
     }
 
-    for handle in handles {
-        handle.await.expect("Task failed");
-    }
+    futures::future::join_all(handles).await;
 
     tracing::info!(
         "Load test completed in {} seconds",
