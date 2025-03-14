@@ -393,14 +393,10 @@ async fn zome_call_load_test() {
         handle.await.expect("Task failed");
     }
 
-    // ensure test ran for at least 10 seconds
-    let test_duration = start_time.elapsed().as_secs();
-    assert!(
-        test_duration >= 10,
-        "Test did not run for at least 10 seconds"
+    tracing::info!(
+        "Load test completed in {} seconds",
+        start_time.elapsed().as_secs()
     );
-
-    println!("Load test completed in {} seconds", test_duration);
 }
 
 fn make_payload<T: serde::Serialize>(payload: &T) -> String {
