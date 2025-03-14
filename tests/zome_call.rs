@@ -355,7 +355,6 @@ async fn zome_call_load_test() {
 
     //  test parameters
     const NUM_CLIENTS: usize = 5;
-    const REQUEST_INTERVAL_MS: u64 = 500;
     const TEST_DURATION_SEC: u64 = 10;
     const HTTP_TIMEOUT_SEC: u64 = 5;
 
@@ -385,8 +384,6 @@ async fn zome_call_load_test() {
 
                 let response = client.get(url).send().await.unwrap();
                 assert_eq!(response.status(), StatusCode::OK);
-
-                tokio::time::sleep(tokio::time::Duration::from_millis(REQUEST_INTERVAL_MS)).await;
             }
         });
 
