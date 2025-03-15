@@ -2,7 +2,6 @@ use crate::sweet::{
     init_zome, install_fixture1, install_fixture2, CreateResponse, GetWithLimitRequest, TestType,
 };
 use base64::Engine;
-use futures::future::join_all;
 use holochain::prelude::{CellId, DnaHash};
 use holochain::sweettest::SweetConductor;
 use holochain_conductor_api::CellInfo;
@@ -384,6 +383,9 @@ async fn zome_call_load_test() {
 
                 let response = client.get(url).send().await.unwrap();
                 assert_eq!(response.status(), StatusCode::OK);
+
+                let json_response = response.json::<Vec<TestType>>().await.unwrap();
+                assert_eq!(json_response.len(), 3);
             }
         });
 
