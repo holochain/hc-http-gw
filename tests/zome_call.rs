@@ -329,6 +329,7 @@ async fn get_first_cell_from_app(sweet_conductor: &SweetConductor, app: &Install
 #[tokio::test(flavor = "multi_thread")]
 async fn zome_call_load_test() {
     initialize_testing_tracing_subscriber();
+
     let sweet_conductor = SweetConductor::from_standard_config().await;
     let app = install_fixture1(sweet_conductor.clone(), None)
         .await
@@ -359,12 +360,15 @@ async fn zome_call_load_test() {
     const HTTP_TIMEOUT_SEC: u64 = 5;
 
     let start_time = std::time::Instant::now();
-    let mut handles = Vec::new();
+    let mut handles = Vec::with_capacity(NUM_CLIENTS);
+
+    let (tx, mut rx) = tokio::sync::mpsc::channel(NUM_CLIENTS);
 
     // spawn client tasks
-    for _ in 0..NUM_CLIENTS {
+    for client_id in 0..NUM_CLIENTS {
         let cell_id_clone = cell_id.clone();
         let address_clone = address.clone();
+        let tx_clone = tx.clone();
 
         // set up http client with timeout
         let client = reqwest::Client::builder()
@@ -373,6 +377,8 @@ async fn zome_call_load_test() {
             .unwrap();
 
         let handle = tokio::spawn(async move {
+            let mut request_count = 0;
+
             // keep sending requests until test duration is reached
             while start_time.elapsed().as_secs() < TEST_DURATION_SEC {
                 let url = format!(
@@ -386,18 +392,33 @@ async fn zome_call_load_test() {
 
                 let json_response = response.json::<Vec<TestType>>().await.unwrap();
                 assert_eq!(json_response.len(), 3);
+
+                request_count += 1;
             }
+
+            tx_clone.send((client_id, request_count)).await.unwrap();
+
+            request_count
         });
 
         handles.push(handle);
     }
 
+    // explicitly drop the original sender to close the channel
+    drop(tx);
+
     futures::future::join_all(handles).await;
 
-    tracing::info!(
-        "Load test completed in {} seconds",
-        start_time.elapsed().as_secs()
-    );
+    let mut total_requests = 0;
+    let mut client_stats = Vec::new();
+
+    while let Some((client_id, request_count)) = rx.recv().await {
+        tracing::debug!("Client {}: {} requests", client_id, request_count);
+        total_requests += request_count;
+        client_stats.push((client_id, request_count));
+    }
+
+    tracing::debug!("Total requests: {}", total_requests);
 }
 
 fn make_payload<T: serde::Serialize>(payload: &T) -> String {
