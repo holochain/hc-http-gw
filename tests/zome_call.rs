@@ -413,12 +413,12 @@ async fn zome_call_load_test() {
     let mut client_stats = Vec::new();
 
     while let Some((client_id, request_count)) = rx.recv().await {
-        tracing::debug!("Client {}: {} requests", client_id, request_count);
+        tracing::info!("Client {}: {} requests", client_id, request_count);
         total_requests += request_count;
         client_stats.push((client_id, request_count));
     }
 
-    tracing::debug!("Total requests: {}", total_requests);
+    tracing::info!("Total requests: {}", total_requests);
 }
 
 fn make_payload<T: serde::Serialize>(payload: &T) -> String {
