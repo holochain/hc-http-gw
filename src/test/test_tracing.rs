@@ -9,7 +9,7 @@ use tracing_subscriber::{
     EnvFilter, Registry,
 };
 
-const DEFAULT_LOG_LEVEL: &str = "warn,holochain_http_gateway=info";
+const DEFAULT_LOG_LEVEL: &str = "warn,holochain_http_gateway=info,zome_call=info";
 
 /// Initialize a global tracing subscriber
 pub fn initialize_testing_tracing_subscriber() {

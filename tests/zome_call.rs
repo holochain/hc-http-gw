@@ -326,6 +326,96 @@ async fn get_first_cell_from_app(sweet_conductor: &SweetConductor, app: &Install
     cell_id
 }
 
+#[tokio::test(flavor = "multi_thread")]
+async fn zome_call_load_test() {
+    initialize_testing_tracing_subscriber();
+
+    let sweet_conductor = SweetConductor::from_standard_config().await;
+    let app = install_fixture1(sweet_conductor.clone(), None)
+        .await
+        .unwrap();
+    let cell_id = get_first_cell_from_app(&sweet_conductor, &app).await;
+
+    // create some test data
+    for _ in 0..3 {
+        sweet_conductor
+            .easy_call_zome::<_, CreateResponse, _>(
+                &app.agent_key,
+                None,
+                cell_id.clone(),
+                "coordinator1",
+                "create_1",
+                (),
+            )
+            .await
+            .unwrap();
+    }
+
+    let gateway = TestGateway::spawn(sweet_conductor.clone()).await;
+    let address = gateway.address.clone();
+
+    //  test parameters
+    const NUM_CLIENTS: usize = 5;
+    const TEST_DURATION_SEC: u64 = 10;
+    const HTTP_TIMEOUT_SEC: u64 = 5;
+
+    let start_time = std::time::Instant::now();
+    let mut handles = Vec::with_capacity(NUM_CLIENTS);
+
+    // spawn client tasks
+    for client_id in 0..NUM_CLIENTS {
+        let cell_id_clone = cell_id.clone();
+        let address_clone = address.clone();
+
+        // set up http client with timeout
+        let client = reqwest::Client::builder()
+            .timeout(std::time::Duration::from_secs(HTTP_TIMEOUT_SEC))
+            .build()
+            .unwrap();
+
+        let handle = tokio::spawn(async move {
+            let mut request_count = 0;
+
+            // keep sending requests until test duration is reached
+            while start_time.elapsed().as_secs() < TEST_DURATION_SEC {
+                let url = format!(
+                    "http://{}/{}/fixture1/coordinator1/get_all_1",
+                    address_clone,
+                    cell_id_clone.dna_hash(),
+                );
+
+                let response = client.get(url).send().await.unwrap();
+                assert_eq!(response.status(), StatusCode::OK);
+
+                let json_response = response.json::<Vec<TestType>>().await.unwrap();
+                assert_eq!(json_response.len(), 3);
+
+                request_count += 1;
+            }
+
+            (client_id, request_count)
+        });
+
+        handles.push(handle);
+    }
+
+    // Collect results from all tasks
+    let results = futures::future::join_all(handles).await;
+
+    let mut total_requests = 0;
+    let mut client_stats = Vec::new();
+
+    for result in results {
+        let (client_id, request_count) = result.unwrap();
+        tracing::info!("Client {}: {} requests", client_id, request_count);
+
+        total_requests += request_count;
+        client_stats.push((client_id, request_count));
+    }
+
+    tracing::info!("Total requests: {}", total_requests);
+}
+
 fn make_payload<T: serde::Serialize>(payload: &T) -> String {
     let v = serde_json::to_string(payload).unwrap();
     base64::prelude::BASE64_URL_SAFE.encode(v)
