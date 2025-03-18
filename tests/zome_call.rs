@@ -362,13 +362,10 @@ async fn zome_call_load_test() {
     let start_time = std::time::Instant::now();
     let mut handles = Vec::with_capacity(NUM_CLIENTS);
 
-    let (tx, mut rx) = tokio::sync::mpsc::channel(NUM_CLIENTS);
-
     // spawn client tasks
     for client_id in 0..NUM_CLIENTS {
         let cell_id_clone = cell_id.clone();
         let address_clone = address.clone();
-        let tx_clone = tx.clone();
 
         // set up http client with timeout
         let client = reqwest::Client::builder()
@@ -396,24 +393,22 @@ async fn zome_call_load_test() {
                 request_count += 1;
             }
 
-            tx_clone.send((client_id, request_count)).await.unwrap();
-
-            request_count
+            (client_id, request_count)
         });
 
         handles.push(handle);
     }
 
-    // explicitly drop the original sender to close the channel
-    drop(tx);
-
-    futures::future::join_all(handles).await;
+    // Collect results from all tasks
+    let results = futures::future::join_all(handles).await;
 
     let mut total_requests = 0;
     let mut client_stats = Vec::new();
 
-    while let Some((client_id, request_count)) = rx.recv().await {
+    for result in results {
+        let (client_id, request_count) = result.unwrap();
         tracing::info!("Client {}: {} requests", client_id, request_count);
+
         total_requests += request_count;
         client_stats.push((client_id, request_count));
     }
