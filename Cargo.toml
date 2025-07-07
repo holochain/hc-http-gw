@@ -1,6 +1,6 @@
 [package]
 name = "holochain_http_gateway"
-version = "0.1.0"
+version = "0.1.1"
 description = "The Holochain HTTP Gateway for providing a way to bridge from the web2 world into Holochain"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 homepage = "https://github.com/holochain/hc-http-gw"

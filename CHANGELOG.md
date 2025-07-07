@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.1] - 2025-07-07
+
+### Added
+
+- Add rust toolchain as watched file for direnv
+- Add cron job to update the Cargo lockfile
+- Add cron job to update the flake lockfile
+- Add workflow to publish a release created by the prepare workflow
+- Add workflow to prepare a release
+- Add LICENSE by @ThetaSinner in [#44](https://github.com/holochain/hc-http-gw/pull/44)
+- Add load test by @c12i in [#43](https://github.com/holochain/hc-http-gw/pull/43)
+
+### Changed
+
+- Update rustc to 1.84.0
+- Update serde_json to use Holochain fork
+- Run changelog preview job in test workflow
+- Don't run test workflow on pushes to main
+- Spec updates by @ThetaSinner in [#41](https://github.com/holochain/hc-http-gw/pull/41)
+- Move spec to repo by @c12i in [#34](https://github.com/holochain/hc-http-gw/pull/34)
+
 ## [0.1.0] - 2025-03-12
 
 ### Added
