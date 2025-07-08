@@ -18,11 +18,11 @@ axum = "0.8.1"
 base64 = "0.22.1"
 clap = { version = "4.5.30", features = ["derive", "env"] }
 futures = "0.3"
-holochain_client = "0.6.2"
-holochain_conductor_api = "0.4.1"
-holochain_types = "0.4.1"
-holochain_websocket = "0.4.1"
-serde = { version = "=1.0.203", features = ["derive"] }
+holochain_client = "0.7.1"
+holochain_conductor_api = "0.5.3"
+holochain_types = "0.5.3"
+holochain_websocket = "0.5.3"
+serde = { version = "=1.0.219", features = ["derive"] }
 serde_json = { package = "hc_serde_json", version = "1.0.141" }
 thiserror = "2.0.11"
 tokio = { version = "1.43.0", features = ["rt-multi-thread", "macros", "net"] }
@@ -37,9 +37,8 @@ url = "2.5"
 holochain_http_gateway = { path = ".", features = ["test-utils"] }
 
 assert2 = "0.3.15"
-holochain = { version = "0.4.1", default-features = false, features = [
+holochain = { version = "0.5.3", default-features = false, features = [
   "sqlite-encrypted",
-  "tx5",
   "wasmer_sys",
   "sweettest",
 ] }
@@ -47,7 +46,7 @@ http-body-util = "0.1.2"
 mockall = "0.13"
 reqwest = { version = "0.12", default-features = false }
 tower = "0.5.2"
-holochain_serialized_bytes = "0.0.55"
+holochain_serialized_bytes = "0.0.56"
 
 [features]
 test-utils = []

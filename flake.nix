@@ -29,9 +29,11 @@
           ]) ++ [
             pkgs.perl
             pkgs.go
+            pkgs.cmake
             rustFromFile
           ];
 
+          LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
           RUST_SRC_PATH = pkgs.rustPlatform.rustLibSrc;
 
           shellHook = ''
