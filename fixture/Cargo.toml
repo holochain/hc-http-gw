@@ -3,8 +3,9 @@ members = ["coordinator1", "coordinator2", "integrity"]
 resolver = "2"
 
 [workspace.dependencies]
-hdi = "0.5.1"
-hdk = "0.4.1"
+hdi = "0.6.3"
+hdk = "0.5.3"
+holochain_serialized_bytes = "0.0.56"
 serde = "1.0"
 
 integrity = { path = "integrity" }
