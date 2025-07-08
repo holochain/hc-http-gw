@@ -26,6 +26,7 @@
         pkgs.mkShell {
           packages = (with inputs'.holonix.packages; [
             holochain
+            hc
           ]) ++ [
             pkgs.perl
             pkgs.go
