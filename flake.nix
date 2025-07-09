@@ -19,27 +19,34 @@
 
       formatter = pkgs.nixpkgs-fmt;
 
-      devShells.default =
+      devShells =
         let
           rustFromFile = pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
         in
-        pkgs.mkShell {
-          packages = (with inputs'.holonix.packages; [
-            holochain
-            hc
-          ]) ++ [
-            pkgs.perl
-            pkgs.go
-            pkgs.cmake
-            rustFromFile
-          ];
+        {
+          default = pkgs.mkShell {
+            packages = (with inputs'.holonix.packages; [
+              holochain
+              hc
+            ]) ++ [
+              pkgs.perl
+              pkgs.go
+              pkgs.cmake
+              rustFromFile
+            ];
 
-          LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
-          RUST_SRC_PATH = pkgs.rustPlatform.rustLibSrc;
+            LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
+            RUST_SRC_PATH = pkgs.rustPlatform.rustLibSrc;
 
-          shellHook = ''
-            export PS1='\[\033[1;34m\][holonix:\w]\$\[\033[0m\] '
-          '';
+            shellHook = ''
+              export PS1='\[\033[1;34m\][holonix:\w]\$\[\033[0m\] '
+            '';
+          };
+          ci = pkgs.mkShell {
+            packages = [
+              rustFromFile
+            ];
+          };
         };
     };
   };
