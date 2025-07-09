@@ -18,8 +18,7 @@ jobs:
           install_url: https://releases.nixos.org/nix/nix-2.28.3/install
 
       - name: Flake update
-        run: |
-          nix develop .#ci --command cargo update
+        run: nix develop .#ci --command cargo update
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v7
