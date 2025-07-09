@@ -5,6 +5,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2025-07-09
+
+### Added
+
+- Add missing CI devShell by @cdunster in [#56](https://github.com/holochain/hc-http-gw/pull/56)
+- Add hc package to devShell for packaging fixtures by @cdunster
+- Add rust toolchain as watched file for direnv by @cdunster
+- Add cron job to update the Cargo lockfile by @cdunster in [#48](https://github.com/holochain/hc-http-gw/pull/48)
+- Add cron job to update the flake lockfile by @cdunster
+- Add CHANGELOG for existing release by @cdunster in [#47](https://github.com/holochain/hc-http-gw/pull/47)
+- Add workflow to publish a release created by the prepare workflow by @cdunster
+- Add workflow to prepare a release by @cdunster
+- Add LICENSE (#44) by @ThetaSinner in [#44](https://github.com/holochain/hc-http-gw/pull/44)
+- Add load test (#43) by @c12i in [#43](https://github.com/holochain/hc-http-gw/pull/43)
+
+### Changed
+
+- Put CI workflow run command onto a single line by @cdunster
+- Cargo update by @cdunster in [#55](https://github.com/holochain/hc-http-gw/pull/55)
+- Update rustc to v1.85.0 by @cdunster
+- Only restrict cargo dependencies to highest version part by @cdunster
+- Update test fixtures to holochain v0.5 by @cdunster
+- Update to holochain v0.5 by @cdunster
+- Update holonix to use `main-0.5` branch by @cdunster
+- Update flake.lock file by @cdunster in [#52](https://github.com/holochain/hc-http-gw/pull/52)
+- Update rustc to 1.84.0 by @cdunster in [#51](https://github.com/holochain/hc-http-gw/pull/51)
+- Update serde_json to use Holochain fork by @cdunster in [#49](https://github.com/holochain/hc-http-gw/pull/49)
+- Run changelog preview job in test workflow by @cdunster
+- Don't run test workflow on pushes to main by @cdunster
+- Spec updates (#41) by @ThetaSinner in [#41](https://github.com/holochain/hc-http-gw/pull/41)
+- Move spec to repo (#34) by @c12i in [#34](https://github.com/holochain/hc-http-gw/pull/34)
+
 ## [0.1.0] - 2025-03-12
 
 ### Added
