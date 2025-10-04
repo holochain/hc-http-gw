@@ -3,7 +3,7 @@ use url::Url;
 
 /// Resolve a URL to a socket address
 pub async fn resolve_address_from_url(url: &str) -> std::io::Result<std::net::SocketAddr> {
-    let url = Url::parse(url).map_err(|e| std::io::Error::other(format!("Invalid URL: {}", e)))?;
+    let url = Url::parse(url).map_err(|e| std::io::Error::other(format!("Invalid URL: {e}")))?;
 
     let host = url
         .host_str()

@@ -53,13 +53,14 @@ async fn reconnect_admin_websocket() {
             .expect("Timed out");
     assert!(list_apps_result.is_err());
 
-    sweet_conductor.startup().await;
+    sweet_conductor.startup(false).await;
 
     sweet_conductor
         .clone()
         .add_admin_interfaces(vec![AdminInterfaceConfig {
             driver: InterfaceDriver::Websocket {
                 port: admin_port,
+                danger_bind_addr: None,
                 allowed_origins: AllowedOrigins::Any,
             },
         }])
@@ -92,7 +93,7 @@ async fn connect_app_websocket() {
     let admin_port = sweet_conductor
         .get_arbitrary_admin_websocket_port()
         .unwrap();
-    let admin_ws = AdminWebsocket::connect((Ipv4Addr::LOCALHOST, admin_port))
+    let admin_ws = AdminWebsocket::connect((Ipv4Addr::LOCALHOST, admin_port), None)
         .await
         .unwrap();
 
@@ -328,7 +329,7 @@ async fn reconnect_on_failed_websocket() {
     app_client.app_info().await.unwrap_err();
 
     // Restart the conductor
-    sweet_conductor.startup().await;
+    sweet_conductor.startup(false).await;
 
     // Make sure we are still serving the admin interface on the same port.
     // This is needed because sweetest configures Holochain to bind to port 0 and
@@ -338,6 +339,7 @@ async fn reconnect_on_failed_websocket() {
         .add_admin_interfaces(vec![AdminInterfaceConfig {
             driver: InterfaceDriver::Websocket {
                 port: admin_port,
+                danger_bind_addr: None,
                 allowed_origins: AllowedOrigins::Any,
             },
         }])
@@ -459,8 +461,7 @@ async fn reconnect_gives_up() {
 
     assert!(
         matches!(err, HcHttpGatewayError::UpstreamUnavailable),
-        "Expected upstream unavailable, got {:?}",
-        err
+        "Expected upstream unavailable, got {err:?}"
     );
 }
 

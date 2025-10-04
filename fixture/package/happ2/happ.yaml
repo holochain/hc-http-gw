@@ -1,4 +1,4 @@
-manifest_version: "1"
+manifest_version: "0"
 name: fixture2
 description: ~
 roles:
@@ -7,7 +7,7 @@ roles:
       strategy: create
       deferred: false
     dna:
-      bundled: "../dna2/fixture2.dna"
+      path: "../dna2/fixture2.dna"
       modifiers:
         network_seed: ~
         properties: ~

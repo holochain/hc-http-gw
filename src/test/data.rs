@@ -22,9 +22,9 @@ pub fn new_test_app_info(app_id: impl ToString, dna_hash: DnaHash) -> AppInfo {
         )]
         .into_iter()
         .collect(),
-        status: AppStatus::Running.into(),
+        status: AppStatus::Enabled,
         agent_pub_key: AgentPubKey::from_raw_32([1; 32].to_vec()),
-        manifest: AppManifest::V1(holochain_types::app::AppManifestV1 {
+        manifest: AppManifest::V0(holochain_types::app::AppManifestV0 {
             name: Default::default(),
             description: Default::default(),
             roles: Vec::with_capacity(0),

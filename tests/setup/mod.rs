@@ -111,7 +111,7 @@ impl TestGateway {
                 self.address
             );
             if let Some(payload) = payload {
-                url.push_str(&format!("?payload={}", payload));
+                url.push_str(&format!("?payload={payload}"));
             }
             url
         };
