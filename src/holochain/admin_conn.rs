@@ -78,7 +78,7 @@ impl AdminConn {
             return Ok(admin_ws.clone());
         }
 
-        match AdminWebsocket::connect(self.socket_addr).await {
+        match AdminWebsocket::connect(self.socket_addr, None).await {
             Ok(admin_ws) => {
                 tracing::info!("Connected a new Holochain admin websocket");
                 *lock = Some(admin_ws.clone());
@@ -152,7 +152,7 @@ impl AdminCall for AdminConn {
 
                 Box::pin(async move {
                     Ok(admin_ws
-                        .attach_app_interface(port, allowed_origins, installed_app_id)
+                        .attach_app_interface(port, None, allowed_origins, installed_app_id)
                         .await?)
                 })
             })

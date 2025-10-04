@@ -79,8 +79,7 @@ impl Configuration {
         for app_id in allowed_app_ids.iter() {
             if !allowed_fns.contains_key(app_id) {
                 return Err(ConfigParseError::Other(format!(
-                    "{} is not present in allowed_fns",
-                    app_id
+                    "{app_id} is not present in allowed_fns"
                 )));
             }
         }
@@ -211,15 +210,13 @@ impl FromStr for AllowedFns {
                 for zome_fn_path in csv {
                     let Some((zome_name, fn_name)) = zome_fn_path.trim().split_once('/') else {
                         return Err(ConfigParseError::Other(format!(
-                            "Failed to parse the zome name and function name from value: {}",
-                            zome_fn_path,
+                            "Failed to parse the zome name and function name from value: {zome_fn_path}",
                         )));
                     };
 
                     if zome_name.is_empty() || fn_name.is_empty() {
                         return Err(ConfigParseError::Other(format!(
-                            "Zome name or function name is empty for value: {}",
-                            zome_fn_path
+                            "Zome name or function name is empty for value: {zome_fn_path}"
                         )));
                     }
 

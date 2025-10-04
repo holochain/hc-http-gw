@@ -21,7 +21,7 @@ pub fn create_2() -> ExternResult<CreateResponse> {
 
 #[hdk_extern]
 pub fn get_all_2() -> ExternResult<Vec<TestType>> {
-    let links = get_links(GetLinksInputBuilder::try_new(base(), LinkTypes::Link)?.build())?;
+    let links = get_links(LinkQuery::try_new(base(), LinkTypes::Link)?, GetStrategy::default())?;
 
     let mut out = Vec::new();
     for link in links {

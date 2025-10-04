@@ -4,7 +4,8 @@ set -euo pipefail
 
 SCRIPT_DIR=$(dirname "$0")
 
-cargo build --manifest-path "$SCRIPT_DIR/Cargo.toml" --release --target wasm32-unknown-unknown -p integrity -p coordinator1 -p coordinator2
+RUSTFLAGS='--cfg getrandom_backend="custom"' \
+  cargo build --manifest-path "$SCRIPT_DIR/Cargo.toml" --release --target wasm32-unknown-unknown -p integrity -p coordinator1 -p coordinator2
 
 pushd "$SCRIPT_DIR/package/dna1" || exit 1
 hc dna pack .

@@ -1,4 +1,4 @@
-manifest_version: "1"
+manifest_version: "0"
 name: fixture1
 integrity:
   network_seed: ~
@@ -6,14 +6,12 @@ integrity:
   zomes:
     - name: integrity
       hash: ~
-      bundled: "../../target/wasm32-unknown-unknown/release/integrity.wasm"
+      path: "../../target/wasm32-unknown-unknown/release/integrity.wasm"
       dependencies: ~
-      dylib: ~
 coordinator:
   zomes:
     - name: coordinator1
       hash: ~
-      bundled: "../../target/wasm32-unknown-unknown/release/coordinator1.wasm"
+      path: "../../target/wasm32-unknown-unknown/release/coordinator1.wasm"
       dependencies:
         - name: integrity
-      dylib: ~

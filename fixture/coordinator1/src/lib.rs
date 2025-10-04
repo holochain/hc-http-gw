@@ -21,7 +21,7 @@ pub fn create_1() -> ExternResult<CreateResponse> {
 
 #[hdk_extern]
 pub fn get_all_1() -> ExternResult<Vec<TestType>> {
-    let links = get_links(GetLinksInputBuilder::try_new(base(), LinkTypes::Link)?.build())?;
+    let links = get_links(LinkQuery::try_new(base(), LinkTypes::Link)?, GetStrategy::default())?;
 
     let mut out = Vec::new();
     for link in links {
@@ -45,7 +45,7 @@ pub fn get_all_1() -> ExternResult<Vec<TestType>> {
 
 #[hdk_extern]
 pub fn get_mine(agent_pub_key: AgentPubKey) -> ExternResult<Vec<TestType>> {
-    let links = get_links(GetLinksInputBuilder::try_new(base(), LinkTypes::Link)?.build())?;
+    let links = get_links(LinkQuery::try_new(base(), LinkTypes::Link)?, GetStrategy::default())?;
 
     let mut out = Vec::new();
     for link in links {
@@ -78,7 +78,7 @@ pub struct GetWithLimitRequest {
 
 #[hdk_extern]
 pub fn get_limited(request: GetWithLimitRequest) -> ExternResult<Vec<TestType>> {
-    let links = get_links(GetLinksInputBuilder::try_new(base(), LinkTypes::Link)?.build())?;
+    let links = get_links(LinkQuery::try_new(base(), LinkTypes::Link)?, GetStrategy::default())?;
 
     let mut out = Vec::new();
     for link in links {

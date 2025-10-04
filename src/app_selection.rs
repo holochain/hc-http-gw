@@ -51,7 +51,7 @@ pub async fn try_get_valid_app(
         Some(app_info) => app_info,
         None => {
             let new_installed_apps = admin_call
-                .list_apps(Some(AppStatusFilter::Running))
+                .list_apps(Some(AppStatusFilter::Enabled))
                 .await
                 .unwrap_or_else(|e| {
                     tracing::error!("Failed to get a list of apps from Holochain: {}", e);

@@ -62,8 +62,8 @@ async fn load_config_from_env() -> anyhow::Result<Configuration> {
 
     let app_ids = AllowedAppIds::from_str(&allowed_app_ids)?;
     for app_id in app_ids.iter() {
-        let fns = env::var(format!("HC_GW_ALLOWED_FNS_{}", app_id))
-            .context(format!("Missing HC_GW_ALLOWED_FNS_{} env var", app_id))?;
+        let fns = env::var(format!("HC_GW_ALLOWED_FNS_{app_id}"))
+            .context(format!("Missing HC_GW_ALLOWED_FNS_{app_id} env var"))?;
         let fns = AllowedFns::from_str(&fns)?;
         allowed_fns.insert(app_id.to_owned(), fns);
     }

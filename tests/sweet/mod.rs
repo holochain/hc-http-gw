@@ -80,7 +80,6 @@ async fn install_app_from_path(
             network_seed: None,
             roles_settings: None,
             ignore_genesis_failure: false,
-            allow_throwaway_random_agent_key: true,
         })
         .await?;
 
