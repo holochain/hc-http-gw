@@ -6,6 +6,14 @@
 
 The Holochain HTTP Gateway for providing a way to bridge from the web2 world into Holochain. Read the [spec](./spec.md) for more details.
 
+## Compatibility
+
+| Holochain Version | HTTP Gateway Version |
+| ----------------- | -------------------- |
+| 0.4.x             | 0.1.x                |
+| 0.5.x             | 0.2.x                |
+| 0.6.x             | 0.3.x                |
+
 ## Running HTTP Gateway locally
 
 ### Prerequisites

@@ -1,4 +1,4 @@
-name: "cargo_update"
+name: "Cargo update"
 
 on:
   workflow_dispatch:
@@ -15,7 +15,7 @@ jobs:
       - name: Install nix
         uses: cachix/install-nix-action@v31
         with:
-          install_url: https://releases.nixos.org/nix/nix-2.31.2/install
+          install_url: https://releases.nixos.org/nix/nix-2.32.4/install
 
       - name: Flake update
         run: nix develop .#ci --command cargo update
@@ -28,5 +28,5 @@ jobs:
           title: "chore: update Cargo.lock file"
           body: "This PR updates the Cargo.lock file."
           branch: "update-cargo-lock"
-          branch-suffix: "short-commit-hash"
           base: "main"
+          team-reviewers: holochain/holochain-devs

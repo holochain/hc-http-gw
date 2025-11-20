@@ -1,4 +1,4 @@
-name: "flake_update"
+name: "Flake update"
 
 on:
   workflow_dispatch:
@@ -15,7 +15,7 @@ jobs:
       - name: Install nix
         uses: cachix/install-nix-action@v31
         with:
-          install_url: https://releases.nixos.org/nix/nix-2.31.2/install
+          install_url: https://releases.nixos.org/nix/nix-2.32.4/install
 
       - name: Flake update
         run: |
@@ -29,5 +29,5 @@ jobs:
           title: "chore: update flake.lock file"
           body: "This PR updates the flake.lock file."
           branch: "update-flake-lock"
-          branch-suffix: "short-commit-hash"
           base: "main"
+          team-reviewers: holochain/holochain-devs
