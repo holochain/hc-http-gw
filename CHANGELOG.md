@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## \[[0.3.1](https://github.com/holochain/hc-http-gw/compare/v0.3.0...v0.3.1)\] - 2025-11-20
+
+### Bug Fixes
+
+- Unconstrained versions are not permitted by crates.io by @ThetaSinner
+
+### Miscellaneous Tasks
+
+- Update to 0.6.0 (#68) by @ThetaSinner in [#68](https://github.com/holochain/hc-http-gw/pull/68)
+- Update Cargo.lock file (#67) by @holochain-release-automation2 in [#67](https://github.com/holochain/hc-http-gw/pull/67)
+
+### Documentation
+
+- Remove old header from changelog (#65) by @ThetaSinner in [#65](https://github.com/holochain/hc-http-gw/pull/65)
+
 ## \[[0.3.0](https://github.com/holochain/hc-http-gw/compare/v0.2.0...v0.3.0)\] - 2025-10-04
 
 ### Features
