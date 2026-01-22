@@ -362,9 +362,9 @@ checksum = "5419bdc4f6a9207fbeba6d11b604d481addf78ecd10c11ad51e76c2f6482748d"
 
 [[package]]
 name = "hdi"
-version = "0.7.0-dev.17"
+version = "0.7.1-rc.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6436fcb621cb3e3dcbb06a7874ee5c8a43e50eeea65a7ff09dca3e1f1783095d"
+checksum = "0dd75f1d02a4244385befc2a5ed5f78dcf27829f7c3c3891e88b837acee292bc"
 dependencies = [
  "getrandom",
  "hdk_derive",
@@ -382,9 +382,9 @@ dependencies = [
 
 [[package]]
 name = "hdk"
-version = "0.6.0-dev.20"
+version = "0.6.1-rc.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "db66482b4e1eb22f5cb6591f2eeb2feea53a08177960c6ae033ca9b4bebdaa00"
+checksum = "0fba4ccb6728d2d405de06e609c17a793fe356e86893136a1de535519cb9ead0"
 dependencies = [
  "getrandom",
  "hdi",
@@ -400,9 +400,9 @@ dependencies = [
 
 [[package]]
 name = "hdk_derive"
-version = "0.6.0-dev.16"
+version = "0.6.1-rc.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "de37ed140c84b9f73e4cac1ea885842cbb6cc1510e40d606b5f766aa68266515"
+checksum = "08c04e1ebb568cc4ced142a0b15b871a9bef6aea70ffa802c773128b0417d55a"
 dependencies = [
  "darling",
  "heck",
@@ -422,9 +422,9 @@ checksum = "2304e00983f87ffb38b55b444b5e3b60a884b5d30c0fca7d82fe33449bbe55ea"
 
 [[package]]
 name = "holo_hash"
-version = "0.6.0-dev.15"
+version = "0.6.1-rc.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5df8daadaf295c0cc80348001baa7f8b6aa1cae2b8529d7c154686770e24ba41"
+checksum = "e6178ff6eb66e5b860d96121abec2654f9337601606690231f372716905656b0"
 dependencies = [
  "base64",
  "blake2b_simd",
@@ -442,9 +442,9 @@ dependencies = [
 
 [[package]]
 name = "holochain_integrity_types"
-version = "0.6.0-dev.16"
+version = "0.6.1-rc.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4b5803f7982a5c3f7c758dc078de914e44c4ff56a7726531ac297d456b4a0ca7"
+checksum = "9f9c8f509510e3a88853b69592ca344a88d3f8f0d087f41d8ee3692b81bde0ba"
 dependencies = [
  "holo_hash",
  "holochain_secure_primitive",
@@ -459,9 +459,9 @@ dependencies = [
 
 [[package]]
 name = "holochain_nonce"
-version = "0.6.0-dev.5"
+version = "0.6.1-rc.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "687b3ceceeceb50ce314b2f8b44ae7ae16e1d6d1a34a9930651677e0c51d9e43"
+checksum = "e8d641bc9d33ad91e38696511683e652d0577a5683c3ecc2bf588d8684268d61"
 dependencies = [
  "getrandom",
  "holochain_secure_primitive",
@@ -470,9 +470,9 @@ dependencies = [
 
 [[package]]
 name = "holochain_secure_primitive"
-version = "0.6.0-dev.2"
+version = "0.6.1-rc.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2a4e0c536b98602c7a1fcaf5cb66247ea255bcc2aee9bf64d2e5672af32e9517"
+checksum = "b087fb6c567804e53f9f0baa59dea3b4ead384913b4cbb8f07c0476f7176589b"
 dependencies = [
  "paste",
  "serde",
@@ -506,9 +506,9 @@ dependencies = [
 
 [[package]]
 name = "holochain_timestamp"
-version = "0.6.0-dev.4"
+version = "0.6.1-rc.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "588fe43eee1b5c506e0c028c9deb1b16f5e94dd65bc47bba0445204a19d5868f"
+checksum = "744a1ef07045a17a0dcc2fed5ccf7fc6c17fa5c3b732c46f832cf729bfdae597"
 dependencies = [
  "chrono",
  "serde",
@@ -516,9 +516,9 @@ dependencies = [
 
 [[package]]
 name = "holochain_util"
-version = "0.6.0-dev.4"
+version = "0.6.1-rc.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "edbf888d6f67af8dc6ee7bbf56793150cc1288970b999a27fda8dd6f044bd89e"
+checksum = "0b47bb9647fce71e41d7a934549a27786517fc84632e04f89d686c50592f96ae"
 dependencies = [
  "cfg-if",
  "colored",
@@ -554,9 +554,9 @@ dependencies = [
 
 [[package]]
 name = "holochain_zome_types"
-version = "0.6.0-dev.19"
+version = "0.6.1-rc.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "97c8fb2b9ef93382332263ed2e320c07c03d7add44dfa23963c5ebbb26037c36"
+checksum = "f528c8d5fcef58ccf4731836f96ef3e5548a404b51afa2a1760df1112169ce6e"
 dependencies = [
  "derive_more",
  "holo_hash",
