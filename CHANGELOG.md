@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## \[[0.4.0-dev.0](https://github.com/holochain/hc-http-gw/compare/v0.3.1...v0.4.0-dev.0)\] - 2026-01-23
+
+### Features
+
+- Update to 0.7.0-dev.8 (#77) by @ThetaSinner in [#77](https://github.com/holochain/hc-http-gw/pull/77)
+  - Feat: Update to 0.7.0-dev.8
+  - Ci: Use latest release tooling
+
+### Miscellaneous Tasks
+
+- Update Cargo.lock file by @cdunster in [#71](https://github.com/holochain/hc-http-gw/pull/71)
+- Update flake.lock file by @cdunster in [#70](https://github.com/holochain/hc-http-gw/pull/70)
+
 ## \[[0.3.1](https://github.com/holochain/hc-http-gw/compare/v0.3.0...v0.3.1)\] - 2025-11-20
 
 ### Bug Fixes
