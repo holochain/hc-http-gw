@@ -29,6 +29,8 @@ pub fn new_test_app_info(app_id: impl ToString, dna_hash: DnaHash) -> AppInfo {
             description: Default::default(),
             roles: Vec::with_capacity(0),
             allow_deferred_memproofs: Default::default(),
+            signal_url: None,
+            bootstrap_url: None,
         }),
         installed_at: Timestamp::now(),
     }
