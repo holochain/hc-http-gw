@@ -18,7 +18,7 @@ mod sweet;
 async fn connect_admin_websocket() {
     initialize_testing_tracing_subscriber();
 
-    let sweet_conductor = SweetConductor::from_standard_config().await;
+    let sweet_conductor = SweetConductor::standard().await;
 
     let admin_port = sweet_conductor
         .get_arbitrary_admin_websocket_port()
@@ -34,7 +34,7 @@ async fn connect_admin_websocket() {
 async fn reconnect_admin_websocket() {
     initialize_testing_tracing_subscriber();
 
-    let mut sweet_conductor = SweetConductor::from_standard_config().await;
+    let mut sweet_conductor = SweetConductor::standard().await;
 
     let admin_port = sweet_conductor
         .get_arbitrary_admin_websocket_port()
@@ -75,7 +75,7 @@ async fn reconnect_admin_websocket() {
 async fn connect_app_websocket() {
     initialize_testing_tracing_subscriber();
 
-    let sweet_conductor = SweetConductor::from_standard_config().await;
+    let sweet_conductor = SweetConductor::standard().await;
 
     let app_1 = install_fixture1(sweet_conductor.clone(), None)
         .await
@@ -140,7 +140,7 @@ async fn connect_app_websocket() {
 async fn reuse_connection() {
     initialize_testing_tracing_subscriber();
 
-    let sweet_conductor = SweetConductor::from_standard_config().await;
+    let sweet_conductor = SweetConductor::standard().await;
 
     let app = install_fixture1(sweet_conductor.clone(), None)
         .await
@@ -205,7 +205,7 @@ async fn reuse_connection() {
 async fn does_not_reconnect_on_non_websocket_error() {
     initialize_testing_tracing_subscriber();
 
-    let sweet_conductor = SweetConductor::from_standard_config().await;
+    let sweet_conductor = SweetConductor::standard().await;
 
     let app = install_fixture1(sweet_conductor.clone(), None)
         .await
@@ -293,7 +293,7 @@ async fn does_not_reconnect_on_non_websocket_error() {
 async fn reconnect_on_failed_websocket() {
     initialize_testing_tracing_subscriber();
 
-    let mut sweet_conductor = SweetConductor::from_standard_config().await;
+    let mut sweet_conductor = SweetConductor::standard().await;
 
     let app = install_fixture1(sweet_conductor.clone(), None)
         .await
@@ -390,7 +390,7 @@ async fn reconnect_on_failed_websocket() {
 async fn reconnect_gives_up() {
     initialize_testing_tracing_subscriber();
 
-    let mut sweet_conductor = SweetConductor::from_standard_config().await;
+    let mut sweet_conductor = SweetConductor::standard().await;
 
     let app = install_fixture1(sweet_conductor.clone(), None)
         .await
@@ -469,7 +469,7 @@ async fn reconnect_gives_up() {
 async fn close_old_connections_on_limit() {
     initialize_testing_tracing_subscriber();
 
-    let sweet_conductor = SweetConductor::from_standard_config().await;
+    let sweet_conductor = SweetConductor::standard().await;
 
     let app_1 = install_fixture1(sweet_conductor.clone(), Some("app_1".to_string()))
         .await

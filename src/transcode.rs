@@ -51,7 +51,6 @@ mod tests {
         transcode::{base64_json_to_hsb, hsb_to_json},
         HcHttpGatewayError,
     };
-    use assert2::let_assert;
     use base64::{prelude::BASE64_URL_SAFE, Engine};
     use holochain_types::dna::ActionHash;
     use holochain_types::prelude::ExternIO;
@@ -96,7 +95,7 @@ mod tests {
         let json_payload = serde_json::to_string(&payload).unwrap();
 
         let result = base64_json_to_hsb(Some(json_payload));
-        let_assert!(HcHttpGatewayError::RequestMalformed(err) = result.unwrap_err());
+        assert2::assert!(let HcHttpGatewayError::RequestMalformed(err) = result.unwrap_err());
         assert_eq!(err.to_string(), "Invalid base64 encoding");
     }
 
@@ -105,7 +104,7 @@ mod tests {
         let base64_encoded_payload = BASE64_URL_SAFE.encode("invalid");
 
         let result = base64_json_to_hsb(Some(base64_encoded_payload));
-        let_assert!(HcHttpGatewayError::RequestMalformed(err) = result.unwrap_err());
+        assert2::assert!(let HcHttpGatewayError::RequestMalformed(err) = result.unwrap_err());
         assert_eq!(err.to_string(), "Invalid JSON value");
     }
 

@@ -18,7 +18,7 @@ mod sweet;
 async fn simple_zome_call() {
     initialize_testing_tracing_subscriber();
 
-    let sweet_conductor = SweetConductor::from_standard_config().await;
+    let sweet_conductor = SweetConductor::standard().await;
 
     let app = install_fixture1(sweet_conductor.clone(), None)
         .await
@@ -47,7 +47,7 @@ async fn simple_zome_call() {
 async fn respond_with_data() {
     initialize_testing_tracing_subscriber();
 
-    let sweet_conductor = SweetConductor::from_standard_config().await;
+    let sweet_conductor = SweetConductor::standard().await;
 
     let app = install_fixture1(sweet_conductor.clone(), None)
         .await
@@ -90,7 +90,7 @@ async fn respond_with_data() {
 async fn get_data_with_agent_key_payload() {
     initialize_testing_tracing_subscriber();
 
-    let sweet_conductor = SweetConductor::from_standard_config().await;
+    let sweet_conductor = SweetConductor::standard().await;
 
     let app = install_fixture1(sweet_conductor.clone(), None)
         .await
@@ -133,7 +133,7 @@ async fn get_data_with_agent_key_payload() {
 async fn get_data_with_object_payload() {
     initialize_testing_tracing_subscriber();
 
-    let sweet_conductor = SweetConductor::from_standard_config().await;
+    let sweet_conductor = SweetConductor::standard().await;
 
     let app = install_fixture1(sweet_conductor.clone(), None)
         .await
@@ -177,7 +177,7 @@ async fn get_data_with_object_payload() {
 async fn get_data_from_multiple_apps() {
     initialize_testing_tracing_subscriber();
 
-    let sweet_conductor = SweetConductor::from_standard_config().await;
+    let sweet_conductor = SweetConductor::standard().await;
 
     let app_1 = install_fixture1(sweet_conductor.clone(), None)
         .await
@@ -252,7 +252,7 @@ async fn get_data_from_multiple_apps() {
 async fn call_function_that_is_not_exposed() {
     initialize_testing_tracing_subscriber();
 
-    let sweet_conductor = SweetConductor::from_standard_config().await;
+    let sweet_conductor = SweetConductor::standard().await;
 
     let app = install_fixture1(sweet_conductor.clone(), None)
         .await
@@ -286,7 +286,7 @@ async fn call_function_that_is_not_exposed() {
 async fn call_missing_app() {
     initialize_testing_tracing_subscriber();
 
-    let sweet_conductor = SweetConductor::from_standard_config().await;
+    let sweet_conductor = SweetConductor::standard().await;
 
     let gateway = TestGateway::spawn(sweet_conductor.clone()).await;
 
@@ -330,7 +330,7 @@ async fn get_first_cell_from_app(sweet_conductor: &SweetConductor, app: &Install
 async fn zome_call_load_test() {
     initialize_testing_tracing_subscriber();
 
-    let sweet_conductor = SweetConductor::from_standard_config().await;
+    let sweet_conductor = SweetConductor::standard().await;
     let app = install_fixture1(sweet_conductor.clone(), None)
         .await
         .unwrap();
