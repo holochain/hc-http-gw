@@ -18,10 +18,10 @@ axum = "0.8"
 base64 = "0.22"
 clap = { version = "4", features = ["derive", "env"] }
 futures = "0.3"
-holochain_client = "0.8.1-rc.0"
-holochain_conductor_api = "0.6.1-rc.0"
-holochain_types = "0.6.1-rc.0"
-holochain_websocket = "0.6.1-rc.0"
+holochain_client = "0.8.1"
+holochain_conductor_api = "0.6.1"
+holochain_types = "0.6.1"
+holochain_websocket = "0.6.1"
 serde = { version = "1", features = ["derive"] }
 serde_json = { package = "hc_serde_json", version = "1" }
 thiserror = "2"
@@ -37,7 +37,7 @@ url = "2"
 holochain_http_gateway = { path = ".", features = ["test-utils"] }
 
 assert2 = "0.3"
-holochain = { version = "0.6.1-rc.0", default-features = false, features = [
+holochain = { version = "0.6.1", default-features = false, features = [
   "sqlite-encrypted",
   "wasmer_sys",
   "sweettest",
