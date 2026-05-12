@@ -10,18 +10,18 @@ jobs:
   flake_update:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Install nix
         uses: cachix/install-nix-action@v31
         with:
-          install_url: https://releases.nixos.org/nix/nix-2.32.4/install
+          install_url: https://releases.nixos.org/nix/nix-2.34.7/install
 
       - name: Flake update
         run: nix develop .#ci --command cargo update
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v8
         with:
           token: ${{ secrets.HRA2_GITHUB_TOKEN }}
           commit-message: "chore: update Cargo.lock file"

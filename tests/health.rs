@@ -9,7 +9,7 @@ mod setup;
 async fn health_check_works() {
     initialize_testing_tracing_subscriber();
 
-    let sweet_conductor = SweetConductor::from_standard_config().await;
+    let sweet_conductor = SweetConductor::standard().await;
 
     let gateway = TestGateway::spawn(sweet_conductor.clone()).await;
 
