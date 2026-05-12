@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## \[[0.4.0-dev.1](https://github.com/holochain/hc-http-gw/compare/v0.4.0-dev.0...v0.4.0-dev.1)\] - 2026-05-12
+
+### Features
+
+- Update to latest 0.7 dev release by @ThetaSinner in [#82](https://github.com/holochain/hc-http-gw/pull/82)
+
+### Miscellaneous Tasks
+
+- Update the CONTRIBUTING.md with shared content in [#81](https://github.com/holochain/hc-http-gw/pull/81)
+
+### First-time Contributors
+
+- @ made their first contribution in [#81](https://github.com/holochain/hc-http-gw/pull/81)
+
 ## \[[0.4.0-dev.0](https://github.com/holochain/hc-http-gw/compare/v0.3.1...v0.4.0-dev.0)\] - 2026-01-23
 
 ### Features
