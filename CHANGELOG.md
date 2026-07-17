@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## \[[0.4.0-rc.0](https://github.com/holochain/hc-http-gw/compare/v0.4.0-dev.1...v0.4.0-rc.0)\] - 2026-07-17
+
+### Features
+
+- Update to Holochain 0.7.0-rc.1 by @ThetaSinner in [#99](https://github.com/holochain/hc-http-gw/pull/99)
+
+### Miscellaneous Tasks
+
+- Update flake.lock file by @cdunster in [#97](https://github.com/holochain/hc-http-gw/pull/97)
+- Update flake.lock file by @cdunster in [#94](https://github.com/holochain/hc-http-gw/pull/94)
+- Update flake.lock file by @cdunster in [#92](https://github.com/holochain/hc-http-gw/pull/92)
+- Update flake.lock file by @cdunster in [#91](https://github.com/holochain/hc-http-gw/pull/91)
+- Update Cargo.lock file by @cdunster in [#89](https://github.com/holochain/hc-http-gw/pull/89)
+- Update flake.lock file by @cdunster in [#88](https://github.com/holochain/hc-http-gw/pull/88)
+- Update Cargo.lock file by @cdunster in [#87](https://github.com/holochain/hc-http-gw/pull/87)
+- Update Cargo.lock file by @cdunster in [#86](https://github.com/holochain/hc-http-gw/pull/86)
+
 ## \[[0.4.0-dev.1](https://github.com/holochain/hc-http-gw/compare/v0.4.0-dev.0...v0.4.0-dev.1)\] - 2026-05-12
 
 ### Features
