@@ -1,11 +1,11 @@
 use crate::holochain::AppCall;
 use crate::{
+    AdminCall,
     config::Configuration,
     routes::{health_check, zome_call},
     service::AppState,
-    AdminCall,
 };
-use axum::{http::StatusCode, routing::get, Router};
+use axum::{Router, http::StatusCode, routing::get};
 use std::sync::Arc;
 
 pub fn hc_http_gateway_router(

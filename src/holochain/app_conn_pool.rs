@@ -72,7 +72,9 @@ impl AppConnPool {
             {
                 Ok(app_ws) => app_ws,
                 Err(HcHttpGatewayError::UpstreamUnavailable) => {
-                    tracing::info!("Unable to connect app client, attempting to reconnect without cached settings");
+                    tracing::info!(
+                        "Unable to connect app client, attempting to reconnect without cached settings"
+                    );
 
                     // In this case, we tried and failed to open a new connection to Holochain.
                     // Assume that this was because the port we used is no longer available.
@@ -305,10 +307,10 @@ impl AppConnPool {
         let app_interfaces = self.admin_call.list_app_interfaces().await?;
 
         let selected_app_interface = app_interfaces.into_iter().find(|app_interface| {
-            if let Some(ref for_app_id) = app_interface.installed_app_id {
-                if for_app_id != installed_app_id {
-                    return false;
-                }
+            if let Some(ref for_app_id) = app_interface.installed_app_id
+                && for_app_id != installed_app_id
+            {
+                return false;
             }
 
             app_interface.allowed_origins.is_allowed(HTTP_GW_ORIGIN)

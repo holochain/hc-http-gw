@@ -1,8 +1,8 @@
 #![allow(dead_code)]
 
+use holochain::conductor::Conductor;
 use holochain::conductor::api::error::ConductorApiResult;
 use holochain::conductor::error::ConductorResult;
-use holochain::conductor::Conductor;
 use holochain::prelude::InitCallbackResult;
 use holochain_types::app::{AppBundleSource, InstallAppPayload, InstalledApp, InstalledAppId};
 use std::path::PathBuf;
@@ -80,6 +80,7 @@ async fn install_app_from_path(
             network_seed: None,
             roles_settings: None,
             ignore_genesis_failure: false,
+            restore_from_dht: false,
         })
         .await?;
 

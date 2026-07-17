@@ -4,9 +4,9 @@
 //! does not make the gateway output unreadable.
 
 use tracing_subscriber::{
+    EnvFilter, Registry,
     fmt::{self, time::UtcTime},
     layer::SubscriberExt,
-    EnvFilter, Registry,
 };
 
 const DEFAULT_LOG_LEVEL: &str = "warn,holochain_http_gateway=info,zome_call=info";

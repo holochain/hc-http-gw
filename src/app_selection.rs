@@ -5,7 +5,7 @@ use std::ops::Deref;
 use std::sync::Arc;
 use thiserror::Error;
 
-use crate::{config::AllowedAppIds, AdminCall};
+use crate::{AdminCall, config::AllowedAppIds};
 
 #[derive(Debug, PartialEq, Error)]
 pub enum AppSelectionError {
@@ -126,8 +126,8 @@ fn choose_unique_app<'a>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test::data;
     use crate::MockAdminCall;
+    use crate::test::data;
     use std::str::FromStr;
     use tokio::sync::RwLock;
 

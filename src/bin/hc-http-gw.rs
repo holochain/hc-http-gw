@@ -1,16 +1,16 @@
 use anyhow::Context;
 use clap::Parser;
 use holochain_http_gateway::{
-    resolve_address_from_url, AdminConn, AllowedAppIds, AllowedFns, AppConnPool, Configuration,
-    HcHttpGatewayService,
+    AdminConn, AllowedAppIds, AllowedFns, AppConnPool, Configuration, HcHttpGatewayService,
+    resolve_address_from_url,
 };
 use std::net::IpAddr;
 use std::sync::Arc;
 use std::{collections::HashMap, env, str::FromStr};
 use tracing_subscriber::{
+    EnvFilter, Registry,
     fmt::{self, format::FmtSpan, time::UtcTime},
     layer::SubscriberExt,
-    EnvFilter, Registry,
 };
 
 const DEFAULT_LOG_LEVEL: &str = "info";

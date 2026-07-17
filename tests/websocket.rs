@@ -1,11 +1,11 @@
-use crate::sweet::{init_zome, install_fixture1, install_fixture2, TestType};
+use crate::sweet::{TestType, init_zome, install_fixture1, install_fixture2};
 use holochain::sweettest::SweetConductor;
 use holochain_client::{AdminWebsocket, CellInfo, ConductorApiError, ExternIO, ZomeCallTarget};
 use holochain_conductor_api::{AdminInterfaceConfig, InterfaceDriver};
 use holochain_http_gateway::test::test_tracing::initialize_testing_tracing_subscriber;
 use holochain_http_gateway::{
-    AdminCall, AdminConn, AllowedFns, AppConnPool, Configuration, HcHttpGatewayError, ZomeFn,
-    HTTP_GW_ORIGIN,
+    AdminCall, AdminConn, AllowedFns, AppConnPool, Configuration, HTTP_GW_ORIGIN,
+    HcHttpGatewayError, ZomeFn,
 };
 use holochain_types::app::DisabledAppReason;
 use holochain_types::websocket::AllowedOrigins;
@@ -53,7 +53,7 @@ async fn reconnect_admin_websocket() {
             .expect("Timed out");
     assert!(list_apps_result.is_err());
 
-    sweet_conductor.startup(false).await;
+    sweet_conductor.startup().await;
 
     sweet_conductor
         .clone()
@@ -329,7 +329,7 @@ async fn reconnect_on_failed_websocket() {
     app_client.app_info().await.unwrap_err();
 
     // Restart the conductor
-    sweet_conductor.startup(false).await;
+    sweet_conductor.startup().await;
 
     // Make sure we are still serving the admin interface on the same port.
     // This is needed because sweetest configures Holochain to bind to port 0 and

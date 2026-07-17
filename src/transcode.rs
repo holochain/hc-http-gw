@@ -7,7 +7,7 @@
 //! to a JSON string.
 
 use crate::{HcHttpGatewayError, HcHttpGatewayResult};
-use base64::{prelude::BASE64_URL_SAFE, Engine};
+use base64::{Engine, prelude::BASE64_URL_SAFE};
 use holochain_client::ConductorApiError;
 use holochain_types::prelude::ExternIO;
 
@@ -48,10 +48,10 @@ pub fn hsb_to_json(hsb_encoded_response: &ExternIO) -> HcHttpGatewayResult<Strin
 #[cfg(test)]
 mod tests {
     use crate::{
-        transcode::{base64_json_to_hsb, hsb_to_json},
         HcHttpGatewayError,
+        transcode::{base64_json_to_hsb, hsb_to_json},
     };
-    use base64::{prelude::BASE64_URL_SAFE, Engine};
+    use base64::{Engine, prelude::BASE64_URL_SAFE};
     use holochain_types::dna::ActionHash;
     use holochain_types::prelude::ExternIO;
     use serde::{Deserialize, Serialize};
@@ -133,6 +133,9 @@ mod tests {
 
         let json = hsb_to_json(&output).unwrap();
 
-        assert_eq!(json, "[132,41,36,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,32,73,61,253]");
+        assert_eq!(
+            json,
+            "[132,41,36,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,32,73,61,253]"
+        );
     }
 }
