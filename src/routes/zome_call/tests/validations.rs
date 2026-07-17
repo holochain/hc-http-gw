@@ -5,7 +5,7 @@ use crate::{
     config::{AllowedFns, Configuration},
     routes::zome_call::MAX_IDENTIFIER_CHARS,
 };
-use base64::{prelude::BASE64_URL_SAFE, Engine};
+use base64::{Engine, prelude::BASE64_URL_SAFE};
 use reqwest::StatusCode;
 use std::collections::HashMap;
 use std::net::{Ipv4Addr, SocketAddr};

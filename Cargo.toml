@@ -6,7 +6,7 @@ authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 homepage = "https://github.com/holochain/hc-http-gw"
 license = "Apache-2.0"
 repository = "https://github.com/holochain/hc-http-gw"
-edition = "2021"
+edition = "2024"
 
 [[bin]]
 name = "hc-http-gw"
@@ -18,10 +18,10 @@ axum = "0.8"
 base64 = "0.22"
 clap = { version = "4", features = ["derive", "env"] }
 futures = "0.3"
-holochain_client = "0.9.0-dev.24"
-holochain_conductor_api = "0.7.0-dev.23"
-holochain_types = "0.7.0-dev.23"
-holochain_websocket = "0.7.0-dev.23"
+holochain_client = "0.9.0-rc.1"
+holochain_conductor_api = "0.7.0-rc.1"
+holochain_types = "0.7.0-rc.1"
+holochain_websocket = "0.7.0-rc.1"
 serde = { version = "1", features = ["derive"] }
 serde_json = { package = "hc_serde_json", version = "1" }
 thiserror = "2"
@@ -37,14 +37,13 @@ url = "2"
 holochain_http_gateway = { path = ".", features = ["test-utils"] }
 
 assert2 = "0.4"
-holochain = { version = "0.7.0-dev.24", default-features = false, features = [
-  "sqlite-encrypted",
+holochain = { version = "0.7.0-rc.1", default-features = false, features = [
+  "encryption",
   "wasmer-sys-cranelift",
   "sweettest",
-  "transport-iroh",
 ] }
 http-body-util = "0.1"
-mockall = "0.14"
+mockall = "0.15"
 reqwest = { version = "0.13", default-features = false, features = ["json"] }
 tower = "0.5"
 holochain_serialized_bytes = "0.0"

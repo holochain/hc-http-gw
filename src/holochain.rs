@@ -21,7 +21,7 @@ pub use app_conn_pool::{AppConnPool, AppWebsocketWithState, HTTP_GW_ORIGIN};
 pub trait AdminCall: std::fmt::Debug + Send + Sync {
     /// Call [`AdminWebsocket::list_app_interfaces`](holochain_client::AdminWebsocket::list_app_interfaces).
     fn list_app_interfaces(&self)
-        -> BoxFuture<'static, HcHttpGatewayResult<Vec<AppInterfaceInfo>>>;
+    -> BoxFuture<'static, HcHttpGatewayResult<Vec<AppInterfaceInfo>>>;
 
     /// Call [`AdminWebsocket::issue_app_auth_token`](holochain_client::AdminWebsocket::issue_app_auth_token)
     /// with the given payload.

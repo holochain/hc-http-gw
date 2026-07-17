@@ -1,12 +1,12 @@
 use crate::sweet::{
-    init_zome, install_fixture1, install_fixture2, CreateResponse, GetWithLimitRequest, TestType,
+    CreateResponse, GetWithLimitRequest, TestType, init_zome, install_fixture1, install_fixture2,
 };
 use base64::Engine;
 use holochain::prelude::{CellId, DnaHash};
 use holochain::sweettest::SweetConductor;
 use holochain_conductor_api::CellInfo;
-use holochain_http_gateway::test::test_tracing::initialize_testing_tracing_subscriber;
 use holochain_http_gateway::ErrorResponse;
+use holochain_http_gateway::test::test_tracing::initialize_testing_tracing_subscriber;
 use holochain_types::app::InstalledApp;
 use reqwest::StatusCode;
 use setup::TestGateway;
