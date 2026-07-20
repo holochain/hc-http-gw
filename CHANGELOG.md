@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## \[[0.3.4](https://github.com/holochain/hc-http-gw/compare/v0.3.3...v0.3.4)\] - 2026-07-20
+
+### Features
+
+- Update to Holochain 0.6.3
+
 ## \[[0.3.3](https://github.com/holochain/hc-http-gw/compare/v0.3.2...v0.3.3)\] - 2026-07-02
 
 ### Features
