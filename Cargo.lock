@@ -2775,7 +2775,7 @@ dependencies = [
 
 [[package]]
 name = "holochain_http_gateway"
-version = "0.4.0-rc.0"
+version = "0.4.0-rc.1"
 dependencies = [
  "anyhow",
  "assert2",
