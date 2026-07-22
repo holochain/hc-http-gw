@@ -4,6 +4,28 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## \[[0.4.0-rc.1](https://github.com/holochain/hc-http-gw/compare/v0.4.0-rc.0...v0.4.0-rc.1)\] - 2026-07-22
+
+### Features
+
+- Update to Holochain 0.7.0-rc.3 by @ThetaSinner in [#105](https://github.com/holochain/hc-http-gw/pull/105)
+
+### Miscellaneous Tasks
+
+- Update flake.lock file by @cdunster in [#102](https://github.com/holochain/hc-http-gw/pull/102)
+
+### Documentation
+
+- Update local gateway workflow by @veeso in [#103](https://github.com/holochain/hc-http-gw/pull/103)
+
+### Automated Changes
+
+- Update CODEOWNERS with shared content in [#98](https://github.com/holochain/hc-http-gw/pull/98)
+
+### First-time Contributors
+
+- @veeso made their first contribution in [#103](https://github.com/holochain/hc-http-gw/pull/103)
+
 ## \[[0.4.0-rc.0](https://github.com/holochain/hc-http-gw/compare/v0.4.0-dev.1...v0.4.0-rc.0)\] - 2026-07-17
 
 ### Features
