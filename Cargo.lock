@@ -799,9 +799,9 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "4.6.3"
+version = "4.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0fb99565819980999fb7b4a1796046a5c949e6d4ff132cf5fadf5a641e20d776"
+checksum = "d91e0c145792ef73a6ad36d27c75ac09f1832222a3c209689d90f534685ee5b7"
 dependencies = [
  "clap_builder",
  "clap_derive",
@@ -822,14 +822,14 @@ dependencies = [
 
 [[package]]
 name = "clap_derive"
-version = "4.6.3"
+version = "4.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "32f2392eae7f16557a3d727ef3a12e57b2b2ca6f98566a5f4fb41ffe305df077"
+checksum = "d012d2b9d65aca7f18f4d9878a045bc17899bba951561ba5ec3c2ba1eed9a061"
 dependencies = [
  "heck",
  "proc-macro2",
  "quote",
- "syn 2.0.119",
+ "syn 3.0.2",
 ]
 
 [[package]]
@@ -2364,9 +2364,9 @@ dependencies = [
 
 [[package]]
 name = "hdi"
-version = "0.8.0-rc.2"
+version = "0.8.0-rc.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2961f3aec0ed5a975ae9325a2f867e0f647a64475f1212e0766c042084cd98f2"
+checksum = "ea896da0fcb2f8550d3d27bffae2ce1377c385aeabae9370119828fb2a7d9d2e"
 dependencies = [
  "getrandom 0.3.4",
  "hdk_derive",
@@ -2384,9 +2384,9 @@ dependencies = [
 
 [[package]]
 name = "hdk"
-version = "0.7.0-rc.2"
+version = "0.7.0-rc.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9d3e2b18c99ba549b05c24a3d33bd8e1b46b9c4f5eb58f5fddf844e13b7a8e46"
+checksum = "94e24a531de40b93e55f15b1d6fbf47453b90e184646e0d42aae80e79c91fad8"
 dependencies = [
  "getrandom 0.3.4",
  "hdi",
@@ -2564,9 +2564,9 @@ dependencies = [
 
 [[package]]
 name = "holochain"
-version = "0.7.0-rc.3"
+version = "0.7.0-rc.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1f24dec2ee27d665f5b40b175a7f035209f2cfc8d053aaa4ce94bc6b3f7e6465"
+checksum = "6f3f358706fa69f4b036bc0822d9bd45397d03f5e5954c460be5de65bf5ea5ca"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2628,7 +2628,6 @@ dependencies = [
  "serde",
  "serde_bytes",
  "serde_json",
- "serde_with",
  "shrinkwraprs",
  "sodoken",
  "strum 0.27.2",
@@ -2651,9 +2650,9 @@ dependencies = [
 
 [[package]]
 name = "holochain_cascade"
-version = "0.7.0-rc.3"
+version = "0.7.0-rc.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f5523c739d06b9b1d2db178d74280c3f2dce17b8439ac8f99763bb546eafbaaf"
+checksum = "9d273ad3d113f468f43bf4b116bfc13540343b792c8831303dc3800133411bc4"
 dependencies = [
  "async-trait",
  "fixt",
@@ -2677,9 +2676,9 @@ dependencies = [
 
 [[package]]
 name = "holochain_client"
-version = "0.9.0-rc.3"
+version = "0.9.0-rc.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bafbf60d1cd0f3d4a627959fb4aa91942261ca8e11148fca525e2b7b5d6f44f9"
+checksum = "a31b7d6bc77023715fb9587c5cd66f692c7871d20b1db89b1abcc09c321ed7e2"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2703,9 +2702,9 @@ dependencies = [
 
 [[package]]
 name = "holochain_conductor_api"
-version = "0.7.0-rc.3"
+version = "0.7.0-rc.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fb02dd215f26860186b56c59d3c4118be35d999fe5d63d22590baa898622ce9d"
+checksum = "1fb0b3024dd9f65de9aeead8f04499e7a55722906116d25146c5c64e87b2bb9d"
 dependencies = [
  "derive_more",
  "holo_hash",
@@ -2718,10 +2717,12 @@ dependencies = [
  "indexmap 2.14.0",
  "kitsune2_api",
  "kitsune2_core",
+ "nanoid 0.4.0",
  "num_cpus",
  "schemars 0.9.0",
  "serde",
  "serde_json",
+ "serde_with",
  "shrinkwraprs",
  "thiserror 2.0.19",
  "tracing",
@@ -2731,9 +2732,9 @@ dependencies = [
 
 [[package]]
 name = "holochain_conductor_config"
-version = "0.7.0-rc.3"
+version = "0.7.0-rc.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "755edea2b3530b0c2745cab756ac74b896f0beedb06d1111277244f24588a588"
+checksum = "5a4531fe9bb847a13970a08b91107cf4a06647be5045775269c855d32131906e"
 dependencies = [
  "ansi_term",
  "anyhow",
@@ -2750,9 +2751,9 @@ dependencies = [
 
 [[package]]
 name = "holochain_data"
-version = "0.7.0-rc.3"
+version = "0.7.0-rc.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c904a8a8937918d5a6a1cd595783dbb0e9ab3388b064ca0ee3dd9b108823f85b"
+checksum = "4735d12c7de94a471347adc6070de084d306605dcca8840cb1eefa434f0445f0"
 dependencies = [
  "base64",
  "bytes",
@@ -2897,9 +2898,9 @@ dependencies = [
 
 [[package]]
 name = "holochain_p2p"
-version = "0.7.0-rc.3"
+version = "0.7.0-rc.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c04792f5c09e2b496bd7c949f7910af16e1e0de3d9ba22c8abca3638d099f262"
+checksum = "2cbe01c733ea8e73ca4b26f98881134dbcfad2045531439b1bfddf0ffbfa9492"
 dependencies = [
  "async-trait",
  "base64",
@@ -2979,9 +2980,9 @@ dependencies = [
 
 [[package]]
 name = "holochain_state"
-version = "0.7.0-rc.3"
+version = "0.7.0-rc.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3cd60eda9607775f363eee5e04c25622f48ac77a072f8f31e0852515d4279ff1"
+checksum = "3955056af7ad4faf6a839a1620744ff5ca5a25497093602866bfee5ef5d7eef8"
 dependencies = [
  "async-recursion",
  "base64",
@@ -2991,6 +2992,7 @@ dependencies = [
  "derive_more",
  "fallible-iterator",
  "holo_hash",
+ "holochain_conductor_api",
  "holochain_data",
  "holochain_keystore",
  "holochain_nonce",
@@ -3014,9 +3016,9 @@ dependencies = [
 
 [[package]]
 name = "holochain_state_types"
-version = "0.7.0-rc.2"
+version = "0.7.0-rc.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "964536c4e08d6af6e8bfa4560f488978b4d71a25b1e057ee393ed2402fd23b1f"
+checksum = "4ca21f44e068dd6473bf0bed131fc67dfe39d4446b8edca8bb2e0c90610ab30b"
 dependencies = [
  "holo_hash",
  "holochain_integrity_types",
@@ -3025,9 +3027,9 @@ dependencies = [
 
 [[package]]
 name = "holochain_test_wasm_common"
-version = "0.7.0-rc.2"
+version = "0.7.0-rc.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "45b02b1c2af9acd6b1c00c2c78acd0e2ffa2bed6162c546bc50e208715398c3c"
+checksum = "6a9e9a10df82f9eeb21c8e72110d53a951deb9e4c17ba721324d3319ead5dbc8"
 dependencies = [
  "hdk",
  "holochain_serialized_bytes",
