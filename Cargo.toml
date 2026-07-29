@@ -15,7 +15,7 @@ path = "./src/bin/hc-http-gw.rs"
 [dependencies]
 anyhow = "1"
 axum = "0.8"
-base64 = "0.22"
+base64 = "0.23"
 clap = { version = "4", features = ["derive", "env"] }
 futures = "0.3"
 holochain_client = "0.9.0-rc.3"
