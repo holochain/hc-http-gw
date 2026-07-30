@@ -4,6 +4,54 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## \[[0.4.0](https://github.com/holochain/hc-http-gw/compare/v0.3.1...v0.4.0)\] - 2026-07-30
+
+### Features
+
+- Update to Holochain 0.7.0 by @ThetaSinner in [#115](https://github.com/holochain/hc-http-gw/pull/115)
+- Update to Holochain 0.7.0-rc.3 by @ThetaSinner in [#105](https://github.com/holochain/hc-http-gw/pull/105)
+- Update to Holochain 0.7.0-rc.1 by @ThetaSinner in [#99](https://github.com/holochain/hc-http-gw/pull/99)
+- Update to latest 0.7 dev release by @ThetaSinner in [#82](https://github.com/holochain/hc-http-gw/pull/82)
+- Update to 0.7.0-dev.8 (#77) by @ThetaSinner in [#77](https://github.com/holochain/hc-http-gw/pull/77)
+  - Feat: Update to 0.7.0-dev.8
+  - Ci: Use latest release tooling
+
+### Miscellaneous Tasks
+
+- Update flake.lock file by @cdunster in [#108](https://github.com/holochain/hc-http-gw/pull/108)
+- Update flake.lock file by @cdunster in [#102](https://github.com/holochain/hc-http-gw/pull/102)
+- Update flake.lock file by @cdunster in [#97](https://github.com/holochain/hc-http-gw/pull/97)
+- Update flake.lock file by @cdunster in [#94](https://github.com/holochain/hc-http-gw/pull/94)
+- Update flake.lock file by @cdunster in [#92](https://github.com/holochain/hc-http-gw/pull/92)
+- Update flake.lock file by @cdunster in [#91](https://github.com/holochain/hc-http-gw/pull/91)
+- Update Cargo.lock file by @cdunster in [#89](https://github.com/holochain/hc-http-gw/pull/89)
+- Update flake.lock file by @cdunster in [#88](https://github.com/holochain/hc-http-gw/pull/88)
+- Update Cargo.lock file by @cdunster in [#87](https://github.com/holochain/hc-http-gw/pull/87)
+- Update Cargo.lock file by @cdunster in [#86](https://github.com/holochain/hc-http-gw/pull/86)
+- Update the CONTRIBUTING.md with shared content in [#81](https://github.com/holochain/hc-http-gw/pull/81)
+- Update Cargo.lock file by @cdunster in [#71](https://github.com/holochain/hc-http-gw/pull/71)
+- Update flake.lock file by @cdunster in [#70](https://github.com/holochain/hc-http-gw/pull/70)
+
+### Documentation
+
+- Update local gateway workflow by @veeso in [#103](https://github.com/holochain/hc-http-gw/pull/103)
+
+### Automated Changes
+
+- *(deps)* Bump base64 from 0.22.1 to 0.23.0 by @dependabot[bot] in [#114](https://github.com/holochain/hc-http-gw/pull/114)
+- *(deps)* Bump the cargo-minor-patch group across 1 directory with 4 updates by @dependabot[bot] in [#113](https://github.com/holochain/hc-http-gw/pull/113)
+- *(deps)* Bump the updates group across 1 directory with 4 updates by @dependabot[bot] in [#111](https://github.com/holochain/hc-http-gw/pull/111)
+- *(deps)* Bump rust-toolchain from 1.96.1 to 1.97.1 by @dependabot[bot] in [#110](https://github.com/holochain/hc-http-gw/pull/110)
+- *(deps)* Bump the nix group with 3 updates by @dependabot[bot] in [#112](https://github.com/holochain/hc-http-gw/pull/112)
+- Update dependabot.yml with shared content in [#109](https://github.com/holochain/hc-http-gw/pull/109)
+- Update CODEOWNERS with shared content in [#98](https://github.com/holochain/hc-http-gw/pull/98)
+
+### First-time Contributors
+
+- @dependabot[bot] made their first contribution in [#114](https://github.com/holochain/hc-http-gw/pull/114)
+- @ made their first contribution in [#109](https://github.com/holochain/hc-http-gw/pull/109)
+- @veeso made their first contribution in [#103](https://github.com/holochain/hc-http-gw/pull/103)
+
 ## \[[0.4.0-rc.1](https://github.com/holochain/hc-http-gw/compare/v0.4.0-rc.0...v0.4.0-rc.1)\] - 2026-07-22
 
 ### Features
