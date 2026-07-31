@@ -10,11 +10,12 @@ Holochain. Read the [spec](./spec.md) for more details.
 ## Compatibility
 
 | Holochain Version | HTTP Gateway Version |
-| ----------------- | -------------------- |
+|-------------------|----------------------|
 | 0.4.x             | 0.1.x                |
 | 0.5.x             | 0.2.x                |
 | 0.6.x             | 0.3.x                |
 | 0.7.x             | 0.4.x                |
+| 0.8.x             | 0.5.x                |
 
 ## Running HTTP Gateway locally
 
