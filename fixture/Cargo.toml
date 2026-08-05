@@ -5,7 +5,7 @@ resolver = "2"
 [workspace.dependencies]
 hdi = "0.7.3"
 hdk = "0.6.3"
-holochain_serialized_bytes = "*"
+holochain_serialized_bytes = "0.0.57"
 serde = "1.0"
 
 integrity = { path = "integrity" }
