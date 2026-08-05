@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## \[[0.3.5](https://github.com/holochain/hc-http-gw/compare/v0.3.4...v0.3.5)\] - 2026-08-05
+
+### Miscellaneous Tasks
+
+- Fix holochain_serialized_bytes version to an actual number
+  - Publishing to crates.io requires that all dependencies have a version specified and doesn't allow wildcard versions.
+
 ## \[[0.3.4](https://github.com/holochain/hc-http-gw/compare/v0.3.3...v0.3.4)\] - 2026-07-20
 
 ### Features
