@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## \[[0.4.1](https://github.com/holochain/hc-http-gw/compare/v0.4.0...v0.4.1)\] - 2026-10-15
+
+### Features
+
+- Update to Holochain 0.7.1
+  - Pin the Nix flake to the holonix main-0.7 branch so this release branch keeps tracking Holochain 0.7.x.
+
 ## \[[0.4.0](https://github.com/holochain/hc-http-gw/compare/v0.3.1...v0.4.0)\] - 2026-07-30
 
 ### Features
